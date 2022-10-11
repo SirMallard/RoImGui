@@ -1,6 +1,6 @@
-local Style = require(script.Parent.Parent.Types.Style)
+local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
-local Utility = require(script.Parent.Parent.Utility)
+local Utility = require(script.Parent.Parent.Utility.Utility)
 local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Window = {}

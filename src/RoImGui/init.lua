@@ -2,12 +2,11 @@ local userInputService: UserInputService = game:GetService("UserInputService")
 local runService: RunService = game:GetService("RunService")
 
 local components = script.Components
-local modules = script.Types
 local Types = require(script.Types)
 local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
-local Style = require(modules.Style)
-local Utility = require(script.Utility)
+local Style = require(script.Utility.Style)
+local Utility = require(script.Utility.Utility)
 
 local frameId: number = -1
 
