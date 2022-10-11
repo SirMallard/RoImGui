@@ -1,15 +1,14 @@
-# Project place file
-/RoImGui.rbxlx
-
-# Roblox Studio lock files
-/*.rbxlx.lock
-/*.rbxl.lock
+# ignoring unnecesary files on git
 
 # Roblox files
 *.rbxl
 *.rbxlx
 *.rbxm
 *.rbxmx
+
+# Locked Roblox files
+*.rbxl.lock
+*.rbxlx.lock
 
 # VSCode files
 sourcemap.json
