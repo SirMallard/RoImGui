@@ -1,7 +1,7 @@
 local Style = require(script.Parent.Parent.Types.Style)
-local Types = require(script.Parent.Parent.Types.Types)
+local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility)
-local ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
+local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Window = {}
 Window.__index = Window
@@ -41,7 +41,7 @@ local function createDropdown(collapsed: boolean): (ImageLabel)
 	return dropdown
 end
 
-local function createClose(windowWidth: number, buttonColour): (ImageLabel)
+local function createClose(windowWidth: number): (ImageLabel)
 	local close: ImageLabel = Instance.new("ImageLabel")
 	close.Name = "close"
 	close.Position = UDim2.fromOffset(windowWidth - Style.Sizes.FramePadding.X - 14, Style.Sizes.WindowPadding.Y - 2)
@@ -77,12 +77,12 @@ local function createClose(windowWidth: number, buttonColour): (ImageLabel)
 end
 
 function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: any?): (Types.ImGuiWindow)
-	local self: Types.ImGuiWindow = setmetatable({}, Window)
+	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName
 	self.Id = windowName
 
-	self.ParentWindow = parentWindow
+	self.ParentWindow = parentWindow or nil
 	self.RootWindow = parentWindow and parentWindow.RootWindow or nil
 	self.WriteAccessed = false
 
@@ -120,7 +120,7 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	return self
 end
 
-function Window:Update(stack: number)
+function Window:Update()
 	self.MinimumSize = Vector2.new(Style.Sizes.WindowPadding.X * 2 + Style.Sizes.ItemInnerSpacing.X + 30, 60)
 	if self.Size.X < self.MinimumSize.X then
 		self.Size = Vector2.new(self.MinimumSize.X, self.Size.Y)
@@ -188,7 +188,7 @@ function Window:Update(stack: number)
 	end
 
 	local close: ImageLabel? = self.Instance.title.close
-	local buttonColour: Types.Color4Type = if (ImGuiInternal.HoverId == self.CloseId)
+	local buttonColour: Types.Color4 = if (ImGuiInternal.HoverId == self.CloseId)
 			and (ImGuiInternal.ActiveId == self.CloseId)
 		then Style.Colours.ButtonActive
 		elseif ImGuiInternal.HoverId == self.CloseId then Style.Colours.ButtonHovered
@@ -206,7 +206,7 @@ function Window:Update(stack: number)
 			close.icon.ImageTransparency = Style.Colours.Text.Transparency
 		end
 	elseif self.CanClose == true then
-		close = createClose(self.Size.X, buttonColour)
+		close = createClose(self.Size.X)
 		close.Parent = title
 	end
 end
@@ -242,7 +242,7 @@ function Window:Draw(stack: number?)
 	title.Transparency = (self.Open[1] == true) and Style.Colours.TitleBg.Transparency
 		or Style.Colours.TitleBgCollapsed.Transparency
 	title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	title.BorderSizePixel = 0	
+	title.BorderSizePixel = 0
 
 	local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
 	local text: TextLabel = Instance.new("TextLabel")
@@ -268,7 +268,7 @@ function Window:Draw(stack: number?)
 	text.BorderSizePixel = 0
 
 	text.Text = self.Name
-	text.FontFace = Font.fromEnum(Enum.Font.Arial)
+	text.FontFace = Font.new("Arial")
 	text.TextColor3 = Style.Colours.Text.Color
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false

@@ -3,14 +3,12 @@ local runService: RunService = game:GetService("RunService")
 
 local components = script.Components
 local modules = script.Types
-local Types = require(script.Types.Types)
+local Types = require(script.Types)
 local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
 local Style = require(modules.Style)
 local Utility = require(script.Utility)
 
-local mouseX: number = 0
-local mouseY: number = 0
 local frameId: number = -1
 
 local ImGui = {}
@@ -36,8 +34,6 @@ local function UpdateMouseInputs()
 	-- Set up the data for the frame.
 	ImGuiInternal.MouseCursor.MousePosition = userInputService:GetMouseLocation()
 	ImGuiInternal.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
-	mouseX = ImGuiInternal.MouseCursor.MousePosition.X
-	mouseY = ImGuiInternal.MouseCursor.MousePosition.Y
 	Utility.Update(ImGuiInternal.MouseCursor.MousePosition)
 
 	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
@@ -104,6 +100,7 @@ function ImGui:Start()
 
 		ImGuiInternal.FrameId += 1
 		frameId += 1
+		ImGuiInternal.ElapsedTime += deltaTime
 
 		if ImGuiInternal.Status == "Stopped" then
 			return
@@ -123,6 +120,8 @@ function ImGui:Start()
 		if ImGuiInternal.Status ~= "Started" then
 			return
 		end
+
+		ClearWindow()
 
 		--todo Add mouse moving window from empty space
 	end)
@@ -158,21 +157,9 @@ function ButtonBehaviour(position: Vector2, size: Vector2): (boolean, boolean, b
 	-- Todo: create the UI ids so I can reference the current id.
 	-- Todo: check whether the active and hovered are currently this button.
 	-- Todo: all button checking behaviour.
+	Utility.IsCursorInBox(position, size)
 
 	return true, true, true
-end
-
-function SetActiveWindow(window: Types.ImGuiWindow)
-	if ImGuiInternal.ActiveWindow ~= nil then
-		if ImGuiInternal.ActiveWindow == window then
-			return
-		end
-
-		ImGuiInternal.ActiveWindow:SetActive(false)
-	end
-
-	ImGuiInternal.ActiveWindow = window
-	window.Active = true
 end
 
 function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: any?)
@@ -180,6 +167,8 @@ function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boo
 		table.insert(ImGuiInternal.WindowFocusOrder, window)
 		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
 	end
+
+	flags = flags
 end
 
 function ImGui:AdvanceDrawCursor(size: Vector2, yOffset: number?, xOffset: number?)
@@ -192,7 +181,9 @@ function ImGui:GetWindowByName(windowName: string): (Types.ImGuiWindow?)
 end
 
 function ImGui:CreateWindow(windowName: string, flags: any?): (Types.ImGuiWindow)
-	local window: Types.ImGuiWindow = Window.new(windowName, nil, flags)
+	local parentWindow: Types.ImGuiWindow? = nil
+
+	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
 
 	ImGuiInternal.Windows[windowName] = window
 	table.insert(ImGuiInternal.WindowOrder, window)
@@ -215,6 +206,8 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: any?)
 
 	local parentWindowFromStack: Types.ImGuiWindow? = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow
+
+	parentWindow = parentWindow
 
 	window.Open = open or { true }
 	window.Closed = open and { not open[0] } or { false }
@@ -301,6 +294,10 @@ function ImGui:Button(buttonText: string, forcedSize: Vector2?)
 	ImGui:AdvanceDrawCursor(size, Style.Sizes.ItemSpacing.Y)
 
 	local pressed: boolean, hovered: boolean, held: boolean = ButtonBehaviour(position, size)
+
+	pressed = pressed
+	hovered = hovered
+	held = held
 
 	return true
 end

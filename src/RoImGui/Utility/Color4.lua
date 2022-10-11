@@ -1,4 +1,4 @@
-local Types = require(script.Parent.Types)
+local Types = require(script.Parent.Parent.Types)
 
 local Color4 = {}
 
@@ -6,24 +6,24 @@ local function Lerp(a: number, b: number, t: number): (number)
 	return a * (1 - t) + b * t
 end
 
-function Color4.new(red: number, green: number, blue: number, transparency: number): (Types.Color4Type)
-	local color: Types.Color4Type = {
+function Color4.new(red: number, green: number, blue: number, transparency: number): (Types.Color4)
+	local color: Types.Color4 = {
 		Color = Color3.new(red, green, blue),
 		Transparency = transparency,
 		Alpha = 1 - transparency,
 		R = red,
 		G = green,
 		B = blue,
+
+		Lerp = function(_: Types.Color4, other_color4: Types.Color4, alpha: number)
+			local r: number = Lerp(color.R, other_color4.R, alpha)
+			local g: number = Lerp(color.G, other_color4.G, alpha)
+			local b: number = Lerp(color.B, other_color4.B, alpha)
+			local t: number = Lerp(color.Transparency, other_color4.Transparency, alpha)
+
+			return Color4.new(r, g, b, t)
+		end,
 	}
-
-	function color:Lerp(other_color4: Types.Color4Type, alpha: number)
-		local r: number = Lerp(color.R, other_color4.R, alpha)
-		local g: number = Lerp(color.G, other_color4.G, alpha)
-		local b: number = Lerp(color.B, other_color4.B, alpha)
-		local t: number = Lerp(color.Transparency, other_color4.Transparency, alpha)
-
-		return Color4.new(r, g, b, t)
-	end
 
 	setmetatable(color, {
 		__newindex = function(_, index: any, value: any)
@@ -51,14 +51,14 @@ function Color4.new(red: number, green: number, blue: number, transparency: numb
 		end,
 	})
 
-	return color
+	return color :: Types.Color4
 end
 
-function Color4.fromAlpha(red: number, green: number, blue: number, alpha: number): (Types.Color4Type)
+function Color4.fromAlpha(red: number, green: number, blue: number, alpha: number): (Types.Color4)
 	return Color4.new(red, green, blue, 1 - alpha)
 end
 
-function Color4.fromColor3(colour: Color3, transparency: number?): (Types.Color4Type)
+function Color4.fromColor3(colour: Color3, transparency: number?): (Types.Color4)
 	return Color4.new(colour.R, colour.G, colour.B, transparency or 0)
 end
 

@@ -1,1 +1,3 @@
-print("Hello world, from server!")
+print("[✅ SERVER] | Server initialising...")
+
+print("[✅ SERVER] | Server finished initialising.")

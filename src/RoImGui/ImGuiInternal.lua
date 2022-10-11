@@ -1,4 +1,4 @@
-local Types = require(script.Parent.Types.Types)
+local Types = require(script.Parent.Types)
 
 local ImGuiInternal: Types.ImGuiInternal = {
 	Widgets = {},
@@ -7,12 +7,13 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	LastStack = {},
 
 	Frame = -1,
+	ElapsedTime = 0,
 
 	HoverId = 0,
 	Hover = nil,
 	ActiveId = 0,
 	Active = nil,
-	
+
 	ActiveIdClickOffset = Vector2.zero,
 
 	ActiveWindow = nil,
@@ -45,40 +46,42 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	},
 	MouseCursor = {
 		MousePosition = Vector2.zero,
-		MouseDelta = Vector2.zero
+		MouseDelta = Vector2.zero,
 	},
 
 	Status = "Stopped",
 } :: Types.ImGuiInternal
 
 function ImGuiInternal:RemoveHoverId(id: string)
-	if (ImGuiInternal.HoverId ~= id) then
+	if ImGuiInternal.HoverId ~= id then
 		return
 	end
-	
+
 	ImGuiInternal.HoverId = nil
 	ImGuiInternal.Hover = nil
 end
 
-function ImGuiInternal:SetHoverId(id: string, instance: Instance?)	
+function ImGuiInternal:SetHoverId(id: string, instance: Instance?)
 	ImGuiInternal.HoverId = id
 	ImGuiInternal.Hover = instance
 end
 
-function ImGuiInternal:IsHovering(id: string)	
+function ImGuiInternal:IsHovering(id: string)
 	if (ImGuiInternal.ActiveId ~= 0) and (ImGuiInternal.ActiveId ~= id) then
 		return false
 	end
-	
+
 	ImGuiInternal:SetHoverId(id)
-	
+
 	return true
 end
 
 function ImGuiInternal:IsActive(id: string)
-	if (ImGuiInternal.ActiveId) then
+	if ImGuiInternal.ActiveId then
 		return
 	end
+
+	id = id
 end
 
 return ImGuiInternal

@@ -7,7 +7,7 @@
 		"Modules": {
 			"$className": "Folder",
 			"RoImGui": {
-				"$path": "src/shared/modules/RoImGui"
+				"$path": "src/RoImGui"
 			}
 		},
 		"Demo": {
