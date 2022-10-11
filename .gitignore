@@ -5,7 +5,12 @@
 /*.rbxlx.lock
 /*.rbxl.lock
 
-sourcemap.json
-*.project.json
-
+# Roblox files
 *.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+
+VSCode files
+sourcemap.json
