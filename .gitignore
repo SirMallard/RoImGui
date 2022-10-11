@@ -11,6 +11,6 @@
 *.rbxm
 *.rbxmx
 
-
-VSCode files
+# VSCode files
 sourcemap.json
+*.project.json
