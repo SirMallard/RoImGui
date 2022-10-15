@@ -203,10 +203,16 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: any?)
 		window.LastFrameActive = frameId
 	end
 
-	local parentWindowFromStack: Types.ImGuiWindow? = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
-	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow
+	local parentWindowFromStack: Types.ImGuiWindow? = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
+	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
 
-	parentWindow = parentWindow
+	table.insert(ImGuiInternal.WindowStack, window)
+
+	-- Handle if the window is not a regular window (ie. popup, child, tooltip)
+
+	if firstFrameCall == true then
+		window.ParentWindowFromStack = parentWindowFromStack
+	end
 
 	window.Open = open or { true }
 	window.Closed = open and { not open[0] } or { false }
@@ -215,7 +221,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: any?)
 
 	ImGuiInternal.ActiveWindow = window
 
-	-- A lot of internal code in here!
+	-- A lot of internal code in here!f
 
 	local skipWindow: boolean = (not window.Collapsed or not window.Active or window.Closed[0])
 

@@ -23,7 +23,7 @@ function Utility.IsCursorInBox(absolutePosition: Vector2, absoluteSize: Vector2)
 end
 
 function Utility.IsCursorInCircle(absolutePosition: Vector2, radius: number): (boolean)
-	return (math.sqrt((mouseX - absolutePosition.X)^2 + (mouseY - absolutePosition.Y))) <= radius
+	return (math.sqrt((mouseX - absolutePosition.X) ^ 2 + (mouseY - absolutePosition.Y))) <= radius
 end
 
 function Utility.CalculateTextSize(text: string): (Vector2)
@@ -33,6 +33,5 @@ end
 function Utility.GenerateRandomId()
 	return httpService:GenerateGUID(false):gsub("=", "")
 end
-
 
 return Utility

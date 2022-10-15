@@ -103,6 +103,7 @@ export type ImGuiWindow = {
 
 	ParentWindow: ImGuiWindow?,
 	RootWindow: ImGuiWindow?,
+	ParentWindowFromStack: ImGuiWindow?,
 	WriteAccessed: boolean,
 
 	LastFrameActive: number,
