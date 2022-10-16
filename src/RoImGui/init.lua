@@ -12,6 +12,15 @@ local frameId: number = -1
 
 local ImGui = {}
 
+local x = {
+
+	"",
+
+	1,
+	2,
+	"",
+}
+
 function FindHoveredWindow()
 	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
 		if (window.Active == false) or (window.Open[1] == false) then
@@ -31,6 +40,7 @@ local function UpdateMouseInputs()
 	ImGuiInternal.MouseButton1.DownOnThisFrame = false
 	ImGuiInternal.MouseButton1.UpOnThisFrame = false
 	-- Set up the data for the frame.
+
 	ImGuiInternal.MouseCursor.MousePosition = userInputService:GetMouseLocation()
 	ImGuiInternal.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
 	Utility.Update(ImGuiInternal.MouseCursor.MousePosition)
