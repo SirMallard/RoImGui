@@ -224,6 +224,21 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: any?)
 		window.ParentWindowFromStack = parentWindowFromStack
 	end
 
+	-- if window collapsed
+
+	if window.open[1] == false and window.CanCollapse == true then
+		window.Collapsed = true
+	end
+
+	if firstFrameCall == true then
+		local tooltip: boolean = false
+
+		window.Active = true
+		window.CanClose = open ~= nil
+
+		-- Possibily reset draw list
+	end
+
 	window.Open = open or { true }
 	window.Closed = open and { not open[0] } or { false }
 

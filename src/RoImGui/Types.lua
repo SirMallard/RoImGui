@@ -89,6 +89,12 @@ export type ImGuiStyleColour = {
 
 export type ImGuiId = string
 
+export type WindowFlags = {
+	NoTitleBar: boolean,
+	NoResive: boolean,
+	NoMove: boolean,
+}
+
 export type DrawCursor = {
 	Position: Vector2,
 	StartPosition: Vector2,
