@@ -89,10 +89,26 @@ export type ImGuiStyleColour = {
 
 export type ImGuiId = string
 
-export type WindowFlags = {
+export type BitFlag = {
+	type: string,
+	[string]: boolean,
+}
+
+export type WindowFlags = BitFlag & {
 	NoTitleBar: boolean,
-	NoResive: boolean,
+	NoResize: boolean,
 	NoMove: boolean,
+	NoScrollBar: boolean,
+	NoMouseScroll: boolean,
+	NoDropdown: boolean,
+	NoBackground: boolean,
+	MenuBar: boolean,
+
+	ChildWindow: boolean,
+	Tooltip: boolean,
+	Popup: boolean,
+	Modal: boolean,
+	ChildMenu: boolean,
 }
 
 export type DrawCursor = {
@@ -104,8 +120,8 @@ export type DrawCursor = {
 
 export type ImGuiWindow = {
 	Name: string,
-	Id: string,
-	Flags: any,
+	Id: ImGuiId,
+	Flags: WindowFlags,
 
 	ParentWindow: ImGuiWindow?,
 	RootWindow: ImGuiWindow?,
@@ -129,7 +145,7 @@ export type ImGuiWindow = {
 	Closed: { boolean },
 	Open: { boolean },
 
-	new: (windowName: string, flags: any) -> (ImGuiWindow),
+	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags?) -> (ImGuiWindow),
 	Update: (ImGuiWindow, stack: number) -> (),
 	Draw: (ImGuiWindow, stack: number) -> (),
 	Destroy: (ImGuiWindow) -> (),

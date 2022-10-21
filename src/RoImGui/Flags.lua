@@ -1,8 +1,23 @@
+local BitFlags = require(script.Parent.BitFlags)
 local Flags = {}
 
-WindowFlags = 0
-Flags.WindowFlags = {
-	NoTitleBar = bit32.lshift(WindowFlags, 1) == 1,
-}
+local WindowFlags = BitFlags("WindowFlags", {
+	NoTitleBar = false,
+	NoResize = false,
+	NoMove = false,
+	NoScrollBar = false,
+	NoMouseScroll = false,
+	NoDropdown = false,
+	NoBackground = false,
+	MenuBar = true,
+
+	ChildWindow = false,
+	Tooltip = false,
+	Popup = false,
+	Modal = false,
+	ChildMenu = false,
+})
+
+Flags.WindowFlags = WindowFlags
 
 return Flags

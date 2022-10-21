@@ -171,7 +171,7 @@ function ButtonBehaviour(position: Vector2, size: Vector2): (boolean, boolean, b
 	return true, true, true
 end
 
-function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: any?)
+function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: Types.WindowFlags?)
 	if new_window == true then
 		table.insert(ImGuiInternal.WindowFocusOrder, window)
 		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
@@ -189,7 +189,7 @@ function ImGui:GetWindowByName(windowName: string): (Types.ImGuiWindow?)
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
-function ImGui:CreateWindow(windowName: string, flags: any?): (Types.ImGuiWindow)
+function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags?): (Types.ImGuiWindow)
 	local parentWindow: Types.ImGuiWindow? = nil
 
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
@@ -200,7 +200,7 @@ function ImGui:CreateWindow(windowName: string, flags: any?): (Types.ImGuiWindow
 	return window
 end
 
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: any?)
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags?)
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowByName(windowName)
 	local new_window: boolean = (previousWindow == nil)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)

@@ -76,7 +76,11 @@ local function createClose(windowWidth: number): (ImageLabel)
 	return close
 end
 
-function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: any?): (Types.ImGuiWindow)
+function Window.new(
+	windowName: string,
+	parentWindow: Types.ImGuiWindow?,
+	flags: Types.WindowFlags?
+): (Types.ImGuiWindow)
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName
