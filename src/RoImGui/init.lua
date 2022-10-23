@@ -12,15 +12,6 @@ local frameId: number = -1
 
 local ImGui = {}
 
-local x = {
-
-	"",
-
-	1,
-	2,
-	"",
-}
-
 function FindHoveredWindow()
 	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
 		if (window.Active == false) or (window.Open[1] == false) then
@@ -180,6 +171,25 @@ function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boo
 	flags = flags
 end
 
+-- Updates RootWindow properties of the current window based upon flags
+function UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags?, parentWindow: Types.ImGuiWindow?)
+	window.ParentWindow = parentWindow
+	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
+	if (parentWindow ~= nil) and (flags and flags.ChildWindow == true) and not (flags and flags.Tooltip == true) then
+		window.RootWindow = parentWindow.RootWindow
+	end
+	if (parentWindow ~= nil) and (flags and flags.Popup == true) then
+		window.PopupRootWindow = parentWindow.PopupRootWindow
+	end
+	if
+		(parentWindow ~= nil)
+		and not (flags and flags.Modal == true)
+		and (flags and (flags.ChildWindow == true or flags.Popup == true))
+	then
+		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
+	end
+end
+
 function ImGui:AdvanceDrawCursor(size: Vector2, yOffset: number?, xOffset: number?)
 	ImGuiInternal.DrawPosition.Y += size.Y + (yOffset or 0)
 	ImGuiInternal.DrawPosition.X += (xOffset or 0)
@@ -208,8 +218,16 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	UpdateWindowInFocusOrderList(window, new_window, flags)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
+	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
+
+	if flags and flags.Popup == true then
+		windowApearing = true -- OpenPopupStack required to check
+	end
+
+	window.Appearing = windowApearing
 
 	if firstFrameCall == true then
+		window.Flags = flags
 		window.LastFrameActive = frameId
 	end
 
@@ -218,29 +236,30 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 
 	table.insert(ImGuiInternal.WindowStack, window)
 
-	-- Handle if the window is not a regular window (ie. popup, child, tooltip)
-
-	if firstFrameCall == true then
-		window.ParentWindowFromStack = parentWindowFromStack
+	if flags and flags.ChildWindow == true then
+		ImGuiInternal.ChildWindowCount += 1
 	end
 
-	-- if window collapsed
+	if flags and flags.Popup == true then
+		print("Popup window created!")
+	end
 
-	if window.open[1] == false and window.CanCollapse == true then
+	if ((window.open[1] == false) and (window.CanCollapse == true)) or (flags and flags.Collapsed == true) then
 		window.Collapsed = true
 	end
 
 	if firstFrameCall == true then
-		local tooltip: boolean = false
+		local tooltip: boolean = (flags and flags.ChildWindow == true) and (flags and flags.Tooltip == true)
 
+		UpdateWindowLinks(window, flags, parentWindow)
+		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
 		window.CanClose = open ~= nil
 
-		-- Possibily reset draw list
+		ImGuiInternal.CurrentWindow = window
 	end
 
 	window.Open = open or { true }
-	window.Closed = open and { not open[0] } or { false }
 
 	window.LastFrameActive = frameId
 
@@ -248,7 +267,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 
 	-- A lot of internal code in here!f
 
-	local skipWindow: boolean = (not window.Collapsed or not window.Active or window.Closed[0])
+	local skipWindow: boolean = (not window.Collapsed or not window.Active or not window.Open[0])
 
 	return skipWindow
 end

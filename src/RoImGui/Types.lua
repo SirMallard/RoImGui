@@ -100,7 +100,7 @@ export type WindowFlags = BitFlag & {
 	NoMove: boolean,
 	NoScrollBar: boolean,
 	NoMouseScroll: boolean,
-	NoDropdown: boolean,
+	Collapsed: boolean,
 	NoBackground: boolean,
 	MenuBar: boolean,
 
@@ -123,9 +123,11 @@ export type ImGuiWindow = {
 	Id: ImGuiId,
 	Flags: WindowFlags,
 
-	ParentWindow: ImGuiWindow?,
-	RootWindow: ImGuiWindow?,
-	ParentWindowFromStack: ImGuiWindow?,
+	ParentWindow: ImGuiWindow?, -- the parent window
+	RootWindow: ImGuiWindow?, -- the top most window in the window stack
+	PopupRootWindow: ImGuiWindow?, -- the popup parent of the window
+	PopupParentRootWindow: ImGuiWindow?, -- the parent window which initiated the popup for title highlighting
+	ParentWindowFromStack: ImGuiWindow?, -- the stacked parent, may be different to the parentWindow
 	WriteAccessed: boolean,
 
 	LastFrameActive: number,
@@ -139,11 +141,27 @@ export type ImGuiWindow = {
 
 	Active: boolean,
 	WasActive: boolean,
+	Appearing: boolean,
 	CanCollapse: boolean,
 	CanClose: boolean,
 	Collapsed: boolean,
-	Closed: { boolean },
 	Open: { boolean },
+
+	Window: {
+		Instance: Frame?,
+		Title: {
+			Instance: Frame?,
+			Text: string?,
+			CollapseInstance: ImageLabel?,
+			CloseInstance: ImageLabel?,
+		},
+		Menubar: {
+			Instance: Frame?,
+		},
+		Frame: {
+			Instance: Frame?,
+		},
+	},
 
 	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags?) -> (ImGuiWindow),
 	Update: (ImGuiWindow, stack: number) -> (),
@@ -169,10 +187,13 @@ export type ImGuiInternal = {
 	ActiveWindow: ImGuiWindow?,
 	HoveredWindow: ImGuiWindow?,
 	MovingWindow: ImGuiWindow?,
+	CurrentWindow: ImGuiWindow?,
 	Windows: { [string]: ImGuiWindow }, -- all windows
 	WindowStack: { ImGuiWindow },
 	WindowOrder: { ImGuiWindow },
 	WindowFocusOrder: { ImGuiWindow }, -- root windows in focus order of back to front. (highest index is highest zindex)
+
+	ChildWindowCount: number,
 
 	MouseButton1: {
 		Down: boolean,

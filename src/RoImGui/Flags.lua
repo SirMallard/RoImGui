@@ -7,7 +7,7 @@ local WindowFlags = BitFlags("WindowFlags", {
 	NoMove = false,
 	NoScrollBar = false,
 	NoMouseScroll = false,
-	NoDropdown = false,
+	Collapsed = false,
 	NoBackground = false,
 	MenuBar = true,
 

@@ -19,10 +19,13 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	ActiveWindow = nil,
 	HoveredWindow = nil,
 	MovingWindow = nil,
+	CurrentWindow = nil,
 	Windows = {},
 	WindowStack = {},
 	WindowOrder = {},
 	WindowFocusOrder = {},
+
+	ChildWindowCount = 0,
 
 	MouseButton1 = {
 		Down = false,
