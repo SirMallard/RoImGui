@@ -10,6 +10,8 @@ local WindowFlags = BitFlags("WindowFlags", {
 	Collapsed = false,
 	NoBackground = false,
 	MenuBar = true,
+	NoClose = false,
+	NoCollapse = false,
 
 	ChildWindow = false,
 	Tooltip = false,

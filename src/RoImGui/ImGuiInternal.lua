@@ -1,5 +1,9 @@
 local Types = require(script.Parent.Types)
 
+local players: Players = game:GetService("Players")
+local player: Player = players.LocalPlayer or players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+local playerGui: PlayerGui = player:WaitForChild("PlayerGui")
+
 local ImGuiInternal: Types.ImGuiInternal = {
 	Widgets = {},
 
@@ -10,11 +14,11 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	ElapsedTime = 0,
 
 	HoverId = 0,
-	Hover = nil,
 	ActiveId = 0,
-	Active = nil,
 
 	ActiveIdClickOffset = Vector2.zero,
+
+	Viewport = Instance.new("ScreenGui"),
 
 	ActiveWindow = nil,
 	HoveredWindow = nil,
@@ -54,6 +58,12 @@ local ImGuiInternal: Types.ImGuiInternal = {
 
 	Status = "Stopped",
 } :: Types.ImGuiInternal
+
+ImGuiInternal.Viewport.Name = "RoImGui"
+ImGuiInternal.Viewport.ResetOnSpawn = false
+ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ImGuiInternal.Viewport.DisplayOrder = 100
+ImGuiInternal.Viewport.Parent = playerGui
 
 function ImGuiInternal:RemoveHoverId(id: string)
 	if ImGuiInternal.HoverId ~= id then

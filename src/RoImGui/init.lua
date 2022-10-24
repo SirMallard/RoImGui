@@ -7,22 +7,26 @@ local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
+local Flags = require(script.Flags)
 
 local frameId: number = -1
 
 local ImGui = {}
 
-function FindHoveredWindow()
+local function FindHoveredWindow()
+	ImGuiInternal.HoveredWindow = nil
+
 	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		if (window.Active == false) or (window.Open[1] == false) then
+		if (window.WasActive == false) or (window.Open[1] == false) then
 			continue
 		end
 
-		if Utility.IsCursorInBox(window.Postion, window.Size) == false then
+		if Utility.IsCursorInBox(window.Position, window.Size) == false then
 			continue
 		end
 
 		ImGuiInternal.HoveredWindow = window
+
 		break
 	end
 end
@@ -82,8 +86,53 @@ local function ClearWindow()
 	end
 end
 
+local function CleanWindowElements()
+	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+		-- loop through all menubars
+		for name: string, menubar in window.Window.Menubar.Menus do
+			menubar.WasActive = menubar.Active
+			menubar.Active = false
+
+			if menubar.WasActive == false then
+				if menubar.Instance ~= nil then
+					menubar.Instance:Destroy()
+				end
+				window.Window.Menubar.Menus[name] = nil
+			end
+		end
+		-- loop through all window elements
+	end
+end
+
+local function UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
+	if window ~= nil then
+		local index: number = table.find(ImGuiInternal.WindowFocusOrder, window)
+		table.remove(ImGuiInternal.WindowFocusOrder, index)
+		table.insert(ImGuiInternal.WindowFocusOrder, window)
+	end
+
+	for order: number, window: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
+		if window.Window.Instance ~= nil then
+			window.Window.Instance.ZIndex = order
+			window.FocusOrder = order
+		end
+	end
+end
+
+function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: Types.WindowFlags)
+	if new_window == true then
+		table.insert(ImGuiInternal.WindowFocusOrder, window)
+		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
+	end
+end
+
+--[[
+	Initialisation API
+
+	:Start() :Stop() :Pause()
+]]
 function ImGui:Start()
-	assert((ImGuiInternal.Status == "Started"), "Cannot call :Start() without stopping or pausing first.")
+	assert((ImGuiInternal.Status ~= "Started"), "Cannot call :Start() without stopping or pausing first.")
 
 	ImGuiInternal.Status = "Started"
 
@@ -98,7 +147,7 @@ function ImGui:Start()
 			return
 		end
 
-		ImGuiInternal.FrameId += 1
+		ImGuiInternal.Frame += 1
 		frameId += 1
 		ImGuiInternal.ElapsedTime += deltaTime
 
@@ -106,12 +155,11 @@ function ImGui:Start()
 			return
 		end
 
-		ImGuiInternal.HoverId = nil
-		ImGuiInternal.Hover = nil
+		ImGuiInternal.HoverId = 0
 
 		UpdateMouseInputs()
-
 		FindHoveredWindow()
+		ClearWindow()
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -121,7 +169,7 @@ function ImGui:Start()
 			return
 		end
 
-		ClearWindow()
+		CleanWindowElements()
 
 		--todo Add mouse moving window from empty space
 	end)
@@ -139,53 +187,79 @@ function ImGui:Pause()
 	ImGuiInternal.Status = "Paused"
 end
 
--- Used to determine the final size of the object.
--- Todo: mark offset from window to clamp.
-function CalculateItemSize(size: Vector2, defaultWidth: number, defaultHeight: number): (Vector2)
-	if size.X == 0 then
-		size.X = defaultWidth
+--[[
+	Button Behaviour functions
+
+	ItemHoverable()
+	ButtonBehaviour()
+]]
+function ItemHoverable(position: Vector2, size: Vector2, id: Types.ImGuiId, window: Types.ImGuiWindow)
+	if ImGuiInternal.HoverId ~= 0 and ImGuiInternal.Hover ~= id then
+		return false
 	end
 
-	if size.Y == 0 then
-		size.Y = defaultHeight
+	if ImGuiInternal.HoveredWindow ~= window then
+		return false
 	end
 
-	return size
+	if ImGuiInternal.ActiveId ~= 0 and ImGuiInternal.ActiveId ~= id then
+		return false
+	end
+
+	if Utility.IsCursorInBox(position, size) == false then
+		return false
+	end
+
+	ImGuiInternal.HoverId = id
+
+	return true
 end
 
-function ButtonBehaviour(position: Vector2, size: Vector2): (boolean, boolean, boolean)
+function ButtonBehaviour(
+	position: Vector2,
+	size: Vector2,
+	id: Types.ImGuiId,
+	window: Types.ImGuiWindow
+): (boolean, boolean, boolean)
 	-- Todo: create the UI ids so I can reference the current id.
 	-- Todo: check whether the active and hovered are currently this button.
 	-- Todo: all button checking behaviour.
-	Utility.IsCursorInBox(position, size)
 
-	return true, true, true
-end
+	local hovered: boolean = ItemHoverable(position, size, id, window)
+	local held: boolean, pressed: boolean = false, false
 
-function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: Types.WindowFlags?)
-	if new_window == true then
-		table.insert(ImGuiInternal.WindowFocusOrder, window)
-		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
+	if hovered == true then
+		if (ImGuiInternal.MouseButton1.UpOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
+			ImGuiInternal.ActiveId = id
+			ImGuiInternal.ActiveWindow = window
+
+			UpdateWindowFocusOrder(window)
+		end
 	end
 
-	flags = flags
+	if ImGuiInternal.ActiveId == id then
+		if ImGuiInternal.MouseButton1.Down == true then
+			held = true
+		else
+			pressed = true
+			ImGuiInternal.ActiveId = 0
+		end
+	end
+
+	return pressed, hovered, held
 end
 
 -- Updates RootWindow properties of the current window based upon flags
-function UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags?, parentWindow: Types.ImGuiWindow?)
+function UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags, parentWindow: Types.ImGuiWindow?)
 	window.ParentWindow = parentWindow
 	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
-	if (parentWindow ~= nil) and (flags and flags.ChildWindow == true) and not (flags and flags.Tooltip == true) then
+	if (parentWindow ~= nil) and (flags.ChildWindow == true) and not (flags.Tooltip == true) then
 		window.RootWindow = parentWindow.RootWindow
 	end
-	if (parentWindow ~= nil) and (flags and flags.Popup == true) then
+	if (parentWindow ~= nil) and (flags.Popup == true) then
 		window.PopupRootWindow = parentWindow.PopupRootWindow
 	end
-	if
-		(parentWindow ~= nil)
-		and not (flags and flags.Modal == true)
-		and (flags and (flags.ChildWindow == true or flags.Popup == true))
-	then
+	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
 		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
 	end
 end
@@ -199,7 +273,7 @@ function ImGui:GetWindowByName(windowName: string): (Types.ImGuiWindow?)
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
-function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags?): (Types.ImGuiWindow)
+function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): (Types.ImGuiWindow)
 	local parentWindow: Types.ImGuiWindow? = nil
 
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
@@ -210,7 +284,56 @@ function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags?): (Typ
 	return window
 end
 
+function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
+	if window.Flags.NoCollapse == false and window.Window.Title.Collapse.Instance ~= nil then
+		local instance: ImageLabel = window.Window.Title.Collapse.Instance
+		local position: Vector2 = instance.AbsolutePosition
+		local size: Vector2 = instance.AbsoluteSize
+
+		local pressed: boolean, hovered: boolean, held: boolean =
+			ButtonBehaviour(position, size, window.Window.Title.Collapse.Id, window)
+
+		if hovered == true then
+			instance.ImageColor3 = Style.Colours.ButtonHovered.Color
+			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+		elseif held == true then
+			instance.ImageColor3 = Style.Colours.ButtonActive.Color
+			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+		end
+
+		if pressed == true then
+			window.Collapsed = not window.Collapsed
+		end
+	end
+
+	if window.Flags.NoClose == false and window.Window.Title.Close.Instance ~= nil then
+		local instance: ImageLabel = window.Window.Title.Close.Instance
+		local position: Vector2 = instance.AbsolutePosition
+		local size: Vector2 = instance.AbsoluteSize
+
+		local pressed: boolean, hovered: boolean, held: boolean =
+			ButtonBehaviour(position, size, window.Window.Title.Close.Id, window)
+
+		if hovered == true then
+			instance.ImageColor3 = Style.Colours.ButtonHovered.Color
+			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+		elseif held == true then
+			instance.ImageColor3 = Style.Colours.ButtonActive.Color
+			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+		end
+
+		if pressed == true then
+			window.Open[1] = false
+		end
+	end
+end
+
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags?)
+	if flags == nil then
+		-- just create a set of default flags
+		flags = Flags.WindowFlags.new() :: Types.WindowFlags
+	end
+
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowByName(windowName)
 	local new_window: boolean = (previousWindow == nil)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
@@ -220,7 +343,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
 
-	if flags and flags.Popup == true then
+	if flags.Popup == true then
 		windowApearing = true -- OpenPopupStack required to check
 	end
 
@@ -236,30 +359,48 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 
 	table.insert(ImGuiInternal.WindowStack, window)
 
-	if flags and flags.ChildWindow == true then
+	if flags.ChildWindow == true then
 		ImGuiInternal.ChildWindowCount += 1
 	end
 
-	if flags and flags.Popup == true then
+	if flags.Popup == true then
 		print("Popup window created!")
 	end
 
-	if ((window.open[1] == false) and (window.CanCollapse == true)) or (flags and flags.Collapsed == true) then
+	window.Open = open or { true }
+	if ((window.Open[1] == false) and (window.CanCollapse == true)) or (flags.Collapsed == true) then
 		window.Collapsed = true
 	end
 
+	ImGuiInternal.CurrentWindow = window
 	if firstFrameCall == true then
-		local tooltip: boolean = (flags and flags.ChildWindow == true) and (flags and flags.Tooltip == true)
+		local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
 
 		UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
 		window.CanClose = open ~= nil
+		window:DrawWindow()
 
-		ImGuiInternal.CurrentWindow = window
+		if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
+			tooltip = tooltip
+		end
+
+		if windowApearing == true then
+			if (flags.Popup == true) and (flags.Modal == false) then
+				window.Postion = window.Postion
+			end
+		end
+
+		if flags.ChildWindow == true then
+			table.insert(parentWindow.ChildWindows, window)
+		end
+
+		if flags.NoTitleBar == false then
+			window:DrawTitle()
+			ImGui:HandleWindowTitleBar(window)
+		end
 	end
-
-	window.Open = open or { true }
 
 	window.LastFrameActive = frameId
 
@@ -273,82 +414,18 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 end
 
 function ImGui:End()
-	assert(
-		(ImGuiInternal.Active ~= nil) and (ImGuiInternal.Active.TYPE == "WIDGET"),
-		"Cannot call :End()\n\tYou are currently in a " .. ImGuiInternal.Active
-			and ImGuiInternal.Active.TYPE .. " element."
-	)
+	assert((#ImGuiInternal.WindowStack > 0), "Called :End() to many times!")
+	assert(ImGuiInternal.CurrentWindow ~= nil, "Never called :Begin() to set a current window!")
 
-	ImGuiInternal.Active = nil
-end
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	local flags: Types.WindowFlags = window.Flags
 
-function ImGui:BeginMenuBar()
-	assert(
-		(ImGuiInternal.Active ~= nil) and (ImGuiInternal.Active.TYPE == "WIDGET"),
-		"Cannot call :BeginMenuBar()\n\tYou are currently in a " .. ImGuiInternal.Active
-			and ImGuiInternal.Active.TYPE .. " element."
-	)
-
-	if ImGuiInternal.Active.flags.NoMenu == false then
-		return false
+	if flags.ChildWindow == true then
+		ImGuiInternal.ChildWindowCount -= 1
 	end
 
-	local menubar = ImGuiInternal.Active.MenuBar or {
-		TYPE = "MENUBAR",
-		parent = ImGuiInternal.Active,
-	}
-
-	menubar.flags = ImGuiInternal.Active.flags
-
-	ImGuiInternal.Active = menubar
-
-	return true
-end
-
-function ImGui:EndMenuBar()
-	assert(
-		(ImGuiInternal.Active ~= nil) and (ImGuiInternal.Active.TYPE == "MENUBAR"),
-		"Cannot call :EndMenuBar()\n\tYou are currently in a " .. ImGuiInternal.Active
-			and ImGuiInternal.Active.TYPE .. " element."
-	)
-
-	ImGuiInternal.Active = ImGuiInternal.Active.Parent
-end
-
-function ImGui:BeginMenu(menuName: string)
-	assert(
-		(ImGuiInternal.Active ~= nil) and (ImGuiInternal.Active.Type == "MENUBAR"),
-		"Cannot call :BeginMenu()\n\tYou are current in a " .. ImGuiInternal.Active
-			and ImGuiInternal.Active.TYPE .. " element."
-	)
-
-	local menu = ImGuiInternal.Active.Menu[menuName] or {
-		TYPE = "MENU",
-		parent = ImGuiInternal.Active,
-	}
-
-	menu.flags = ImGuiInternal.Active.flags
-	menu.children = nil
-end
-
-function ImGui:Button(buttonText: string, forcedSize: Vector2?)
-	local position: Vector2 = ImGuiInternal.DrawPosition
-	local textSize: Vector2 = Utility.CalculateTextSize(buttonText)
-	local size: Vector2 = CalculateItemSize(
-		forcedSize or Vector2.zero,
-		textSize.X + (2 * Style.Sizes.FramePadding.X),
-		textSize.Y + (2 * Style.Sizes.FramePadding.Y)
-	)
-
-	ImGui:AdvanceDrawCursor(size, Style.Sizes.ItemSpacing.Y)
-
-	local pressed: boolean, hovered: boolean, held: boolean = ButtonBehaviour(position, size)
-
-	pressed = pressed
-	hovered = hovered
-	held = held
-
-	return true
+	table.remove(ImGuiInternal.WindowStack)
+	ImGuiInternal.CurrentWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
 end
 
 return ImGui

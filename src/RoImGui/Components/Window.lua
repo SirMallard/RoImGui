@@ -7,80 +7,7 @@ local Window = {}
 Window.__index = Window
 Window.ClassName = "ImGuiWindow"
 
-local function createDropdown(collapsed: boolean): (ImageLabel)
-	local dropdown: ImageLabel = Instance.new("ImageLabel")
-	dropdown.Name = "dropdown"
-	dropdown.Position = UDim2.fromOffset(Style.Sizes.WindowPadding.X - 1, Style.Sizes.WindowPadding.Y - 2)
-	dropdown.Size = UDim2.fromOffset(15, 15)
-	dropdown.Rotation = (collapsed == true) and -90 or 0
-
-	dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	dropdown.BackgroundTransparency = 1
-	dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	dropdown.BorderSizePixel = 0
-
-	dropdown.Image = "rbxassetid://4673889148"
-	dropdown.ImageColor3 = Style.Colours.Text.Color
-	dropdown.ImageTransparency = Style.Colours.Text.Transparency
-
-	local icon: ImageLabel = Instance.new("ImageLabel")
-	icon.Name = "icon"
-	icon.Position = UDim2.fromScale(6, 5)
-	icon.Size = UDim2.fromOffset(11, 9)
-
-	icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	icon.BackgroundTransparency = 1
-	icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	icon.BorderSizePixel = 0
-
-	icon.Image = "rbxassetid://1248849582"
-	icon.ImageColor3 = Style.Colours.Text.Color
-	icon.ImageTransparency = Style.Colours.Text.Transparency
-	icon.Parent = dropdown
-
-	return dropdown
-end
-
-local function createClose(windowWidth: number): (ImageLabel)
-	local close: ImageLabel = Instance.new("ImageLabel")
-	close.Name = "close"
-	close.Position = UDim2.fromOffset(windowWidth - Style.Sizes.FramePadding.X - 14, Style.Sizes.WindowPadding.Y - 2)
-	close.Size = UDim2.fromOffset(15, 15)
-
-	close.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	close.BackgroundTransparency = 1
-	close.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	close.BorderSizePixel = 0
-
-	close.Image = "rbxassetid://4673889148"
-	close.ImageColor3 = Style.Colours.ButtonHovered.Color
-	close.ImageTransparency = Style.Colours.ButtonHovered.Transparency
-
-	local icon = Instance.new("ImageLabel")
-	icon.Name = "close"
-	icon.Position = UDim2.fromOffset(1, 1)
-	icon.Size = UDim2.fromOffset(13, 13)
-
-	icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	icon.BackgroundTransparency = 1
-	icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	icon.BorderSizePixel = 0
-
-	icon.Image = "rbxassetid://3926305904"
-	icon.ImageRectOffset = Vector2.new(284, 4)
-	icon.ImageRectSize = Vector2.new(24, 24)
-	icon.ImageColor3 = Style.Colours.Text.Color
-	icon.ImageTransparency = Style.Colours.Text.Transparency
-	icon.Parent = close
-
-	return close
-end
-
-function Window.new(
-	windowName: string,
-	parentWindow: Types.ImGuiWindow?,
-	flags: Types.WindowFlags?
-): (Types.ImGuiWindow)
+function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): (Types.ImGuiWindow)
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName
@@ -91,7 +18,7 @@ function Window.new(
 	-- self.PopupRootWindow = nil
 	-- self.ParentWindowFromStack = nil
 	-- self.PopupParentRootWindow = nil
-	self.WriteAccessed = false
+	self.ChildWindows = {}
 
 	self.LastFrameActive = 0
 	self.FocusOrder = 0
@@ -126,168 +53,50 @@ function Window.new(
 		Title = {
 			-- Instance = nil,
 			Text = "",
-			-- CollapseInstance = nil,
-			-- CloseInstance = nil,
+			Collapse = {
+				Id = self.Id .. ">Title>Collapse",
+			},
+			Close = {
+				Id = self.Id .. ">Title>Close",
+			},
+			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
 			-- Instance = nil,
+			Menus = {},
+			MinimumSize = Vector2.new(0, 0),
 		},
 		Frame = {
 			-- Instance = nil,
+			MinimumSize = Vector2.new(0, 0),
 		},
 	}
 
 	return self
 end
 
-function Window:Update()
-	self.MinimumSize = Vector2.new(Style.Sizes.WindowPadding.X * 2 + Style.Sizes.ItemInnerSpacing.X + 30, 60)
-	if self.Size.X < self.MinimumSize.X then
-		self.Size = Vector2.new(self.MinimumSize.X, self.Size.Y)
-	end
-	if self.Size.Y < self.MinimumSize.Y then
-		self.Size = Vector2.new(self.Size.X, self.MinimumSize.Y)
-	end
+function Window:UpdateSize()
+	local minimumTitleSize: Vector2 = self.Window.Title.MinimumSize
+	local minimumMenubarSize: Vector2 = self.Window.Menubar.MinimumSize
+	local minimumFrameSize: Vector2 = self.Window.Frame.MinimumSize
 
-	local minimumHeight: number = Utility.DefaultFramePaddedHeight
-	if self.Menubar ~= nil then
-		minimumHeight += Utility.DefaultFramePaddedHeight
+	local width: number = math.max(math.max(minimumTitleSize.X, minimumMenubarSize.X), minimumFrameSize.X)
+	local height: number = minimumTitleSize.Y + minimumMenubarSize.Y + minimumFrameSize.Y
+
+	self.MinimumSize = Vector2.new(width, height)
+
+	if self.Size.X < width then
+		self.Size = Vector2.new(width, self.Size.Y)
 	end
-
-	self.Instance.Name = "window:" .. self.Name
-	self.Instance.Position = UDim2.fromOffset(self.Position.X, self.Position.Y)
-	self.Instance.Size = UDim2.fromOffset(self.Size.X, minimumHeight + self.Size.Y)
-
-	local title: Frame = self.Instance.title
-	title.Size = UDim2.fromOffset(self.Size.X, Utility.DefaultFramePaddedHeight)
-	if self.Open[1] == false then
-		title.BackgroundColor3 = Style.Colours.TitleBgCollapsed.Color
-		title.Transparency = Style.Colours.TitleBgCollapsed.Transparency
-	else
-		title.BackgroundColor3 = Style.Colours.TitleBg.Color
-		title.Transparency = Style.Colours.TitleBg.Transparency
+	if self.Size.Y < height then
+		self.Size = Vector2.new(self.Size.X, height)
 	end
 
-	local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
-	local text: TextLabel = self.Instance.title.text
-	text.Position = UDim2.fromOffset(
-		Style.Sizes.WindowPadding.X + (self.CanCollapse and (15 + Style.Sizes.ItemInnerSpacing.X) or 0),
-		Style.Sizes.WindowPadding.Y
-	)
-	text.Size = UDim2.fromOffset(
-		math.min(
-			textSize.X,
-			self.Size.X
-				- Style.Sizes.WindowPadding.X
-				- ((self.CanCollapse == true) and 15 + Style.Sizes.ItemInnerSpacing.X or 0)
-				- ((self.CanClose == true) and 15 + Style.Sizes.ItemInnerSpacing.X or 0)
-		),
-		Style.Sizes.TextSize
-	)
-	text.Text = self.Name
-	text.TextColor3 = Style.Colours.Text.Color
-	text.TextTransparency = Style.Colours.Text.Transparency
-	text.TextSize = Style.Sizes.TextSize
-
-	local dropdown: ImageLabel? = self.Instance.title.dropdown
-	if dropdown ~= nil then
-		if self.CanCollapse == false then
-			dropdown:Destroy()
-		else
-			dropdown.Position = UDim2.fromOffset(Style.Sizes.WindowPadding.X - 1, Style.Sizes.WindowPadding.Y - 2)
-			dropdown.Size = UDim2.fromOffset(15, 15)
-			dropdown.Rotation = (self.Collapsed == true) and -90 or 0
-			dropdown.ImageColor3 = Style.Colours.Text.Color
-			dropdown.ImageTransparency = 1
-			dropdown.icon.ImageColor3 = Style.Colours.Text.Color
-			dropdown.icon.ImageTransparency = Style.Colours.Text.Transparency
-		end
-	elseif self.CanCollapse == true then
-		dropdown = createDropdown(self.Collapsed)
-		dropdown.Parent = title
-	end
-
-	local close: ImageLabel? = self.Instance.title.close
-	local buttonColour: Types.Color4 = if (ImGuiInternal.HoverId == self.CloseId)
-			and (ImGuiInternal.ActiveId == self.CloseId)
-		then Style.Colours.ButtonActive
-		elseif ImGuiInternal.HoverId == self.CloseId then Style.Colours.ButtonHovered
-		else Style.Colours.Transparent
-	if close ~= nil then
-		if self.CanClose == false then
-			close:Destroy()
-		else
-			close.Position =
-				UDim2.fromOffset(self.Size.X - Style.Sizes.FramePadding.X - 14, Style.Sizes.WindowPadding.Y - 2)
-			close.Size = UDim2.fromOffset(15, 15)
-			close.ImageColor3 = buttonColour.Color
-			close.ImageTransparency = buttonColour.Transparency
-			close.icon.ImageColor3 = Style.Colours.Text.Color
-			close.icon.ImageTransparency = Style.Colours.Text.Transparency
-		end
-	elseif self.CanClose == true then
-		close = createClose(self.Size.X)
-		close.Parent = title
-	end
-end
-
-function Window:Draw(stack: number?)
-	local title: Frame = Instance.new("Frame")
-	title.Name = "title"
-	title.Position = UDim2.fromScale(0, 0)
-	title.Size = UDim2.fromOffset(self.Size.X, Utility.DefaultFramePaddedHeight)
-
-	title.BackgroundColor3 = (self.Open[1] == true) and Style.Colours.TitleBg.Color
-		or Style.Colours.TitleBgCollapsed.Color
-	title.Transparency = (self.Open[1] == true) and Style.Colours.TitleBg.Transparency
-		or Style.Colours.TitleBgCollapsed.Transparency
-	title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	title.BorderSizePixel = 0
-
-	local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
-	local text: TextLabel = Instance.new("TextLabel")
-	text.Name = "text"
-	text.Position = UDim2.fromOffset(
-		Style.Sizes.WindowPadding.X + (self.CanCollapse and (15 + Style.Sizes.ItemInnerSpacing.X) or 0),
-		Style.Sizes.WindowPadding.Y
-	)
-	text.Size = UDim2.fromOffset(
-		math.min(
-			textSize.X,
-			self.Size.X
-				- Style.Sizes.WindowPadding.X
-				- ((self.CanCollapse == true) and 15 + Style.Sizes.ItemInnerSpacing.X or 0)
-				- ((self.CanClose == true) and 15 + Style.Sizes.ItemInnerSpacing.X or 0)
-		),
-		Style.Sizes.TextSize
-	)
-
-	text.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	text.BackgroundTransparency = 1
-	text.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	text.BorderSizePixel = 0
-
-	text.Text = self.Name
-	text.FontFace = Font.new("Arial")
-	text.TextColor3 = Style.Colours.Text.Color
-	text.TextSize = Style.Sizes.TextSize
-	text.TextWrapped = false
-	text.TextXAlignment = Enum.TextXAlignment.Left
-	text.Parent = title
-
-	if self.CanCollapse == true then
-		local dropdown: ImageLabel = createDropdown(self.Collapsed)
-		dropdown.Parent = title
-	end
-
-	if self.CanClose == true then
-		local close: ImageLabel = createClose(self.Size.X)
-		close.Parent = title
-	end
+	self.Window.Instance.Size = UDim2.fromOffset(self.Size.X, self.Size.Y)
 end
 
 function Window:DrawWindow(stack: number?)
-	if self.Instance == nil then
+	if self.Window.Instance == nil then
 		local window: Frame = Instance.new("Frame")
 		window.Name = "window:" .. self.Name
 		window.ZIndex = stack or window.ZIndex
@@ -308,15 +117,15 @@ function Window:DrawWindow(stack: number?)
 		stroke.Transparency = Style.Colours.Border.Transparency
 		stroke.Parent = window
 
-		self.Instance = window
+		window.Parent = ImGuiInternal.Viewport
+		self.Window.Instance = window
 	end
-	-- We don't parent the window yet unless it has elements in its frame
 end
 
 function Window:DrawTitle()
 	local textCorrect: boolean = self.Name == self.Window.Title.Text
-	local closeButtonCorrect: boolean = self.flags.CanClose == (self.Window.Title.CloseInstance ~= nil)
-	local collapseButtonCorrect: boolean = self.flags.CanCollapse == (self.Window.Title ~= nil)
+	local closeButtonCorrect: boolean = self.Flags.NoClose ~= (self.Window.Title.Close.Instance ~= nil)
+	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (self.Window.Title.Collapse.Instance ~= nil)
 
 	if
 		(self.Window.Title.Instance == nil)
@@ -324,26 +133,25 @@ function Window:DrawTitle()
 		or (closeButtonCorrect == false)
 		or (collapseButtonCorrect == false)
 	then
-		if self.Window.Title.CollapseInstance ~= nil then
-			self.Window.Title.CollapseInstance:Destroy()
+		if self.Window.Title.Collapse.Instance ~= nil then
+			self.Window.Title.Collapse.Instance:Destroy()
 		end
-		if self.Window.Title.CloseInstance ~= nil then
-			self.Window.Title.CloseInstance:Destroy()
+		if self.Window.Title.Close.Instance ~= nil then
+			self.Window.Title.Close.Instance:Destroy()
 		end
 		if self.Window.Title.Instance ~= nil then
 			self.Window.Title.Instance:Destroy()
 		end
-		self.Window.Title = {}
+		self.Window.Title.Text = nil
 
 		-- Calculate any constants which determine size or position.
 		local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
 		local collapseWidth: number = self.CanCollapse == true and 15 + Style.Sizes.ItemInnerSpacing.X or 0
 		local closeWidth: number = self.CanClose == true and 15 + Style.Sizes.ItemInnerSpacing.X or 0
 		local minTitleWidth = collapseWidth + closeWidth + 2 * Style.Sizes.FramePadding.X + textSize.X
-		if self.Size.X < minTitleWidth then
-			self.Size = Vector2.new(minTitleWidth, self.Size.Y)
-			self.MinimumSize = Vector2.new(minTitleWidth, self.MinimumSize.Y)
-		end
+
+		self.Window.Title.MinimumSize = Vector2.new(minTitleWidth, Utility.DefaultFramePaddedHeight)
+		self:UpdateSize()
 
 		-- build the instance
 		local title: Frame = Instance.new("Frame")
@@ -351,9 +159,11 @@ function Window:DrawTitle()
 		title.Position = UDim2.fromScale(0, 0)
 		title.Size = UDim2.fromOffset(self.Size.X, Utility.DefaultFramePaddedHeight)
 
-		title.BackgroundColor3 = (self.Open[1] == true) and Style.Colours.TitleBg.Color
+		title.BackgroundColor3 = (ImGuiInternal.ActiveWindow == self) and Style.Colours.TitleBgActive.Color
+			or (self.Open[1] == true) and Style.Colours.TitleBg.Color
 			or Style.Colours.TitleBgCollapsed.Color
-		title.Transparency = (self.Open[1] == true) and Style.Colours.TitleBg.Transparency
+		title.Transparency = (ImGuiInternal.ActiveWindow == self) and Style.Colours.TitleBgActive.Transparency
+			or (self.Open[1] == true) and Style.Colours.TitleBg.Transparency
 			or Style.Colours.TitleBgCollapsed.Transparency
 		title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		title.BorderSizePixel = 0
@@ -383,6 +193,84 @@ function Window:DrawTitle()
 		text.TextWrapped = false
 		text.TextXAlignment = Enum.TextXAlignment.Left
 		text.Parent = title
+		self.Window.Title.Text = self.Name
+
+		if self.Flags.NoCollapse == false then
+			local dropdown: ImageLabel = Instance.new("ImageLabel")
+			dropdown.Name = "dropdown"
+			dropdown.Position = UDim2.fromOffset(-1, -2)
+			dropdown.Size = UDim2.fromOffset(15, 15)
+			dropdown.Rotation = (self.Collapsed == true) and -90 or 0
+
+			dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			dropdown.BackgroundTransparency = 1
+			dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			dropdown.BorderSizePixel = 0
+
+			dropdown.Image = "rbxassetid://4673889148"
+			dropdown.ImageColor3 = Style.Colours.Button.Color
+			dropdown.ImageTransparency = 1
+
+			local icon: ImageLabel = Instance.new("ImageLabel")
+			icon.Name = "icon"
+			icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			icon.Position = UDim2.new(0.5, 0, 0.5, 1)
+			icon.Size = UDim2.fromOffset(11, 9)
+
+			icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			icon.BackgroundTransparency = 1
+			icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			icon.BorderSizePixel = 0
+
+			icon.Image = "rbxassetid://1248849582"
+			icon.ImageColor3 = Style.Colours.Text.Color
+			icon.ImageTransparency = Style.Colours.Text.Transparency
+			icon.Parent = dropdown
+
+			dropdown.Parent = title
+			self.Window.Title.Collapse.Instance = dropdown
+		end
+
+		if self.Flags.NoClose == false then
+			local close: ImageLabel = Instance.new("ImageLabel")
+			close.Name = "close"
+			close.AnchorPoint = Vector2.new(1, 0)
+			close.Position = UDim2.new(1, 1, 0, -2)
+			close.Size = UDim2.fromOffset(15, 15)
+
+			close.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			close.BackgroundTransparency = 1
+			close.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			close.BorderSizePixel = 0
+
+			close.Image = "rbxassetid://4673889148"
+			close.ImageColor3 = Style.Colours.Button.Color
+			close.ImageTransparency = 1
+
+			local icon = Instance.new("ImageLabel")
+			icon.Name = "close"
+			icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			icon.Position = UDim2.new(0.5, 0, 0.5, 0)
+			icon.Size = UDim2.fromOffset(13, 13)
+
+			icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			icon.BackgroundTransparency = 1
+			icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			icon.BorderSizePixel = 0
+
+			icon.Image = "rbxassetid://3926305904"
+			icon.ImageRectOffset = Vector2.new(284, 4)
+			icon.ImageRectSize = Vector2.new(24, 24)
+			icon.ImageColor3 = Style.Colours.Text.Color
+			icon.ImageTransparency = Style.Colours.Text.Transparency
+			icon.Parent = close
+
+			close.Parent = title
+			self.Window.Title.Close.Instance = close
+		end
+
+		title.Parent = self.Window.Instance
+		self.Window.Title.Instance = title
 	end
 end
 

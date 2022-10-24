@@ -1,7 +1,7 @@
 local textService: TextService = game:GetService("TextService")
 local httpService: HttpService = game:GetService("HttpService")
 
-local Style = require(script.Parent.Types.Style)
+local Style = require(script.Parent.Style)
 
 local Utility = {}
 
@@ -20,10 +20,6 @@ end
 
 function Utility.IsCursorInBox(absolutePosition: Vector2, absoluteSize: Vector2): (boolean)
 	return (mouseX - absolutePosition.X <= absoluteSize.X) and (mouseY - absolutePosition.Y <= absoluteSize.Y)
-end
-
-function Utility.IsCursorInCircle(absolutePosition: Vector2, radius: number): (boolean)
-	return (math.sqrt((mouseX - absolutePosition.X) ^ 2 + (mouseY - absolutePosition.Y))) <= radius
 end
 
 function Utility.CalculateTextSize(text: string): (Vector2)

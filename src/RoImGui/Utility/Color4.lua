@@ -15,11 +15,11 @@ function Color4.new(red: number, green: number, blue: number, transparency: numb
 		G = green,
 		B = blue,
 
-		Lerp = function(_: Types.Color4, other_color4: Types.Color4, alpha: number)
-			local r: number = Lerp(color.R, other_color4.R, alpha)
-			local g: number = Lerp(color.G, other_color4.G, alpha)
-			local b: number = Lerp(color.B, other_color4.B, alpha)
-			local t: number = Lerp(color.Transparency, other_color4.Transparency, alpha)
+		Lerp = function(self: Types.Color4, other_color4: Types.Color4, alpha: number)
+			local r: number = Lerp(self.R, other_color4.R, alpha)
+			local g: number = Lerp(self.G, other_color4.G, alpha)
+			local b: number = Lerp(self.B, other_color4.B, alpha)
+			local t: number = Lerp(self.Transparency, other_color4.Transparency, alpha)
 
 			return Color4.new(r, g, b, t)
 		end,

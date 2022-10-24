@@ -87,14 +87,14 @@ export type ImGuiStyleColour = {
 	Transparent: Color4,
 }
 
-export type ImGuiId = string
+export type ImGuiId = string | number
 
-export type BitFlag = {
+export type BitFlag<T> = {
 	type: string,
 	[string]: boolean,
 }
 
-export type WindowFlags = BitFlag & {
+export type WindowFlags = BitFlag<"WindowFlags"> & {
 	NoTitleBar: boolean,
 	NoResize: boolean,
 	NoMove: boolean,
@@ -103,6 +103,8 @@ export type WindowFlags = BitFlag & {
 	Collapsed: boolean,
 	NoBackground: boolean,
 	MenuBar: boolean,
+	NoClose: boolean,
+	NoCollapse: boolean,
 
 	ChildWindow: boolean,
 	Tooltip: boolean,
@@ -128,7 +130,8 @@ export type ImGuiWindow = {
 	PopupRootWindow: ImGuiWindow?, -- the popup parent of the window
 	PopupParentRootWindow: ImGuiWindow?, -- the parent window which initiated the popup for title highlighting
 	ParentWindowFromStack: ImGuiWindow?, -- the stacked parent, may be different to the parentWindow
-	WriteAccessed: boolean,
+
+	ChildWindows: { ImGuiWindow },
 
 	LastFrameActive: number,
 	FocusOrder: number,
@@ -152,20 +155,37 @@ export type ImGuiWindow = {
 		Title: {
 			Instance: Frame?,
 			Text: string?,
-			CollapseInstance: ImageLabel?,
-			CloseInstance: ImageLabel?,
+			Collapse: {
+				Instance: ImageLabel?,
+				Id: ImGuiId,
+			},
+			Close: {
+				Instance: ImageLabel?,
+				Id: ImGuiId,
+			},
+			MinimumSize: Vector2,
 		},
 		Menubar: {
 			Instance: Frame?,
+			Menus: {
+				[string]: {
+					Instance: Frame?,
+					Active: boolean,
+					WasActive: boolean,
+					Id: ImGuiId,
+				},
+			},
+			MinimumSize: Vector2,
 		},
 		Frame: {
 			Instance: Frame?,
+			MinimumSize: Vector2,
 		},
 	},
 
-	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags?) -> (ImGuiWindow),
-	Update: (ImGuiWindow, stack: number) -> (),
-	Draw: (ImGuiWindow, stack: number) -> (),
+	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
+	DrawWindow: (ImGuiWindow, stack: number?) -> (),
+	DrawTitle: (ImGuiWindow) -> (),
 	Destroy: (ImGuiWindow) -> (),
 
 	[any]: any,
@@ -177,12 +197,12 @@ export type ImGuiInternal = {
 
 	Status: string,
 
-	HoverId: ImGuiId?,
-	Hover: any?,
-	ActiveId: ImGuiId?,
-	Active: any?,
+	HoverId: ImGuiId,
+	ActiveId: ImGuiId,
 
 	ActiveIdClickOffset: Vector2?,
+
+	Viewport: ScreenGui,
 
 	ActiveWindow: ImGuiWindow?,
 	HoveredWindow: ImGuiWindow?,
