@@ -19,7 +19,10 @@ function Utility.Update(mousePosition: Vector2)
 end
 
 function Utility.IsCursorInBox(absolutePosition: Vector2, absoluteSize: Vector2): (boolean)
-	return (mouseX - absolutePosition.X <= absoluteSize.X) and (mouseY - absolutePosition.Y <= absoluteSize.Y)
+	return (mouseX >= absolutePosition.X)
+		and (mouseX <= absolutePosition.X + absoluteSize.X)
+		and (mouseY >= absolutePosition.Y)
+		and (mouseY <= absolutePosition.Y + absoluteSize.Y)
 end
 
 function Utility.CalculateTextSize(text: string): (Vector2)

@@ -12,6 +12,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 
 	Frame = -1,
 	ElapsedTime = 0,
+	GuiInset = Vector2.zero,
 
 	HoverId = 0,
 	ActiveId = 0,
@@ -62,6 +63,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 ImGuiInternal.Viewport.Name = "RoImGui"
 ImGuiInternal.Viewport.ResetOnSpawn = false
 ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ImGuiInternal.Viewport.IgnoreGuiInset = false
 ImGuiInternal.Viewport.DisplayOrder = 100
 ImGuiInternal.Viewport.Parent = playerGui
 

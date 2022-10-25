@@ -120,6 +120,21 @@ export type DrawCursor = {
 	PreviousPosition: Vector2,
 }
 
+export type WindowTitleButton = {
+	Instance: ImageLabel?,
+	Id: ImGuiId,
+	Active: boolean,
+	Hovered: boolean,
+	WasUpdated: boolean,
+}
+
+export type WindowMenu = {
+	Instance: Frame?,
+	Id: ImGuiId,
+	Active: boolean,
+	WasActive: boolean,
+}
+
 export type ImGuiWindow = {
 	Name: string,
 	Id: ImGuiId,
@@ -155,25 +170,14 @@ export type ImGuiWindow = {
 		Title: {
 			Instance: Frame?,
 			Text: string?,
-			Collapse: {
-				Instance: ImageLabel?,
-				Id: ImGuiId,
-			},
-			Close: {
-				Instance: ImageLabel?,
-				Id: ImGuiId,
-			},
+			Collapse: WindowTitleButton,
+			Close: WindowTitleButton,
 			MinimumSize: Vector2,
 		},
 		Menubar: {
 			Instance: Frame?,
 			Menus: {
-				[string]: {
-					Instance: Frame?,
-					Active: boolean,
-					WasActive: boolean,
-					Id: ImGuiId,
-				},
+				[string]: WindowMenu,
 			},
 			MinimumSize: Vector2,
 		},
@@ -194,6 +198,7 @@ export type ImGuiWindow = {
 export type ImGuiInternal = {
 	Frame: number,
 	ElapsedTime: number,
+	GuiInset: Vector2,
 
 	Status: string,
 

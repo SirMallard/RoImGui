@@ -55,9 +55,15 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			Text = "",
 			Collapse = {
 				Id = self.Id .. ">Title>Collapse",
+				Active = false,
+				Hovered = false,
+				WasUpdated = false,
 			},
 			Close = {
 				Id = self.Id .. ">Title>Close",
+				Active = false,
+				Hovered = false,
+				WasUpdated = false,
 			},
 			MinimumSize = Vector2.new(0, 0),
 		},
@@ -124,8 +130,10 @@ end
 
 function Window:DrawTitle()
 	local textCorrect: boolean = self.Name == self.Window.Title.Text
-	local closeButtonCorrect: boolean = self.Flags.NoClose ~= (self.Window.Title.Close.Instance ~= nil)
+	local closeButtonCorrect: boolean = (self.Flags.NoClose ~= (self.Window.Title.Close.Instance ~= nil))
+		and (self.Window.Title.Close.WasUpdated == true)
 	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (self.Window.Title.Collapse.Instance ~= nil)
+		and (self.Window.Title.Collapse.WasUpdated == true)
 
 	if
 		(self.Window.Title.Instance == nil)

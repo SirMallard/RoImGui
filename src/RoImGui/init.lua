@@ -1,4 +1,5 @@
 local userInputService: UserInputService = game:GetService("UserInputService")
+local guiService: GuiService = game:GetService("GuiService")
 local runService: RunService = game:GetService("RunService")
 
 local components = script.Components
@@ -36,7 +37,7 @@ local function UpdateMouseInputs()
 	ImGuiInternal.MouseButton1.UpOnThisFrame = false
 	-- Set up the data for the frame.
 
-	ImGuiInternal.MouseCursor.MousePosition = userInputService:GetMouseLocation()
+	ImGuiInternal.MouseCursor.MousePosition = userInputService:GetMouseLocation() - ImGuiInternal.GuiInset
 	ImGuiInternal.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
 	Utility.Update(ImGuiInternal.MouseCursor.MousePosition)
 
@@ -88,6 +89,14 @@ end
 
 local function CleanWindowElements()
 	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+		local close: Types.WindowTitleButton = window.Window.Title.Close
+		close.WasUpdated = close.Active or close.Hovered
+		close.Active, close.Hovered = false, false
+
+		local collapse: Types.WindowTitleButton = window.Window.Title.Close
+		collapse.WasUpdated = collapse.Active or collapse.Hovered
+		collapse.Active, collapse.Hovered = false, false
+
 		-- loop through all menubars
 		for name: string, menubar in window.Window.Menubar.Menus do
 			menubar.WasActive = menubar.Active
@@ -129,12 +138,16 @@ end
 --[[
 	Initialisation API
 
-	:Start() :Stop() :Pause()
+	:Start()
+	:Stop()
+	:Pause()
 ]]
 function ImGui:Start()
 	assert((ImGuiInternal.Status ~= "Started"), "Cannot call :Start() without stopping or pausing first.")
 
 	ImGuiInternal.Status = "Started"
+
+	ImGuiInternal.GuiInset = guiService:GetGuiInset()
 
 	-- These will be called at the very start and very end of each render stepped, as long as they are connected
 	-- first.
@@ -229,7 +242,7 @@ function ButtonBehaviour(
 	local held: boolean, pressed: boolean = false, false
 
 	if hovered == true then
-		if (ImGuiInternal.MouseButton1.UpOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
+		if (ImGuiInternal.MouseButton1.DownOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
 			ImGuiInternal.ActiveId = id
 			ImGuiInternal.ActiveWindow = window
 
@@ -241,7 +254,9 @@ function ButtonBehaviour(
 		if ImGuiInternal.MouseButton1.Down == true then
 			held = true
 		else
-			pressed = true
+			if hovered == true then
+				pressed = true
+			end
 			ImGuiInternal.ActiveId = 0
 		end
 	end
@@ -286,19 +301,29 @@ end
 
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	if window.Flags.NoCollapse == false and window.Window.Title.Collapse.Instance ~= nil then
-		local instance: ImageLabel = window.Window.Title.Collapse.Instance
+		local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
+		local instance: ImageLabel = collapse.Instance
 		local position: Vector2 = instance.AbsolutePosition
 		local size: Vector2 = instance.AbsoluteSize
 
 		local pressed: boolean, hovered: boolean, held: boolean =
 			ButtonBehaviour(position, size, window.Window.Title.Collapse.Id, window)
 
+		-- Setting the color of the buttons
+		-- Prevents a double call to update colour and transparency
 		if hovered == true then
-			instance.ImageColor3 = Style.Colours.ButtonHovered.Color
-			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-		elseif held == true then
-			instance.ImageColor3 = Style.Colours.ButtonActive.Color
-			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+			if held == true then
+				instance.ImageColor3 = Style.Colours.ButtonActive.Color
+				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+				collapse.Active = true
+			else
+				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
+				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+				collapse.Hovered = true
+				collapse.Active = false
+			end
+		else
+			collapse.Hovered = false
 		end
 
 		if pressed == true then
@@ -317,7 +342,8 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 		if hovered == true then
 			instance.ImageColor3 = Style.Colours.ButtonHovered.Color
 			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-		elseif held == true then
+		end
+		if held == true then
 			instance.ImageColor3 = Style.Colours.ButtonActive.Color
 			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
 		end
@@ -328,6 +354,12 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 end
 
+--[[
+	Window functions
+
+	:Begin()
+	:End()
+]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags?)
 	if flags == nil then
 		-- just create a set of default flags
