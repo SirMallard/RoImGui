@@ -1,5 +1,7 @@
 local Types = require(script.Parent.Types)
+local Utility = require(script.Parent.Utility.Utility)
 
+local userInputService: UserInputService = game:GetService("UserInputService")
 local players: Players = game:GetService("Players")
 local player: Player = players.LocalPlayer or players:GetPropertyChangedSignal("LocalPlayer"):Wait()
 local playerGui: PlayerGui = player:WaitForChild("PlayerGui")
@@ -31,6 +33,8 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	WindowStack = {},
 	WindowOrder = {},
 	WindowFocusOrder = {},
+
+	NextWindowData = {},
 
 	ChildWindowCount = 0,
 
@@ -68,5 +72,47 @@ ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Global
 ImGuiInternal.Viewport.IgnoreGuiInset = false
 ImGuiInternal.Viewport.DisplayOrder = 100
 ImGuiInternal.Viewport.Parent = playerGui
+
+function ImGuiInternal:UpdateMouseInputs()
+	self.MouseButton1.DownOnThisFrame = false
+	self.MouseButton1.UpOnThisFrame = false
+	-- Set up the data for the frame.
+
+	self.MouseCursor.MousePosition = userInputService:GetMouseLocation() - self.GuiInset
+	self.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
+	Utility.Update(self.MouseCursor.MousePosition)
+
+	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+	if mouse1Down == true then
+		self.MouseButton1.DownFrames += 1 -- Down for at least 1 frame.
+		if self.MouseButton1.Down == false then
+			self.MouseButton1.DownOnThisFrame = true -- Not already marked as down, so must be first time.
+		end
+	elseif mouse1Down == false then
+		if self.MouseButton1.Up == false then
+			self.MouseButton1.UpOnThisFrame = true -- Not already marked as up, so must be first time.
+			self.MouseButton1.DownFrames = 0 -- No need to write every frame.
+		end
+	end
+
+	self.MouseButton1.Down = mouse1Down
+	self.MouseButton1.Up = not mouse1Down
+
+	local mouse2Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+	if mouse2Down == true then
+		self.MouseButton2.DownFrames += 1 -- Down for at least 1 frame.
+		if self.MouseButton2.Down == false then
+			self.MouseButton2.DownOnThisFrame = true -- Not already marked as down, so must be first time.
+		end
+	elseif mouse2Down == false then
+		if self.MouseButton2.Up == false then
+			self.MouseButton2.UpOnThisFrame = true -- Not already marked as up, so must be first time.
+			self.MouseButton2.DownFrames = 0 -- No need to write every frame.
+		end
+	end
+
+	self.MouseButton2.Down = mouse2Down
+	self.MouseButton2.Up = not mouse2Down
+end
 
 return ImGuiInternal

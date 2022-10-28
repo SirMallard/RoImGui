@@ -1,4 +1,3 @@
-local userInputService: UserInputService = game:GetService("UserInputService")
 local guiService: GuiService = game:GetService("GuiService")
 local runService: RunService = game:GetService("RunService")
 
@@ -32,57 +31,21 @@ local function FindHoveredWindow()
 	end
 end
 
-local function UpdateMouseInputs()
-	ImGuiInternal.MouseButton1.DownOnThisFrame = false
-	ImGuiInternal.MouseButton1.UpOnThisFrame = false
-	-- Set up the data for the frame.
+--[[
+	Functions to be called before or after code.
 
-	ImGuiInternal.MouseCursor.MousePosition = userInputService:GetMouseLocation() - ImGuiInternal.GuiInset
-	ImGuiInternal.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
-	Utility.Update(ImGuiInternal.MouseCursor.MousePosition)
-
-	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-	if mouse1Down == true then
-		ImGuiInternal.MouseButton1.DownFrames += 1 -- Down for at least 1 frame.
-		if ImGuiInternal.MouseButton1.Down == false then
-			ImGuiInternal.MouseButton1.DownOnThisFrame = true -- Not already marked as down, so must be first time.
-		end
-	elseif mouse1Down == false then
-		if ImGuiInternal.MouseButton1.Up == false then
-			ImGuiInternal.MouseButton1.UpOnThisFrame = true -- Not already marked as up, so must be first time.
-			ImGuiInternal.MouseButton1.DownFrames = 0 -- No need to write every frame.
-		end
-	end
-
-	ImGuiInternal.MouseButton1.Down = mouse1Down
-	ImGuiInternal.MouseButton1.Up = not mouse1Down
-
-	local mouse2Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-	if mouse2Down == true then
-		ImGuiInternal.MouseButton2.DownFrames += 1 -- Down for at least 1 frame.
-		if ImGuiInternal.MouseButton2.Down == false then
-			ImGuiInternal.MouseButton2.DownOnThisFrame = true -- Not already marked as down, so must be first time.
-		end
-	elseif mouse2Down == false then
-		if ImGuiInternal.MouseButton2.Up == false then
-			ImGuiInternal.MouseButton2.UpOnThisFrame = true -- Not already marked as up, so must be first time.
-			ImGuiInternal.MouseButton2.DownFrames = 0 -- No need to write every frame.
-		end
-	end
-
-	ImGuiInternal.MouseButton2.Down = mouse2Down
-	ImGuiInternal.MouseButton2.Up = not mouse2Down
-end
-
+	Generally for cleaning and updating last frame data.
+]]
 -- Iterates through all the windows, changing their active properties and
 local function ClearWindow()
-	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
 		window.WasActive = window.Active
 		window.Active = false
 		window.JustCreated = false
 
 		if window.WasActive == false then
 			window:Destroy()
+			ImGuiInternal.Windows[index] = nil
 		end
 	end
 end
@@ -167,9 +130,9 @@ function ImGui:Start()
 
 		ImGuiInternal.HoverId = 0
 
-		UpdateMouseInputs()
+		ImGuiInternal:UpdateMouseInputs()
 		FindHoveredWindow()
-		ClearWindow()
+		CleanWindowElements()
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -179,8 +142,7 @@ function ImGui:Start()
 			return
 		end
 
-		CleanWindowElements()
-
+		ClearWindow()
 		--todo Add mouse moving window from empty space
 	end)
 end
@@ -374,7 +336,12 @@ end
 	:Begin()
 	:End()
 ]]
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags?)
+function ImGui:Begin(
+	windowName: string,
+	open: { boolean }?,
+	flags: Types.WindowFlags?,
+	optional_arugments: { [string]: any }?
+)
 	if flags == nil then
 		-- just create a set of default flags
 		flags = Flags.WindowFlags.new() :: Types.WindowFlags
@@ -383,6 +350,12 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowByName(windowName)
 	local new_window: boolean = (previousWindow == nil)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
+
+	if optional_arugments ~= nil then
+		for argument: string, value: any in optional_arugments do
+			window[argument] = value
+		end
+	end
 
 	UpdateWindowInFocusOrderList(window, new_window)
 

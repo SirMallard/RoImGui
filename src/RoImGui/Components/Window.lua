@@ -211,12 +211,13 @@ function Window:DrawTitle()
 		title.Position = UDim2.fromScale(0, 0)
 		title.Size = UDim2.fromOffset(self.Size.X, Utility.DefaultFramePaddedHeight)
 
-		title.BackgroundColor3 = (ImGuiInternal.ActiveWindow == self) and Style.Colours.TitleBgActive.Color
-			or (self.Open[1] == true) and Style.Colours.TitleBg.Color
-			or Style.Colours.TitleBgCollapsed.Color
-		title.Transparency = (ImGuiInternal.ActiveWindow == self) and Style.Colours.TitleBgActive.Transparency
-			or (self.Open[1] == true) and Style.Colours.TitleBg.Transparency
-			or Style.Colours.TitleBgCollapsed.Transparency
+		local titleColor: Types.Color4 = if self.Collapsed == true
+			then Style.Colours.TitleBgCollapsed
+			elseif ImGuiInternal.ActiveWindow == self then Style.Colours.TitleBgActive
+			else Style.Colours.TitleBg
+
+		title.BackgroundColor3 = titleColor.Color
+		title.Transparency = titleColor.Transparency
 		title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		title.BorderSizePixel = 0
 
@@ -332,6 +333,8 @@ function Window:Destroy()
 	end
 
 	setmetatable(self, nil)
+
+	self = nil
 end
 
 return Window
