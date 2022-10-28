@@ -10,7 +10,7 @@ runService.RenderStepped:Connect(function(deltaTime: number)
 	RoImGui:End()
 
 	RoImGui:Begin("Second Wider Window", { true }, nil, {
-		Position = Vector2.new(200, 60),
+		Position = Vector2.new(100, 60),
 	})
 
 	RoImGui:End()

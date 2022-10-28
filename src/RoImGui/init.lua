@@ -11,93 +11,11 @@ local Flags = require(script.Flags)
 
 local frameId: number = -1
 
-local ImGui = {}
-
-local function FindHoveredWindow()
-	ImGuiInternal.HoveredWindow = nil
-
-	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		if (window.WasActive == false) or (window.Open[1] == false) then
-			continue
-		end
-
-		if Utility.IsCursorInBox(window.Position, window.Size) == false then
-			continue
-		end
-
-		ImGuiInternal.HoveredWindow = window
-
-		break
-	end
-end
-
---[[
-	Functions to be called before or after code.
-
-	Generally for cleaning and updating last frame data.
-]]
--- Iterates through all the windows, changing their active properties and
-local function ClearWindow()
-	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		window.WasActive = window.Active
-		window.Active = false
-		window.JustCreated = false
-
-		if window.WasActive == false then
-			window:Destroy()
-			ImGuiInternal.Windows[index] = nil
-		end
-	end
-end
-
-local function CleanWindowElements()
-	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		-- loop through all menubars
-
-		window.RedrawThisFrame = window.RedrawNextFrame
-		window.RedrawNextFrame = false
-
-		for name: string, menubar: Types.WindowMenu in window.Window.Menubar.Menus do
-			menubar.Id = name
-			-- menubar.WasActive = menubar.Active
-			-- menubar.Active = false
-
-			-- if menubar.WasActive == false then
-			-- 	if menubar.Instance ~= nil then
-			-- 		menubar.Instance:Destroy()
-			-- 	end
-			-- 	window.Window.Menubar.Menus[name] = nil
-			-- end
-		end
-		-- loop through all window elements
-	end
-end
-
-local function UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
-	if window ~= nil then
-		local index: number = table.find(ImGuiInternal.WindowFocusOrder, window)
-		table.remove(ImGuiInternal.WindowFocusOrder, index)
-		table.insert(ImGuiInternal.WindowFocusOrder, window)
-	end
-
-	for order: number, focusWindow: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
-		if focusWindow.Window.Instance ~= nil then
-			focusWindow.Window.Instance.ZIndex = order
-			focusWindow.FocusOrder = order
-		end
-	end
-end
-
-function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean)
-	if new_window == true then
-		table.insert(ImGuiInternal.WindowFocusOrder, window)
-		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
-	end
-end
+local ImGui: Types.ImGui = {} :: Types.ImGui
 
 --[[
 	Initialisation API
-
+	
 	:Start()
 	:Stop()
 	:Pause()
@@ -131,8 +49,8 @@ function ImGui:Start()
 		ImGuiInternal.HoverId = 0
 
 		ImGuiInternal:UpdateMouseInputs()
-		FindHoveredWindow()
-		CleanWindowElements()
+		ImGui:FindHoveredWindow()
+		ImGui:CleanWindowElements()
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -142,7 +60,6 @@ function ImGui:Start()
 			return
 		end
 
-		ClearWindow()
 		--todo Add mouse moving window from empty space
 	end)
 end
@@ -158,6 +75,103 @@ function ImGui:Pause()
 
 	ImGuiInternal.Status = "Paused"
 end
+
+--[[
+	Functions to be called before or after code.
+	
+	Generally for cleaning and updating last frame data.
+]]
+function ImGui:CleanWindowElements()
+	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+		window.WasActive = window.Active
+		window.Active = false
+		window.JustCreated = false
+
+		if window.WasActive == false then
+			window:Destroy()
+			ImGuiInternal.Windows[index] = nil
+		end
+
+		-- loop through all menubars
+
+		window.RedrawThisFrame = window.RedrawNextFrame
+		window.RedrawNextFrame = false
+
+		for name: string, menubar: Types.WindowMenu in window.Window.Menubar.Menus do
+			menubar.Id = name
+			-- menubar.WasActive = menubar.Active
+			-- menubar.Active = false
+
+			-- if menubar.WasActive == false then
+			-- 	if menubar.Instance ~= nil then
+			-- 		menubar.Instance:Destroy()
+			-- 	end
+			-- 	window.Window.Menubar.Menus[name] = nil
+			-- end
+		end
+		-- loop through all window elements
+	end
+end
+
+function ImGui:UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
+	if window ~= nil then
+		local index: number = table.find(ImGuiInternal.WindowFocusOrder, window)
+		table.remove(ImGuiInternal.WindowFocusOrder, index)
+		table.insert(ImGuiInternal.WindowFocusOrder, window)
+	end
+
+	for order: number, focusWindow: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
+		if focusWindow.Window.Instance ~= nil then
+			focusWindow.Window.Instance.ZIndex = order
+			focusWindow.FocusOrder = order
+		end
+	end
+end
+
+function ImGui:AppendWindowToFocusOrder(window: Types.ImGuiWindow, new_window: boolean)
+	if new_window == true then
+		table.insert(ImGuiInternal.WindowFocusOrder, window)
+		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
+	end
+end
+
+function ImGui:FindHoveredWindow()
+	ImGuiInternal.HoveredWindow = nil
+
+	for index: number = #ImGuiInternal.WindowFocusOrder, 1, -1 do
+		local window = ImGuiInternal.WindowFocusOrder[index]
+		if (window.WasActive == false) or (window.Open[1] == false) then
+			continue
+		end
+
+		if Utility.IsCursorInBox(window.Position, window.Size) == false then
+			continue
+		end
+
+		ImGuiInternal.HoveredWindow = window
+
+		break
+	end
+end
+
+-- Updates RootWindow properties of the current window based upon flags
+function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags, parentWindow: Types.ImGuiWindow?)
+	window.ParentWindow = parentWindow
+	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
+	if (parentWindow ~= nil) and (flags.ChildWindow == true) and not (flags.Tooltip == true) then
+		window.RootWindow = parentWindow.RootWindow
+	end
+	if (parentWindow ~= nil) and (flags.Popup == true) then
+		window.PopupRootWindow = parentWindow.PopupRootWindow
+	end
+	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
+		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
+	end
+end
+
+--[[
+	BUTTON FUNCTIONS
+]]
 
 --[[
 	Button Behaviour functions
@@ -211,7 +225,9 @@ function ButtonBehaviour(
 			ImGuiInternal.ActiveId = id
 			ImGuiInternal.ActiveWindow = window
 
-			UpdateWindowFocusOrder(window)
+			ImGuiInternal.NavWindow = window
+
+			ImGui:UpdateWindowFocusOrder(window)
 		end
 	end
 
@@ -223,27 +239,17 @@ function ButtonBehaviour(
 				pressed = true
 			end
 			ImGuiInternal.ActiveId = 0
+			ImGuiInternal.ActiveWindow = nil
 		end
 	end
 
 	return pressed, hovered, held
 end
 
--- Updates RootWindow properties of the current window based upon flags
-function UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags, parentWindow: Types.ImGuiWindow?)
-	window.ParentWindow = parentWindow
-	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
-	if (parentWindow ~= nil) and (flags.ChildWindow == true) and not (flags.Tooltip == true) then
-		window.RootWindow = parentWindow.RootWindow
-	end
-	if (parentWindow ~= nil) and (flags.Popup == true) then
-		window.PopupRootWindow = parentWindow.PopupRootWindow
-	end
-	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
-		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
-	end
-end
+--[[
+	Additional functions
 
+]]
 function ImGui:AdvanceDrawCursor(size: Vector2, yOffset: number?, xOffset: number?)
 	ImGuiInternal.DrawPosition.Y += size.Y + (yOffset or 0)
 	ImGuiInternal.DrawPosition.X += (xOffset or 0)
@@ -259,7 +265,7 @@ function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): (Type
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
 
 	ImGuiInternal.Windows[windowName] = window
-	table.insert(ImGuiInternal.WindowOrder, window)
+	table.insert(ImGuiInternal.WindowFocusOrder, window)
 
 	return window
 end
@@ -331,6 +337,8 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 end
 
 --[[
+	CREATION FUNCTIONS
+
 	Window functions
 
 	:Begin()
@@ -357,7 +365,7 @@ function ImGui:Begin(
 		end
 	end
 
-	UpdateWindowInFocusOrderList(window, new_window)
+	ImGui:AppendWindowToFocusOrder(window, new_window)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
@@ -396,7 +404,7 @@ function ImGui:Begin(
 	if firstFrameCall == true then
 		local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
 
-		UpdateWindowLinks(window, flags, parentWindow)
+		ImGui:UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
 		flags.NoClose = open == nil

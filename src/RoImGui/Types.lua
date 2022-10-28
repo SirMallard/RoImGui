@@ -89,12 +89,12 @@ export type ImGuiStyleColour = {
 
 export type ImGuiId = string | number
 
-export type BitFlag<T> = {
+export type BitFlag = {
 	type: string,
 	[string]: boolean,
 }
 
-export type WindowFlags = BitFlag<"WindowFlags"> & {
+export type WindowFlags = BitFlag & {
 	NoTitleBar: boolean,
 	NoResize: boolean,
 	NoMove: boolean,
@@ -194,7 +194,6 @@ export type ImGuiWindow = {
 	Active: boolean,
 	WasActive: boolean,
 	Appearing: boolean,
-	Collapsed: boolean,
 	Open: { boolean },
 
 	RedrawNextFrame: boolean,
@@ -217,6 +216,26 @@ export type ImGuiWindow = {
 	[any]: any,
 }
 
+export type ImGui = {
+	Start: (ImGui) -> (),
+	Stop: (ImGui) -> (),
+	Pause: (ImGui) -> (),
+
+	Begin: (ImGui, string, { boolean }?, WindowFlags | nil, { [string]: any }?) -> (boolean),
+	End: (ImGui) -> (),
+
+	CleanWindowElements: (ImGui) -> (),
+	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
+	AppendWindowToFocusOrder: (ImGui, ImGuiWindow, boolean) -> (),
+	FindHoveredWindow: (ImGui) -> (),
+	UpdateWindowLinks: (ImGui, ImGuiWindow, WindowFlags, ImGuiWindow?) -> (),
+
+	AdvanceDrawCursor: (ImGui, Vector2, number?, number?) -> (),
+	GetWindowByName: (ImGui, string) -> (ImGuiWindow?),
+	CreateWindow: (ImGui, string, WindowFlags) -> (ImGuiWindow),
+	HandleWindowTitleBar: (ImGui, ImGuiWindow) -> (),
+}
+
 export type ImGuiInternal = {
 	Frame: number,
 	ElapsedTime: number,
@@ -226,20 +245,19 @@ export type ImGuiInternal = {
 
 	HoverId: ImGuiId,
 	ActiveId: ImGuiId,
-	PreviousActiveId: ImGuiId,
 
-	ActiveIdClickOffset: Vector2?,
+	HoldOffset: Vector2?,
 
 	Viewport: ScreenGui,
 
 	ActiveWindow: ImGuiWindow?,
-	PreviousActiveWindow: ImGuiWindow?,
 	HoveredWindow: ImGuiWindow?,
 	MovingWindow: ImGuiWindow?,
 	CurrentWindow: ImGuiWindow?,
+	NavWindow: ImGuiWindow?,
+
 	Windows: { [string]: ImGuiWindow }, -- all windows
 	WindowStack: { ImGuiWindow },
-	WindowOrder: { ImGuiWindow },
 	WindowFocusOrder: { ImGuiWindow }, -- root windows in focus order of back to front. (highest index is highest zindex)
 
 	ChildWindowCount: number,
@@ -269,9 +287,6 @@ export type ImGuiInternal = {
 		MousePosition: Vector2,
 		MouseDelta: Vector2,
 	},
-
-	RemoveHoverId: (ImGuiInternal, ImGuiId) -> (),
-	SetHoverId: (ImGuiInternal, ImGuiId, Instance?) -> (),
 
 	[any]: any,
 }

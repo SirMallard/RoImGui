@@ -1,4 +1,3 @@
-local StarterPlayer = game:GetService("StarterPlayer")
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility.Utility)
@@ -145,7 +144,7 @@ function Window:DrawWindow(stack: number?)
 
 		local window: Frame = Instance.new("Frame")
 		window.Name = "window:" .. self.Name
-		window.ZIndex = stack or window.ZIndex
+		window.ZIndex = stack or self.FocusOrder
 
 		window.Position = UDim2.fromOffset(self.Position.X, self.Position.Y)
 		window.Size = UDim2.fromOffset(self.Size.X, self.Size.Y)
@@ -213,7 +212,7 @@ function Window:DrawTitle()
 
 		local titleColor: Types.Color4 = if self.Collapsed == true
 			then Style.Colours.TitleBgCollapsed
-			elseif ImGuiInternal.ActiveWindow == self then Style.Colours.TitleBgActive
+			elseif ImGuiInternal.NavWindow == self then Style.Colours.TitleBgActive
 			else Style.Colours.TitleBg
 
 		title.BackgroundColor3 = titleColor.Color

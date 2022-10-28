@@ -18,20 +18,19 @@ local ImGuiInternal: Types.ImGuiInternal = {
 
 	HoverId = 0,
 	ActiveId = 0,
-	PreviousActiveId = 0,
 
-	ActiveIdClickOffset = Vector2.zero,
+	HoldOffset = Vector2.zero,
 
 	Viewport = Instance.new("ScreenGui"),
 
-	ActiveWindow = nil,
-	PreviousActiveWindow = nil,
-	HoveredWindow = nil,
-	MovingWindow = nil,
-	CurrentWindow = nil,
+	-- ActiveWindow = nil,
+	-- HoveredWindow = nil,
+	-- MovingWindow = nil,
+	-- CurrentWindow = nil,
+	-- NavWindow = nil,
+
 	Windows = {},
 	WindowStack = {},
-	WindowOrder = {},
 	WindowFocusOrder = {},
 
 	NextWindowData = {},
