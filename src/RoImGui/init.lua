@@ -89,25 +89,22 @@ end
 
 local function CleanWindowElements()
 	for _, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		local close: Types.WindowTitleButton = window.Window.Title.Close
-		close.WasUpdated = close.Active or close.Hovered
-		close.Active, close.Hovered = false, false
-
-		local collapse: Types.WindowTitleButton = window.Window.Title.Close
-		collapse.WasUpdated = collapse.Active or collapse.Hovered
-		collapse.Active, collapse.Hovered = false, false
-
 		-- loop through all menubars
-		for name: string, menubar in window.Window.Menubar.Menus do
-			menubar.WasActive = menubar.Active
-			menubar.Active = false
 
-			if menubar.WasActive == false then
-				if menubar.Instance ~= nil then
-					menubar.Instance:Destroy()
-				end
-				window.Window.Menubar.Menus[name] = nil
-			end
+		window.RedrawThisFrame = window.RedrawNextFrame
+		window.RedrawNextFrame = false
+
+		for name: string, menubar: Types.WindowMenu in window.Window.Menubar.Menus do
+			menubar.Id = name
+			-- menubar.WasActive = menubar.Active
+			-- menubar.Active = false
+
+			-- if menubar.WasActive == false then
+			-- 	if menubar.Instance ~= nil then
+			-- 		menubar.Instance:Destroy()
+			-- 	end
+			-- 	window.Window.Menubar.Menus[name] = nil
+			-- end
 		end
 		-- loop through all window elements
 	end
@@ -120,15 +117,15 @@ local function UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
 		table.insert(ImGuiInternal.WindowFocusOrder, window)
 	end
 
-	for order: number, window: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
-		if window.Window.Instance ~= nil then
-			window.Window.Instance.ZIndex = order
-			window.FocusOrder = order
+	for order: number, focusWindow: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
+		if focusWindow.Window.Instance ~= nil then
+			focusWindow.Window.Instance.ZIndex = order
+			focusWindow.FocusOrder = order
 		end
 	end
 end
 
-function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean, flags: Types.WindowFlags)
+function UpdateWindowInFocusOrderList(window: Types.ImGuiWindow, new_window: boolean)
 	if new_window == true then
 		table.insert(ImGuiInternal.WindowFocusOrder, window)
 		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
@@ -228,6 +225,12 @@ function ItemHoverable(position: Vector2, size: Vector2, id: Types.ImGuiId, wind
 	return true
 end
 
+--[[
+	Notes on button drawing:
+		- the buttons are drawn once and will not be redrawn because of a hover/hold/normal state.
+			- only excepetional changes call for a redraw
+		- the buttons *STORE THEIR STATE*
+]]
 function ButtonBehaviour(
 	position: Vector2,
 	size: Vector2,
@@ -312,27 +315,30 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 		-- Setting the color of the buttons
 		-- Prevents a double call to update colour and transparency
 		if hovered == true then
-			if held == true then
+			if held == true and collapse.State ~= 2 then
 				instance.ImageColor3 = Style.Colours.ButtonActive.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				collapse.Active = true
-			else
+				collapse.State = 2
+			elseif collapse.State ~= 1 then
 				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				collapse.Hovered = true
-				collapse.Active = false
+				collapse.State = 1
 			end
-		else
-			collapse.Hovered = false
+		elseif collapse.State ~= 0 then
+			instance.ImageColor3 = Style.Colours.Button.Color
+			instance.ImageTransparency = 1
+			collapse.State = 0
 		end
 
 		if pressed == true then
 			window.Collapsed = not window.Collapsed
+			window.RedrawNextFrame = true
 		end
 	end
 
 	if window.Flags.NoClose == false and window.Window.Title.Close.Instance ~= nil then
-		local instance: ImageLabel = window.Window.Title.Close.Instance
+		local close: Types.WindowTitleButton = window.Window.Title.Close
+		local instance: ImageLabel = close.Instance
 		local position: Vector2 = instance.AbsolutePosition
 		local size: Vector2 = instance.AbsoluteSize
 
@@ -340,16 +346,24 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 			ButtonBehaviour(position, size, window.Window.Title.Close.Id, window)
 
 		if hovered == true then
-			instance.ImageColor3 = Style.Colours.ButtonHovered.Color
-			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-		end
-		if held == true then
-			instance.ImageColor3 = Style.Colours.ButtonActive.Color
-			instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+			if held == true and close.State ~= 2 then
+				instance.ImageColor3 = Style.Colours.ButtonActive.Color
+				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+				close.State = 2
+			elseif close.State ~= 1 then
+				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
+				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
+				close.State = 1
+			end
+		elseif close.State ~= 0 then
+			instance.ImageColor3 = Style.Colours.Button.Color
+			instance.ImageTransparency = 1
+			close.State = 0
 		end
 
 		if pressed == true then
 			window.Open[1] = false
+			window.RedrawNextFrame = true
 		end
 	end
 end
@@ -370,7 +384,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	local new_window: boolean = (previousWindow == nil)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
-	UpdateWindowInFocusOrderList(window, new_window, flags)
+	UpdateWindowInFocusOrderList(window, new_window)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
@@ -400,7 +414,8 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	end
 
 	window.Open = open or { true }
-	if ((window.Open[1] == false) and (window.CanCollapse == true)) or (flags.Collapsed == true) then
+	if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
+		window.CollapsedThisFrame = window.Collapsed == false
 		window.Collapsed = true
 	end
 
@@ -411,7 +426,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
-		window.CanClose = open ~= nil
+		flags.NoClose = open == nil
 		window:DrawWindow()
 
 		if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
@@ -420,7 +435,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 
 		if windowApearing == true then
 			if (flags.Popup == true) and (flags.Modal == false) then
-				window.Postion = window.Postion
+				window.Position = window.Position
 			end
 		end
 

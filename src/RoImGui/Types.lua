@@ -120,19 +120,52 @@ export type DrawCursor = {
 	PreviousPosition: Vector2,
 }
 
-export type WindowTitleButton = {
-	Instance: ImageLabel?,
+--[[
+	The Internal ButtonState used by all buttons:
+		0 - None
+		1 - Hovered
+		2 - Held
+		3 - Active
+]]
+export type ButtonState = number
+
+export type Button = {
+	Instance: GuiBase2d?,
 	Id: ImGuiId,
-	Active: boolean,
-	Hovered: boolean,
-	WasUpdated: boolean,
+	State: ButtonState,
+	PreviousState: ButtonState,
+}
+
+export type WindowTitleButton = Button & {
+	Instance: ImageLabel?,
 }
 
 export type WindowMenu = {
 	Instance: Frame?,
 	Id: ImGuiId,
-	Active: boolean,
-	WasActive: boolean,
+	WasUpdated: boolean,
+}
+
+export type WindowTitle = {
+	Id: ImGuiId,
+	Instance: Frame?,
+	Text: string?,
+	Collapse: WindowTitleButton,
+	Close: WindowTitleButton,
+	MinimumSize: Vector2,
+}
+
+export type WindowMenubar = {
+	Instance: Frame?,
+	Menus: {
+		[string]: WindowMenu,
+	},
+	MinimumSize: Vector2,
+}
+
+export type WindowFrame = {
+	Instance: Frame?,
+	MinimumSize: Vector2,
 }
 
 export type ImGuiWindow = {
@@ -153,38 +186,27 @@ export type ImGuiWindow = {
 
 	DrawCursor: DrawCursor,
 
-	Postion: Vector2,
+	Position: Vector2,
 	Size: Vector2,
 	MinimumSize: Vector2,
 
+	State: ButtonState,
 	Active: boolean,
 	WasActive: boolean,
 	Appearing: boolean,
-	CanCollapse: boolean,
-	CanClose: boolean,
 	Collapsed: boolean,
 	Open: { boolean },
 
+	RedrawNextFrame: boolean,
+	RedrawThisFrame: boolean,
+
 	Window: {
 		Instance: Frame?,
-		Title: {
-			Instance: Frame?,
-			Text: string?,
-			Collapse: WindowTitleButton,
-			Close: WindowTitleButton,
-			MinimumSize: Vector2,
-		},
-		Menubar: {
-			Instance: Frame?,
-			Menus: {
-				[string]: WindowMenu,
-			},
-			MinimumSize: Vector2,
-		},
-		Frame: {
-			Instance: Frame?,
-			MinimumSize: Vector2,
-		},
+		Active: boolean,
+		WasActive: boolean,
+		Title: WindowTitle,
+		Menubar: WindowMenubar,
+		Frame: WindowFrame,
 	},
 
 	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
@@ -204,12 +226,14 @@ export type ImGuiInternal = {
 
 	HoverId: ImGuiId,
 	ActiveId: ImGuiId,
+	PreviousActiveId: ImGuiId,
 
 	ActiveIdClickOffset: Vector2?,
 
 	Viewport: ScreenGui,
 
 	ActiveWindow: ImGuiWindow?,
+	PreviousActiveWindow: ImGuiWindow?,
 	HoveredWindow: ImGuiWindow?,
 	MovingWindow: ImGuiWindow?,
 	CurrentWindow: ImGuiWindow?,

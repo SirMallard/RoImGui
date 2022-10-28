@@ -1,3 +1,4 @@
+local StarterPlayer = game:GetService("StarterPlayer")
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility.Utility)
@@ -6,6 +7,23 @@ local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInt
 local Window = {}
 Window.__index = Window
 Window.ClassName = "ImGuiWindow"
+
+--[[
+	Notes on drawing:
+		- An entire window draw is called very rarely:
+			- Collapsed or un-collpased
+			- Closed or opened
+			- Repurpose of the window?
+			
+		- Title:
+			- Redraw:
+				- Window name change
+			- Updated:
+				- Button hover or highlights.
+
+
+
+]]
 
 function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): (Types.ImGuiWindow)
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
@@ -36,34 +54,36 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Size = Vector2.new(60, 60)
 	self.MinimumSize = Vector2.new(Style.Sizes.WindowPadding.X * 2 + Style.Sizes.ItemInnerSpacing.X + 30, 60)
 
+	self.State = 0
 	self.Active = true
 	self.WasActive = true
 	self.Appearing = false
-	self.CanCollapse = true
-	self.CanClose = true
 	self.Collapsed = false
-	self.Closed = { false }
 	self.Open = { true }
+
+	self.RedrawThisFrame = false
+	self.RedrawNextFrame = false
 
 	self.DropdownId = Utility.GenerateRandomId()
 	self.CloseId = Utility.GenerateRandomId()
 
 	self.Window = {
 		-- Instance = nil,
+		Active = false,
+		WasActive = false,
 		Title = {
+			Id = self.Id .. ">Title",
 			-- Instance = nil,
 			Text = "",
 			Collapse = {
 				Id = self.Id .. ">Title>Collapse",
-				Active = false,
-				Hovered = false,
-				WasUpdated = false,
+				State = 0,
+				PreviousState = 0,
 			},
 			Close = {
 				Id = self.Id .. ">Title>Close",
-				Active = false,
-				Hovered = false,
-				WasUpdated = false,
+				State = 0,
+				PreviousState = 0,
 			},
 			MinimumSize = Vector2.new(0, 0),
 		},
@@ -83,6 +103,11 @@ end
 
 function Window:UpdateSize()
 	local minimumTitleSize: Vector2 = self.Window.Title.MinimumSize
+	if self.Collapsed == true then
+		self.Window.Instance.Size = UDim2.fromOffset(minimumTitleSize.X, minimumTitleSize.Y)
+		return
+	end
+
 	local minimumMenubarSize: Vector2 = self.Window.Menubar.MinimumSize
 	local minimumFrameSize: Vector2 = self.Window.Frame.MinimumSize
 
@@ -101,8 +126,23 @@ function Window:UpdateSize()
 	self.Window.Instance.Size = UDim2.fromOffset(self.Size.X, self.Size.Y)
 end
 
+function Window:SetAllStates(state: Types.ButtonState)
+	self.State = state
+	self.Window.Title.Collapse.State = state
+	self.Window.Title.Close.State = state
+end
+
 function Window:DrawWindow(stack: number?)
-	if self.Window.Instance == nil then
+	local instance: Frame? = self.Window.Instance
+
+	if (instance == nil) or (self.RedrawThisFrame == true) then
+		if instance ~= nil then
+			instance:Destroy()
+		end
+		if self.RedrawThisFrame == true then
+			self:SetAllStates(0)
+		end
+
 		local window: Frame = Instance.new("Frame")
 		window.Name = "window:" .. self.Name
 		window.ZIndex = stack or window.ZIndex
@@ -129,18 +169,22 @@ function Window:DrawWindow(stack: number?)
 end
 
 function Window:DrawTitle()
+	local instance: Frame? = self.Window.Title.Instance
 	local textCorrect: boolean = self.Name == self.Window.Title.Text
 	local closeButtonCorrect: boolean = (self.Flags.NoClose ~= (self.Window.Title.Close.Instance ~= nil))
-		and (self.Window.Title.Close.WasUpdated == true)
 	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (self.Window.Title.Collapse.Instance ~= nil)
-		and (self.Window.Title.Collapse.WasUpdated == true)
 
 	if
-		(self.Window.Title.Instance == nil)
+		(instance == nil)
 		or (textCorrect == false)
 		or (closeButtonCorrect == false)
 		or (collapseButtonCorrect == false)
+		or (self.RedrawThisFrame == true)
 	then
+		if instance ~= nil then
+			instance:Destroy()
+		end
+
 		if self.Window.Title.Collapse.Instance ~= nil then
 			self.Window.Title.Collapse.Instance:Destroy()
 		end
@@ -154,8 +198,8 @@ function Window:DrawTitle()
 
 		-- Calculate any constants which determine size or position.
 		local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
-		local collapseWidth: number = self.CanCollapse == true and 15 + Style.Sizes.ItemInnerSpacing.X or 0
-		local closeWidth: number = self.CanClose == true and 15 + Style.Sizes.ItemInnerSpacing.X or 0
+		local collapseWidth: number = self.Flags.NoCollapse == false and 15 + Style.Sizes.ItemInnerSpacing.X or 0
+		local closeWidth: number = self.Flags.NoClose == false and 15 + Style.Sizes.ItemInnerSpacing.X or 0
 		local minTitleWidth = collapseWidth + closeWidth + 2 * Style.Sizes.FramePadding.X + textSize.X
 
 		self.Window.Title.MinimumSize = Vector2.new(minTitleWidth, Utility.DefaultFramePaddedHeight)

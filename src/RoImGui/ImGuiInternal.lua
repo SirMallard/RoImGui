@@ -16,12 +16,14 @@ local ImGuiInternal: Types.ImGuiInternal = {
 
 	HoverId = 0,
 	ActiveId = 0,
+	PreviousActiveId = 0,
 
 	ActiveIdClickOffset = Vector2.zero,
 
 	Viewport = Instance.new("ScreenGui"),
 
 	ActiveWindow = nil,
+	PreviousActiveWindow = nil,
 	HoveredWindow = nil,
 	MovingWindow = nil,
 	CurrentWindow = nil,
@@ -66,37 +68,5 @@ ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Global
 ImGuiInternal.Viewport.IgnoreGuiInset = false
 ImGuiInternal.Viewport.DisplayOrder = 100
 ImGuiInternal.Viewport.Parent = playerGui
-
-function ImGuiInternal:RemoveHoverId(id: string)
-	if ImGuiInternal.HoverId ~= id then
-		return
-	end
-
-	ImGuiInternal.HoverId = nil
-	ImGuiInternal.Hover = nil
-end
-
-function ImGuiInternal:SetHoverId(id: string, instance: Instance?)
-	ImGuiInternal.HoverId = id
-	ImGuiInternal.Hover = instance
-end
-
-function ImGuiInternal:IsHovering(id: string)
-	if (ImGuiInternal.ActiveId ~= 0) and (ImGuiInternal.ActiveId ~= id) then
-		return false
-	end
-
-	ImGuiInternal:SetHoverId(id)
-
-	return true
-end
-
-function ImGuiInternal:IsActive(id: string)
-	if ImGuiInternal.ActiveId then
-		return
-	end
-
-	id = id
-end
 
 return ImGuiInternal
