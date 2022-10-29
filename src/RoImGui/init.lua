@@ -38,9 +38,8 @@ function ImGui:Start()
 			return
 		end
 
-		ImGuiInternal.Frame += 1
 		frameId += 1
-		ImGuiInternal.ElapsedTime += deltaTime
+		ImGuiInternal:UpdateTime(deltaTime)
 
 		if ImGuiInternal.Status == "Stopped" then
 			return
@@ -48,10 +47,20 @@ function ImGui:Start()
 
 		ImGuiInternal.HoverId = 0
 
-		ImGuiInternal:UpdateMouseInputs()
-		ImGui:FindHoveredWindow()
+		ImGuiInternal:UpdateMouseInputs(deltaTime)
 		ImGui:CleanWindowElements()
 		ImGui:UpdateWindowMove()
+		ImGui:FindHoveredWindow()
+
+		local flags: Types.WindowFlags = Flags.WindowFlags.new() :: Types.WindowFlags
+		flags.NoClose = true
+		ImGui:Begin("Debug", { true }, flags)
+		ImGui:End()
+
+		local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
+		window.Active = true
+
+		table.insert(ImGuiInternal.WindowStack, window)
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -62,6 +71,8 @@ function ImGui:Start()
 		end
 
 		ImGui:EndFrameMouseUpdate()
+
+		table.remove(ImGuiInternal.WindowStack, 1)
 
 		--todo Add mouse moving window from empty space
 	end)
@@ -86,16 +97,30 @@ end
 ]]
 function ImGui:CleanWindowElements()
 	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
-		if window.Active == false then
-			print("Window not active:", window.Id)
-		end
 		window.WasActive = window.Active
 		window.Active = false
 		window.JustCreated = false
 
-		if window.WasActive == false then
+		if (window.WasActive == false) or (window.Open[1] == false) then
 			table.remove(ImGuiInternal.WindowFocusOrder, window.FocusOrder)
 			ImGuiInternal.Windows[index] = nil
+
+			if ImGuiInternal.ActiveWindow == window then
+				ImGui:SetActive(0, nil)
+			end
+			if ImGuiInternal.NavWindow == window then
+				ImGui:SetNavWindow(nil)
+			end
+			if ImGuiInternal.HoveredWindow == window then
+				ImGuiInternal.HoveredWindow = nil
+			end
+			if ImGuiInternal.MovingWindow == window then
+				ImGuiInternal.MovingWindow = nil
+			end
+			if ImGuiInternal.CurrentWindow == window then
+				ImGuiInternal.CurrentWindow = nil
+			end
+
 			window:Destroy()
 		end
 
@@ -142,10 +167,13 @@ end
 function ImGui:FindHoveredWindow()
 	ImGuiInternal.HoveredWindow = nil
 
+	-- local topWindow: Types.ImGuiWindow? = ImGuiInternal.WindowFocusOrder[#ImGuiInternal.WindowFocusOrder]
+	-- print(topWindow ~= nil and topWindow.Id or "nil")
+
 	for index = #ImGuiInternal.WindowFocusOrder, 1, -1 do
 		local window = ImGuiInternal.WindowFocusOrder[index]
 		local instance: Frame? = window.Window.Instance
-		if (window.WasActive == false) or (window.Open[1] == false) or (instance == nil) then
+		if (window.WasActive == false) or (instance == nil) then
 			continue
 		end
 
@@ -154,7 +182,6 @@ function ImGui:FindHoveredWindow()
 		end
 
 		ImGuiInternal.HoveredWindow = window
-
 		break
 	end
 end
@@ -179,7 +206,10 @@ function ImGui:EndFrameMouseUpdate()
 		return
 	end
 
-	if ImGuiInternal.MouseButton1.Down == true then
+	if
+		((ImGuiInternal.MouseButton1.Down == true) and (ImGuiInternal.MovingWindow ~= nil))
+		or (ImGuiInternal.MouseButton1.DownOnThisFrame == true)
+	then
 		local rootWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow ~= nil
 				and ImGuiInternal.HoveredWindow.RootWindow
 			or nil
@@ -218,8 +248,6 @@ function ItemHoverable(position: Vector2, size: Vector2, id: Types.ImGuiId, wind
 		return false
 	end
 
-	ImGuiInternal.HoverId = id
-
 	return true
 end
 
@@ -243,6 +271,7 @@ function ButtonBehaviour(
 	local held: boolean, pressed: boolean = false, false
 
 	if hovered == true then
+		ImGuiInternal.HoverId = id
 		if (ImGuiInternal.MouseButton1.DownOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
 			ImGui:SetActive(id, window)
 
@@ -312,6 +341,11 @@ function ImGui:SetActive(id: Types.ImGuiId, window: Types.ImGuiWindow | nil)
 	ImGuiInternal.ActiveWindow = window
 end
 
+--[[
+	Manages the activity on the title bar excluding moving:
+		- Checks for close and collapse buttons and updates accordingly.
+		- Detects a double click on the title bar and collapses the window.
+]]
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	local focusOnButton: boolean = false
 
@@ -384,19 +418,16 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 
 	local title: Types.WindowTitle = window.Window.Title
-	if focusOnButton == false and title.Instance ~= nil then
+	if (focusOnButton == false) and (title.Instance ~= nil) then
 		local instance: Frame = title.Instance
 
-		local pressed: boolean, _: boolean, held: boolean =
-			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, title.Id, window)
+		local hovered: boolean = ItemHoverable(instance.AbsolutePosition, instance.AbsoluteSize, title.Id, window)
 
-		if (held == true) or (pressed == true) then
-			ImGui:SetNavWindow(window)
-			ImGui:UpdateWindowFocusOrder(window)
-
-			if pressed == false then
-				ImGui:SetActive(title.Id, window)
-			end
+		if (hovered == true) and (ImGuiInternal.MouseButton1.ClicksThisFrame == 2) then
+			window.Collapsed = not window.Collapsed
+			window.RedrawNextFrame = true
+			-- Have to draw it next frame because we have already done so this frame.
+			-- Unlike Dear ImGui, we are relying on the absolute properties, so we can't detect a click before drawing for the frame.
 		end
 	end
 end
@@ -416,7 +447,7 @@ function ImGui:UpdateWindowMove()
 	end
 
 	if ImGuiInternal.MouseButton1.Down == true then
-		window.Position += ImGuiInternal.MouseCursor.MouseDelta
+		window.Position += ImGuiInternal.MouseCursor.Delta
 		window:UpdatePosition()
 		ImGui:UpdateWindowFocusOrder(window)
 		ImGui:SetActive(0, nil)
@@ -440,9 +471,11 @@ function ImGui:Begin(
 	flags: Types.WindowFlags | nil,
 	optional_arugments: { [string]: any } | nil
 )
-	if flags == nil then
-		-- just create a set of default flags
-		flags = Flags.WindowFlags.new() :: Types.WindowFlags
+	-- just create a set of default flags
+	flags = flags or Flags.WindowFlags.new() :: Types.WindowFlags
+
+	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
+		return false
 	end
 
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
@@ -468,7 +501,7 @@ function ImGui:Begin(
 		window.LastFrameActive = frameId
 	end
 
-	local parentWindowFromStack: Types.ImGuiWindow? = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
+	local parentWindowFromStack: Types.ImGuiWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
 
 	table.insert(ImGuiInternal.WindowStack, window)
@@ -481,9 +514,7 @@ function ImGui:Begin(
 		print("Popup window created!")
 	end
 
-	window.Open = open or { true }
 	if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
-		window.CollapsedThisFrame = window.Collapsed == false
 		window.Collapsed = true
 	end
 
@@ -495,6 +526,7 @@ function ImGui:Begin(
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
 		flags.NoClose = open == nil
+		window.Open = open or { true }
 		window:DrawWindow()
 
 		if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
@@ -523,9 +555,9 @@ function ImGui:Begin(
 
 	-- A lot of internal code in here!f
 
-	local skipWindow: boolean = (not window.Collapsed or not window.Active or not window.Open[0])
+	local skipWindow: boolean = (window.Collapsed == true) or (window.Active == false) or (window.Open[1] == false)
 
-	return skipWindow
+	return not skipWindow
 end
 
 function ImGui:End()

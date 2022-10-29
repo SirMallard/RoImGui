@@ -11,4 +11,4 @@
 *.rbxlx.lock
 
 # VSCode files
-sourcemap.json
+merge.info

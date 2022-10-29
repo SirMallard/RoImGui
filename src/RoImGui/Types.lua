@@ -196,8 +196,8 @@ export type ImGuiWindow = {
 	Appearing: boolean,
 	Open: { boolean },
 
-	RedrawNextFrame: boolean,
-	RedrawThisFrame: boolean,
+	RedrawNextFrame: boolean, -- DO NOT SET, changed internally based on .RedrawNextFrame
+	RedrawThisFrame: boolean, -- Calls a complete redraw for the next frame. Everything gets wiped. Used when collapsing a window.
 
 	Window: {
 		Instance: Frame?,
@@ -248,9 +248,27 @@ export type ImGui = {
 	SetNavWindow: (ImGui, ImGuiWindow?) -> (),
 }
 
+export type MouseButtonData = {
+	Down: boolean,
+	DownOnThisFrame: boolean,
+	DownFrames: number,
+	DownTime: number,
+
+	Up: boolean,
+	UpOnThisFrame: boolean,
+	UpFrames: number,
+	UpTime: number,
+
+	LastClickFrame: number,
+	LastClickTime: number,
+	Clicks: number,
+	ClicksThisFrame: number,
+}
+
 export type ImGuiInternal = {
 	Frame: number,
 	ElapsedTime: number,
+	DeltaTime: number,
 	GuiInset: Vector2,
 
 	Status: string,
@@ -269,36 +287,21 @@ export type ImGuiInternal = {
 	NavWindow: ImGuiWindow?,
 
 	Windows: { [string]: ImGuiWindow }, -- all windows
-	WindowStack: { ImGuiWindow },
+	WindowStack: { ImGuiWindow }, -- most recently created window in order for parenting reasons. window removed on :End(), so will be empty at the end
 	WindowFocusOrder: { ImGuiWindow }, -- root windows in focus order of back to front. (highest index is highest zindex)
 
 	ChildWindowCount: number,
 
-	MouseButton1: {
-		Down: boolean,
-		DownOnThisFrame: boolean,
-		DownFrames: number,
-		Up: boolean,
-		UpOnThisFrame: boolean,
-		UpFrames: number,
-		DownId: string,
-		UpId: string,
-	},
-	MouseButton2: {
-		Down: boolean,
-		DownOnThisFrame: boolean,
-		DownFrames: number,
-		Up: boolean,
-		UpOnThisFrame: boolean,
-		UpFrames: number,
-		DownId: string,
-		UpId: string,
-	},
+	MouseButton1: MouseButtonData,
+	MouseButton2: MouseButtonData,
 
 	MouseCursor: {
-		MousePosition: Vector2,
-		MouseDelta: Vector2,
+		Position: Vector2,
+		Delta: Vector2,
+		Magnitude: number,
 	},
+
+	UpdateTime: (ImGuiInternal, number) -> (),
 
 	[any]: any,
 }

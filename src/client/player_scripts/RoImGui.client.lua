@@ -4,6 +4,8 @@ local RoImGui = require(replicatedStorage:WaitForChild("Modules"):WaitForChild("
 
 RoImGui:Start()
 
+local childOpen: { boolean } = { true }
+
 runService.RenderStepped:Connect(function(_: number)
 	RoImGui:Begin("First Window", { true })
 	RoImGui:End()
@@ -14,11 +16,9 @@ runService.RenderStepped:Connect(function(_: number)
 	RoImGui:Begin("Third window!", { true })
 	RoImGui:End()
 
-	RoImGui:Begin("A super-duper really long window name!")
-	RoImGui:End()
-
-	for i = 1, 10 do
-		RoImGui:Begin("Window #" .. tostring(i))
+	if RoImGui:Begin("A super-duper really long window name!", { true }) then
+		RoImGui:Begin("Child window!", childOpen)
 		RoImGui:End()
 	end
+	RoImGui:End()
 end)

@@ -6,6 +6,12 @@ local players: Players = game:GetService("Players")
 local player: Player = players.LocalPlayer or players:GetPropertyChangedSignal("LocalPlayer"):Wait()
 local playerGui: PlayerGui = player:WaitForChild("PlayerGui")
 
+--[[
+	CONSTANTS
+]]
+local MOUSE_DOUBLE_CLICK_TIME: number = 0.3 -- maximum interval between clicks
+local MOUSE_DOUBLE_CLICK_MAGNITUDE: number = 6 -- maximum pixels moved for clicks
+
 local ImGuiInternal: Types.ImGuiInternal = {
 	Widgets = {},
 
@@ -41,25 +47,36 @@ local ImGuiInternal: Types.ImGuiInternal = {
 		Down = false,
 		DownOnThisFrame = false,
 		DownFrames = 0,
+		DownTime = 0,
+
 		Up = false,
 		UpOnThisFrame = false,
 		UpFrames = 0,
-		DownId = nil,
-		UpId = nil,
+		UpTime = 0,
+
+		LastClickFrame = 0,
+		LastClickTime = 0,
+		Clicks = 0,
 	},
 	MouseButton2 = {
 		Down = false,
 		DownOnThisFrame = false,
 		DownFrames = 0,
+		DownTime = 0,
+
 		Up = false,
 		UpOnThisFrame = false,
 		UpFrames = 0,
-		DownId = nil,
-		UpId = nil,
+		UpTime = 0,
+
+		LastClickFrame = 0,
+		LastClickTime = 0,
+		Clicks = 0,
 	},
 	MouseCursor = {
-		MousePosition = Vector2.zero,
-		MouseDelta = Vector2.zero,
+		Position = Vector2.zero,
+		Delta = Vector2.zero,
+		Magnitude = 0,
 	},
 
 	Status = "Stopped",
@@ -72,48 +89,68 @@ ImGuiInternal.Viewport.IgnoreGuiInset = false
 ImGuiInternal.Viewport.DisplayOrder = 100
 ImGuiInternal.Viewport.Parent = playerGui
 
-function ImGuiInternal:UpdateMouseInputs()
-	self.MouseButton1.DownOnThisFrame = false
-	self.MouseButton1.UpOnThisFrame = false
-	-- Set up the data for the frame.
+function UpdateMouseButton(mouseButtonData: Types.MouseButtonData, button: Enum.UserInputType)
+	mouseButtonData.DownOnThisFrame = false
+	mouseButtonData.UpOnThisFrame = false
+	mouseButtonData.ClicksThisFrame = 0
 
-	local position: Vector2 = userInputService:GetMouseLocation() - self.GuiInset
-	self.MouseCursor.MouseDelta = position - self.MouseCursor.MousePosition
-	self.MouseCursor.MousePosition = position
-
-	Utility.Update(self.MouseCursor.MousePosition)
-
-	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(button)
 	if mouse1Down == true then
-		self.MouseButton1.DownFrames += 1 -- Down for at least 1 frame.
-		if self.MouseButton1.Down == false then
-			self.MouseButton1.DownOnThisFrame = true -- Not already marked as down, so must be first time.
+		mouseButtonData.DownFrames += 1 -- Down for at least 1 frame.
+		mouseButtonData.DownTime += ImGuiInternal.DeltaTime
+
+		if mouseButtonData.Down == false then
+			mouseButtonData.DownOnThisFrame = true -- Not already marked as down, so must be first time.
+
+			mouseButtonData.UpFrames = 0
+			mouseButtonData.UpTime = 0
 		end
 	elseif mouse1Down == false then
-		if self.MouseButton1.Up == false then
-			self.MouseButton1.UpOnThisFrame = true -- Not already marked as up, so must be first time.
-			self.MouseButton1.DownFrames = 0 -- No need to write every frame.
+		mouseButtonData.UpFrames += 1
+		mouseButtonData.UpTime += ImGuiInternal.DeltaTime
+
+		if mouseButtonData.Up == false then
+			mouseButtonData.UpOnThisFrame = true -- Not already marked as up, so must be first time.
+
+			mouseButtonData.Clicks += 1
+			mouseButtonData.ClicksThisFrame = mouseButtonData.Clicks
+
+			mouseButtonData.LastClickFrame = ImGuiInternal.Frame
+			mouseButtonData.LastClickTime = ImGuiInternal.ElapsedTime
+
+			mouseButtonData.DownFrames = 0 -- No need to write every frame.
+			mouseButtonData.DownTime = 0
 		end
 	end
 
-	self.MouseButton1.Down = mouse1Down
-	self.MouseButton1.Up = not mouse1Down
-
-	local mouse2Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-	if mouse2Down == true then
-		self.MouseButton2.DownFrames += 1 -- Down for at least 1 frame.
-		if self.MouseButton2.Down == false then
-			self.MouseButton2.DownOnThisFrame = true -- Not already marked as down, so must be first time.
-		end
-	elseif mouse2Down == false then
-		if self.MouseButton2.Up == false then
-			self.MouseButton2.UpOnThisFrame = true -- Not already marked as up, so must be first time.
-			self.MouseButton2.DownFrames = 0 -- No need to write every frame.
-		end
+	if
+		((ImGuiInternal.ElapsedTime - mouseButtonData.LastClickTime) > MOUSE_DOUBLE_CLICK_TIME)
+		or (ImGuiInternal.MouseCursor.Magnitude > MOUSE_DOUBLE_CLICK_MAGNITUDE)
+	then
+		mouseButtonData.Clicks = 0
 	end
 
-	self.MouseButton2.Down = mouse2Down
-	self.MouseButton2.Up = not mouse2Down
+	mouseButtonData.Down = mouse1Down
+	mouseButtonData.Up = not mouse1Down
+end
+
+function ImGuiInternal:UpdateMouseInputs()
+	-- Set up the data for the frame.
+	local position: Vector2 = userInputService:GetMouseLocation() - self.GuiInset
+	self.MouseCursor.Delta = position - self.MouseCursor.Position
+	self.MouseCursor.Position = position
+	self.MouseCursor.Magnitude = self.MouseCursor.Delta.Magnitude
+
+	Utility.Update(self.MouseCursor.Position)
+
+	UpdateMouseButton(self.MouseButton1, Enum.UserInputType.MouseButton1)
+	UpdateMouseButton(self.MouseButton2, Enum.UserInputType.MouseButton2)
+end
+
+function ImGuiInternal:UpdateTime(deltaTime: number)
+	self.Frame += 1
+	self.ElapsedTime += deltaTime
+	self.DeltaTime = deltaTime
 end
 
 return ImGuiInternal

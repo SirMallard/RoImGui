@@ -60,8 +60,8 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Collapsed = false
 	self.Open = { true }
 
-	self.RedrawThisFrame = false
-	self.RedrawNextFrame = false
+	self.RedrawThisFrame = false -- DO NOT SET, changed internally based on .RedrawNextFrame
+	self.RedrawNextFrame = false -- Calls a complete redraw for the next frame. Everything gets wiped. Used when
 
 	self.Window = {
 		Title = {
@@ -340,8 +340,8 @@ function Window:DrawTitle()
 end
 
 function Window:Destroy()
-	if self.Instance then
-		self.Instance:Destroy()
+	if self.Window.Instance ~= nil then
+		self.Window.Instance:Destroy()
 	end
 
 	setmetatable(self, nil)
