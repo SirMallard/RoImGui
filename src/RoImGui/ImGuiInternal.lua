@@ -67,7 +67,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 
 ImGuiInternal.Viewport.Name = "RoImGui"
 ImGuiInternal.Viewport.ResetOnSpawn = false
-ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ImGuiInternal.Viewport.IgnoreGuiInset = false
 ImGuiInternal.Viewport.DisplayOrder = 100
 ImGuiInternal.Viewport.Parent = playerGui
@@ -77,8 +77,10 @@ function ImGuiInternal:UpdateMouseInputs()
 	self.MouseButton1.UpOnThisFrame = false
 	-- Set up the data for the frame.
 
-	self.MouseCursor.MousePosition = userInputService:GetMouseLocation() - self.GuiInset
-	self.MouseCursor.MouseDelta = userInputService:GetMouseDelta()
+	local position: Vector2 = userInputService:GetMouseLocation() - self.GuiInset
+	self.MouseCursor.MouseDelta = position - self.MouseCursor.MousePosition
+	self.MouseCursor.MousePosition = position
+
 	Utility.Update(self.MouseCursor.MousePosition)
 
 	local mouse1Down: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)

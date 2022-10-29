@@ -201,16 +201,22 @@ export type ImGuiWindow = {
 
 	Window: {
 		Instance: Frame?,
-		Active: boolean,
-		WasActive: boolean,
 		Title: WindowTitle,
 		Menubar: WindowMenubar,
 		Frame: WindowFrame,
 	},
 
 	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
+
+	UpdateTitleColour: (ImGuiWindow) -> (),
+	UpdatePosition: (ImGuiWindow) -> (),
+	UpdateSize: (ImGuiWindow) -> (),
+
+	SetAllStates: (ImGuiWindow, ButtonState) -> (),
+
 	DrawWindow: (ImGuiWindow, stack: number?) -> (),
 	DrawTitle: (ImGuiWindow) -> (),
+
 	Destroy: (ImGuiWindow) -> (),
 
 	[any]: any,
@@ -221,19 +227,25 @@ export type ImGui = {
 	Stop: (ImGui) -> (),
 	Pause: (ImGui) -> (),
 
-	Begin: (ImGui, string, { boolean }?, WindowFlags | nil, { [string]: any }?) -> (boolean),
+	Begin: (ImGui, string, { boolean }?, WindowFlags?, { [string]: any }?) -> (boolean),
 	End: (ImGui) -> (),
 
 	CleanWindowElements: (ImGui) -> (),
 	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
-	AppendWindowToFocusOrder: (ImGui, ImGuiWindow, boolean) -> (),
 	FindHoveredWindow: (ImGui) -> (),
 	UpdateWindowLinks: (ImGui, ImGuiWindow, WindowFlags, ImGuiWindow?) -> (),
+	EndFrameMouseUpdate: (ImGui) -> (),
 
 	AdvanceDrawCursor: (ImGui, Vector2, number?, number?) -> (),
-	GetWindowByName: (ImGui, string) -> (ImGuiWindow?),
+	GetWindowById: (ImGui, string) -> (ImGuiWindow?),
 	CreateWindow: (ImGui, string, WindowFlags) -> (ImGuiWindow),
 	HandleWindowTitleBar: (ImGui, ImGuiWindow) -> (),
+
+	StartWindowMove: (ImGui, ImGuiWindow) -> (),
+	UpdateWindowMove: (ImGui) -> (),
+
+	SetActive: (ImGui, ImGuiId, ImGuiWindow?) -> (),
+	SetNavWindow: (ImGui, ImGuiWindow?) -> (),
 }
 
 export type ImGuiInternal = {

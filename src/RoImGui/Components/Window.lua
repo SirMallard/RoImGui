@@ -63,16 +63,9 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.RedrawThisFrame = false
 	self.RedrawNextFrame = false
 
-	self.DropdownId = Utility.GenerateRandomId()
-	self.CloseId = Utility.GenerateRandomId()
-
 	self.Window = {
-		-- Instance = nil,
-		Active = false,
-		WasActive = false,
 		Title = {
 			Id = self.Id .. ">Title",
-			-- Instance = nil,
 			Text = "",
 			Collapse = {
 				Id = self.Id .. ">Title>Collapse",
@@ -87,17 +80,37 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
-			-- Instance = nil,
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Frame = {
-			-- Instance = nil,
 			MinimumSize = Vector2.new(0, 0),
 		},
 	}
 
 	return self
+end
+
+function Window:UpdateTitleColour()
+	local title: Frame? = self.Window.Title.Instance
+
+	if title ~= nil then
+		local titleColor: Types.Color4 = if self.Collapsed == true
+			then Style.Colours.TitleBgCollapsed
+			elseif ImGuiInternal.NavWindow == self then Style.Colours.TitleBgActive
+			else Style.Colours.TitleBg
+
+		title.BackgroundColor3 = titleColor.Color
+		title.Transparency = titleColor.Transparency
+	end
+end
+
+function Window:UpdatePosition()
+	local instance: Frame? = self.Window.Instance
+
+	if instance ~= nil then
+		instance.Position = UDim2.fromOffset(self.Position.X, self.Position.Y)
+	end
 end
 
 function Window:UpdateSize()

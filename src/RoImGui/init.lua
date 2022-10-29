@@ -51,6 +51,7 @@ function ImGui:Start()
 		ImGuiInternal:UpdateMouseInputs()
 		ImGui:FindHoveredWindow()
 		ImGui:CleanWindowElements()
+		ImGui:UpdateWindowMove()
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -59,6 +60,8 @@ function ImGui:Start()
 		if ImGuiInternal.Status ~= "Started" then
 			return
 		end
+
+		ImGui:EndFrameMouseUpdate()
 
 		--todo Add mouse moving window from empty space
 	end)
@@ -83,13 +86,17 @@ end
 ]]
 function ImGui:CleanWindowElements()
 	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+		if window.Active == false then
+			print("Window not active:", window.Id)
+		end
 		window.WasActive = window.Active
 		window.Active = false
 		window.JustCreated = false
 
 		if window.WasActive == false then
-			window:Destroy()
+			table.remove(ImGuiInternal.WindowFocusOrder, window.FocusOrder)
 			ImGuiInternal.Windows[index] = nil
+			window:Destroy()
 		end
 
 		-- loop through all menubars
@@ -114,6 +121,10 @@ function ImGui:CleanWindowElements()
 end
 
 function ImGui:UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
+	if window.FocusOrder == #ImGuiInternal.WindowFocusOrder then
+		return
+	end
+
 	if window ~= nil then
 		local index: number = table.find(ImGuiInternal.WindowFocusOrder, window)
 		table.remove(ImGuiInternal.WindowFocusOrder, index)
@@ -121,30 +132,24 @@ function ImGui:UpdateWindowFocusOrder(window: Types.ImGuiWindow?)
 	end
 
 	for order: number, focusWindow: Types.ImGuiWindow in ImGuiInternal.WindowFocusOrder do
+		focusWindow.FocusOrder = order
 		if focusWindow.Window.Instance ~= nil then
 			focusWindow.Window.Instance.ZIndex = order
-			focusWindow.FocusOrder = order
 		end
-	end
-end
-
-function ImGui:AppendWindowToFocusOrder(window: Types.ImGuiWindow, new_window: boolean)
-	if new_window == true then
-		table.insert(ImGuiInternal.WindowFocusOrder, window)
-		window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
 	end
 end
 
 function ImGui:FindHoveredWindow()
 	ImGuiInternal.HoveredWindow = nil
 
-	for index: number = #ImGuiInternal.WindowFocusOrder, 1, -1 do
+	for index = #ImGuiInternal.WindowFocusOrder, 1, -1 do
 		local window = ImGuiInternal.WindowFocusOrder[index]
-		if (window.WasActive == false) or (window.Open[1] == false) then
+		local instance: Frame? = window.Window.Instance
+		if (window.WasActive == false) or (window.Open[1] == false) or (instance == nil) then
 			continue
 		end
 
-		if Utility.IsCursorInBox(window.Position, window.Size) == false then
+		if Utility.IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) == false then
 			continue
 		end
 
@@ -166,6 +171,23 @@ function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowF
 	end
 	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
 		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
+	end
+end
+
+function ImGui:EndFrameMouseUpdate()
+	if (ImGuiInternal.ActiveId ~= 0) or (ImGuiInternal.HoverId ~= 0) then
+		return
+	end
+
+	if ImGuiInternal.MouseButton1.Down == true then
+		local rootWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow ~= nil
+				and ImGuiInternal.HoveredWindow.RootWindow
+			or nil
+		if rootWindow ~= nil then
+			ImGui:StartWindowMove(ImGuiInternal.HoveredWindow)
+		elseif (rootWindow == nil) and (ImGuiInternal.NavWindow ~= nil) then
+			ImGui:SetNavWindow(nil)
+		end
 	end
 end
 
@@ -222,11 +244,9 @@ function ButtonBehaviour(
 
 	if hovered == true then
 		if (ImGuiInternal.MouseButton1.DownOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
-			ImGuiInternal.ActiveId = id
-			ImGuiInternal.ActiveWindow = window
+			ImGui:SetActive(id, window)
 
-			ImGuiInternal.NavWindow = window
-
+			ImGui:SetNavWindow(window)
 			ImGui:UpdateWindowFocusOrder(window)
 		end
 	end
@@ -238,8 +258,7 @@ function ButtonBehaviour(
 			if hovered == true then
 				pressed = true
 			end
-			ImGuiInternal.ActiveId = 0
-			ImGuiInternal.ActiveWindow = nil
+			ImGui:SetActive(0, nil)
 		end
 	end
 
@@ -255,7 +274,7 @@ function ImGui:AdvanceDrawCursor(size: Vector2, yOffset: number?, xOffset: numbe
 	ImGuiInternal.DrawPosition.X += (xOffset or 0)
 end
 
-function ImGui:GetWindowByName(windowName: string): (Types.ImGuiWindow?)
+function ImGui:GetWindowById(windowName: string): (Types.ImGuiWindow?)
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
@@ -266,19 +285,44 @@ function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): (Type
 
 	ImGuiInternal.Windows[windowName] = window
 	table.insert(ImGuiInternal.WindowFocusOrder, window)
+	window.FocusOrder = #ImGuiInternal.WindowFocusOrder - 1
 
 	return window
 end
 
+function ImGui:SetNavWindow(window: Types.ImGuiWindow | nil)
+	local previousWindow: Types.ImGuiWindow? = ImGuiInternal.NavWindow
+
+	if previousWindow == window then
+		return
+	end
+	ImGuiInternal.NavWindow = window
+
+	if previousWindow ~= nil then
+		previousWindow:UpdateTitleColour()
+	end
+
+	if window ~= nil then
+		window:UpdateTitleColour()
+	end
+end
+
+function ImGui:SetActive(id: Types.ImGuiId, window: Types.ImGuiWindow | nil)
+	ImGuiInternal.ActiveId = id
+	ImGuiInternal.ActiveWindow = window
+end
+
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
-	if window.Flags.NoCollapse == false and window.Window.Title.Collapse.Instance ~= nil then
-		local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
+	local focusOnButton: boolean = false
+
+	local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
+	if window.Flags.NoCollapse == false and collapse.Instance ~= nil then
 		local instance: ImageLabel = collapse.Instance
-		local position: Vector2 = instance.AbsolutePosition
-		local size: Vector2 = instance.AbsoluteSize
 
 		local pressed: boolean, hovered: boolean, held: boolean =
-			ButtonBehaviour(position, size, window.Window.Title.Collapse.Id, window)
+			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, collapse.Id, window)
+
+		focusOnButton = pressed or hovered or held
 
 		-- Setting the color of the buttons
 		-- Prevents a double call to update colour and transparency
@@ -287,6 +331,8 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 				instance.ImageColor3 = Style.Colours.ButtonActive.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
 				collapse.State = 2
+
+				window:UpdateTitleColour()
 			elseif collapse.State ~= 1 then
 				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
@@ -304,20 +350,22 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 		end
 	end
 
-	if window.Flags.NoClose == false and window.Window.Title.Close.Instance ~= nil then
-		local close: Types.WindowTitleButton = window.Window.Title.Close
+	local close: Types.WindowTitleButton = window.Window.Title.Close
+	if window.Flags.NoClose == false and close.Instance ~= nil then
 		local instance: ImageLabel = close.Instance
-		local position: Vector2 = instance.AbsolutePosition
-		local size: Vector2 = instance.AbsoluteSize
 
 		local pressed: boolean, hovered: boolean, held: boolean =
-			ButtonBehaviour(position, size, window.Window.Title.Close.Id, window)
+			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, close.Id, window)
+
+		focusOnButton = pressed or hovered or held
 
 		if hovered == true then
 			if held == true and close.State ~= 2 then
 				instance.ImageColor3 = Style.Colours.ButtonActive.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
 				close.State = 2
+
+				window:UpdateTitleColour()
 			elseif close.State ~= 1 then
 				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
 				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
@@ -334,6 +382,48 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 			window.RedrawNextFrame = true
 		end
 	end
+
+	local title: Types.WindowTitle = window.Window.Title
+	if focusOnButton == false and title.Instance ~= nil then
+		local instance: Frame = title.Instance
+
+		local pressed: boolean, _: boolean, held: boolean =
+			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, title.Id, window)
+
+		if (held == true) or (pressed == true) then
+			ImGui:SetNavWindow(window)
+			ImGui:UpdateWindowFocusOrder(window)
+
+			if pressed == false then
+				ImGui:SetActive(title.Id, window)
+			end
+		end
+	end
+end
+
+function ImGui:StartWindowMove(window: Types.ImGuiWindow)
+	ImGui:SetNavWindow(window)
+	ImGui:UpdateWindowFocusOrder(window)
+
+	ImGuiInternal.MovingWindow = window
+end
+
+function ImGui:UpdateWindowMove()
+	local window: Types.ImGuiWindow? = ImGuiInternal.MovingWindow
+
+	if window == nil then
+		return
+	end
+
+	if ImGuiInternal.MouseButton1.Down == true then
+		window.Position += ImGuiInternal.MouseCursor.MouseDelta
+		window:UpdatePosition()
+		ImGui:UpdateWindowFocusOrder(window)
+		ImGui:SetActive(0, nil)
+	else
+		ImGuiInternal.MovingWindow = nil
+		ImGui:SetActive(0, nil)
+	end
 end
 
 --[[
@@ -347,16 +437,15 @@ end
 function ImGui:Begin(
 	windowName: string,
 	open: { boolean }?,
-	flags: Types.WindowFlags?,
-	optional_arugments: { [string]: any }?
+	flags: Types.WindowFlags | nil,
+	optional_arugments: { [string]: any } | nil
 )
 	if flags == nil then
 		-- just create a set of default flags
 		flags = Flags.WindowFlags.new() :: Types.WindowFlags
 	end
 
-	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowByName(windowName)
-	local new_window: boolean = (previousWindow == nil)
+	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
 	if optional_arugments ~= nil then
@@ -364,8 +453,6 @@ function ImGui:Begin(
 			window[argument] = value
 		end
 	end
-
-	ImGui:AppendWindowToFocusOrder(window, new_window)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
