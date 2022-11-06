@@ -1,4 +1,3 @@
-local TextService = game:GetService("TextService")
 export type Color4 = {
 	Color: Color3,
 	Transparency: number,
