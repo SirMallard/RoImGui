@@ -7,6 +7,9 @@ local Window = {}
 Window.__index = Window
 Window.ClassName = "ImGuiWindow"
 
+local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+
 --[[
 	Notes on drawing:
 		- An entire window draw is called very rarely:
@@ -37,20 +40,13 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	-- self.PopupParentRootWindow = nil
 	self.ChildWindows = {}
 
-	self.LastFrameActive = 0
+	self.LastFrameActive = -1
 	self.FocusOrder = 0
 
 	self.Flags = flags
 
-	self.DrawCursor = {
-		Position = Vector2.zero, -- Kept locally to the frame
-		StartPosition = Vector2.zero,
-		MaximumPosition = Vector2.new(60, 60),
-		PreviousPosition = Vector2.zero,
-	}
-
 	self.Position = Vector2.new(60, 60) -- Default starting positon.
-	self.Size = Vector2.new(60, 60)
+	self.Size = self.Id == "Debug" and Vector2.new(300, 200) or Vector2.new(60, 120)
 	self.MinimumSize = Vector2.new(Style.Sizes.WindowPadding.X * 2 + Style.Sizes.ItemInnerSpacing.X + 30, 60)
 
 	self.State = 0
@@ -85,6 +81,15 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 		},
 		Frame = {
 			MinimumSize = Vector2.new(0, 0),
+
+			DrawCursor = {
+				Position = Vector2.zero, -- Kept locally to the frame
+				PreviousPosition = Vector2.zero,
+
+				StartPosition = Vector2.zero,
+				MaximumPosition = Vector2.new(60, 60),
+			},
+			Elements = {},
 		},
 	}
 
@@ -116,7 +121,7 @@ end
 function Window:UpdateSize()
 	local minimumTitleSize: Vector2 = self.Window.Title.MinimumSize
 	if self.Collapsed == true then
-		self.Window.Instance.Size = UDim2.fromOffset(minimumTitleSize.X, minimumTitleSize.Y)
+		self.Window.Instance.Size = UDim2.fromOffset(self.Size.X, minimumTitleSize.Y)
 		return
 	end
 
@@ -150,6 +155,7 @@ function Window:DrawWindow(stack: number?)
 	if (instance == nil) or (self.RedrawThisFrame == true) then
 		if instance ~= nil then
 			instance:Destroy()
+			self.Window.Instance = nil
 		end
 		if self.RedrawThisFrame == true then
 			self:SetAllStates(0)
@@ -160,12 +166,14 @@ function Window:DrawWindow(stack: number?)
 		window.ZIndex = stack or self.FocusOrder
 
 		window.Position = UDim2.fromOffset(self.Position.X, self.Position.Y)
-		window.Size = UDim2.fromOffset(self.Size.X, self.Size.Y)
+		window.Size = UDim2.fromScale(1, 1)
 
 		window.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		window.BackgroundTransparency = 1
 		window.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		window.BorderSizePixel = 0
+
+		window.ClipsDescendants = true
 
 		local stroke: UIStroke = Instance.new("UIStroke")
 		stroke.Name = "stroke"
@@ -181,10 +189,11 @@ function Window:DrawWindow(stack: number?)
 end
 
 function Window:DrawTitle()
-	local instance: Frame? = self.Window.Title.Instance
-	local textCorrect: boolean = self.Name == self.Window.Title.Text
-	local closeButtonCorrect: boolean = (self.Flags.NoClose ~= (self.Window.Title.Close.Instance ~= nil))
-	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (self.Window.Title.Collapse.Instance ~= nil)
+	local windowTitle: Types.WindowTitle = self.Window.Title
+	local instance: Frame? = windowTitle.Instance
+	local textCorrect: boolean = self.Name == windowTitle.Text
+	local closeButtonCorrect: boolean = (self.Flags.NoClose ~= (windowTitle.Close.Instance ~= nil))
+	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (windowTitle.Collapse.Instance ~= nil)
 
 	if
 		(instance == nil)
@@ -195,18 +204,22 @@ function Window:DrawTitle()
 	then
 		if instance ~= nil then
 			instance:Destroy()
+			windowTitle.Instance = nil
 		end
 
-		if self.Window.Title.Collapse.Instance ~= nil then
-			self.Window.Title.Collapse.Instance:Destroy()
+		if windowTitle.Collapse.Instance ~= nil then
+			windowTitle.Collapse.Instance:Destroy()
+			windowTitle.Collapse.Instance = nil
 		end
-		if self.Window.Title.Close.Instance ~= nil then
-			self.Window.Title.Close.Instance:Destroy()
+		if windowTitle.Close.Instance ~= nil then
+			windowTitle.Close.Instance:Destroy()
+			windowTitle.Close.Instance = nil
 		end
-		if self.Window.Title.Instance ~= nil then
-			self.Window.Title.Instance:Destroy()
+		if windowTitle.Instance ~= nil then
+			windowTitle.Instance:Destroy()
+			windowTitle.Instance = nil
 		end
-		self.Window.Title.Text = nil
+		windowTitle.Text = nil
 
 		-- Calculate any constants which determine size or position.
 		local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
@@ -214,14 +227,13 @@ function Window:DrawTitle()
 		local closeWidth: number = self.Flags.NoClose == false and 15 + Style.Sizes.ItemInnerSpacing.X or 0
 		local minTitleWidth = collapseWidth + closeWidth + 2 * Style.Sizes.FramePadding.X + textSize.X
 
-		self.Window.Title.MinimumSize = Vector2.new(minTitleWidth, Utility.DefaultFramePaddedHeight)
+		windowTitle.MinimumSize = Vector2.new(minTitleWidth, Utility.DefaultFramePaddedHeight)
 		self:UpdateSize()
 
-		-- build the instance
 		local title: Frame = Instance.new("Frame")
 		title.Name = "title"
 		title.Position = UDim2.fromScale(0, 0)
-		title.Size = UDim2.fromOffset(self.Size.X, Utility.DefaultFramePaddedHeight)
+		title.Size = UDim2.new(1, 0, 0, Utility.DefaultFramePaddedHeight)
 
 		local titleColor: Types.Color4 = if self.Collapsed == true
 			then Style.Colours.TitleBgCollapsed
@@ -230,15 +242,17 @@ function Window:DrawTitle()
 
 		title.BackgroundColor3 = titleColor.Color
 		title.Transparency = titleColor.Transparency
-		title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		title.BorderColor3 = COLOR3_BLACK
 		title.BorderSizePixel = 0
+
+		title.ClipsDescendants = true
 
 		local padding = Instance.new("UIPadding")
 		padding.Name = "padding"
-		padding.PaddingBottom = UDim.new(0, 3)
-		padding.PaddingLeft = UDim.new(0, 4)
-		padding.PaddingRight = UDim.new(0, 4)
-		padding.PaddingTop = UDim.new(0, 3)
+		padding.PaddingTop = UDim.new(0, Style.Sizes.FramePadding.Y)
+		padding.PaddingBottom = UDim.new(0, Style.Sizes.FramePadding.Y)
+		padding.PaddingLeft = UDim.new(0, Style.Sizes.FramePadding.X)
+		padding.PaddingRight = UDim.new(0, Style.Sizes.FramePadding.X)
 		padding.Parent = title
 
 		local text: TextLabel = Instance.new("TextLabel")
@@ -246,19 +260,19 @@ function Window:DrawTitle()
 		text.Position = UDim2.fromOffset(collapseWidth or 0, -1)
 		text.Size = UDim2.new(1, -collapseWidth - closeWidth, 0, Style.Sizes.TextSize)
 
-		text.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		text.BackgroundColor3 = COLOR3_WHITE
 		text.BackgroundTransparency = 1
-		text.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		text.BorderColor3 = COLOR3_BLACK
 		text.BorderSizePixel = 0
 
 		text.Text = self.Name
-		text.FontFace = Font.new("Arial")
+		text.FontFace = Style.Font
 		text.TextColor3 = Style.Colours.Text.Color
 		text.TextSize = Style.Sizes.TextSize
 		text.TextWrapped = false
 		text.TextXAlignment = Enum.TextXAlignment.Left
 		text.Parent = title
-		self.Window.Title.Text = self.Name
+		windowTitle.Text = self.Name
 
 		if self.Flags.NoCollapse == false then
 			local dropdown: ImageLabel = Instance.new("ImageLabel")
@@ -267,9 +281,9 @@ function Window:DrawTitle()
 			dropdown.Size = UDim2.fromOffset(15, 15)
 			dropdown.Rotation = (self.Collapsed == true) and -90 or 0
 
-			dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			dropdown.BackgroundColor3 = COLOR3_WHITE
 			dropdown.BackgroundTransparency = 1
-			dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			dropdown.BorderColor3 = COLOR3_BLACK
 			dropdown.BorderSizePixel = 0
 
 			dropdown.Image = "rbxassetid://4673889148"
@@ -282,9 +296,9 @@ function Window:DrawTitle()
 			icon.Position = UDim2.new(0.5, 0, 0.5, 1)
 			icon.Size = UDim2.fromOffset(11, 9)
 
-			icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			icon.BackgroundColor3 = COLOR3_WHITE
 			icon.BackgroundTransparency = 1
-			icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			icon.BorderColor3 = COLOR3_BLACK
 			icon.BorderSizePixel = 0
 
 			icon.Image = "rbxassetid://1248849582"
@@ -293,7 +307,7 @@ function Window:DrawTitle()
 			icon.Parent = dropdown
 
 			dropdown.Parent = title
-			self.Window.Title.Collapse.Instance = dropdown
+			windowTitle.Collapse.Instance = dropdown
 		end
 
 		if self.Flags.NoClose == false then
@@ -303,9 +317,9 @@ function Window:DrawTitle()
 			close.Position = UDim2.new(1, 1, 0, -2)
 			close.Size = UDim2.fromOffset(15, 15)
 
-			close.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			close.BackgroundColor3 = COLOR3_WHITE
 			close.BackgroundTransparency = 1
-			close.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			close.BorderColor3 = COLOR3_BLACK
 			close.BorderSizePixel = 0
 
 			close.Image = "rbxassetid://4673889148"
@@ -318,9 +332,9 @@ function Window:DrawTitle()
 			icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 			icon.Size = UDim2.fromOffset(13, 13)
 
-			icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			icon.BackgroundColor3 = COLOR3_WHITE
 			icon.BackgroundTransparency = 1
-			icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			icon.BorderColor3 = COLOR3_BLACK
 			icon.BorderSizePixel = 0
 
 			icon.Image = "rbxassetid://3926305904"
@@ -331,22 +345,62 @@ function Window:DrawTitle()
 			icon.Parent = close
 
 			close.Parent = title
-			self.Window.Title.Close.Instance = close
+			windowTitle.Close.Instance = close
 		end
 
 		title.Parent = self.Window.Instance
-		self.Window.Title.Instance = title
+		windowTitle.Instance = title
+	end
+end
+
+function Window:DrawFrame()
+	local instance: Frame? = self.Window.Frame.Instance
+
+	if (instance == nil) or (self.RedrawThisFrame == true) then
+		if instance ~= nil then
+			instance:Destroy()
+			self.Window.Frame.Instance = nil
+		end
+
+		if self.Collapsed == true then
+			return
+		end
+
+		local titleAndMenuBarSize: number = self.Window.Title.MinimumSize.Y + self.Window.Menubar.MinimumSize.Y
+
+		local frame: Frame = Instance.new("Frame")
+		frame.Name = "frame"
+		frame.Position = UDim2.fromOffset(0, titleAndMenuBarSize)
+		frame.Size = UDim2.new(1, 0, 1, -titleAndMenuBarSize)
+
+		frame.BackgroundColor3 = Style.Colours.WindowBg.Color
+		frame.BackgroundTransparency = Style.Colours.WindowBg.Transparency
+		frame.BorderColor3 = COLOR3_BLACK
+		frame.BorderSizePixel = 0
+
+		frame.ClipsDescendants = true
+
+		local padding: UIPadding = Instance.new("UIPadding")
+		padding.Name = "padding"
+		padding.PaddingTop = UDim.new(0, Style.Sizes.WindowPadding.Y)
+		padding.PaddingBottom = UDim.new(0, Style.Sizes.WindowPadding.Y)
+		padding.PaddingLeft = UDim.new(0, Style.Sizes.WindowPadding.X)
+		padding.PaddingRight = UDim.new(0, Style.Sizes.WindowPadding.X)
+
+		padding.Parent = frame
+
+		frame.Parent = self.Window.Instance
+		self.Window.Frame.Instance = frame
 	end
 end
 
 function Window:Destroy()
 	if self.Window.Instance ~= nil then
 		self.Window.Instance:Destroy()
+		self.Window.Instance = nil
 	end
 
 	setmetatable(self, nil)
-
-	self = nil
 end
 
 return Window

@@ -5,6 +5,7 @@ local components = script.Components
 local Types = require(script.Types)
 local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
+local Text = require(components.Text)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
 local Flags = require(script.Flags)
@@ -12,6 +13,31 @@ local Flags = require(script.Flags)
 local frameId: number = -1
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
+
+function ImGui:DebugWindow()
+	local flags: Types.WindowFlags = Flags.WindowFlags.new() :: Types.WindowFlags
+	flags.NoClose = true
+
+	ImGui:Begin("Debug", { true }, flags)
+	local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
+	window.Active = true
+
+	ImGui:Text("Elements:")
+	ImGui:Indent()
+	ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
+	ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
+	ImGui:Unindent()
+
+	ImGui:Text("Windows:")
+	ImGui:Indent()
+	ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
+	ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
+	ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
+	ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
+	ImGui:Unindent()
+
+	ImGui:End()
+end
 
 --[[
 	Initialisation API
@@ -48,19 +74,8 @@ function ImGui:Start()
 		ImGuiInternal.HoverId = 0
 
 		ImGuiInternal:UpdateMouseInputs(deltaTime)
-		ImGui:CleanWindowElements()
 		ImGui:UpdateWindowMove()
 		ImGui:FindHoveredWindow()
-
-		local flags: Types.WindowFlags = Flags.WindowFlags.new() :: Types.WindowFlags
-		flags.NoClose = true
-		ImGui:Begin("Debug", { true }, flags)
-		ImGui:End()
-
-		local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
-		window.Active = true
-
-		table.insert(ImGuiInternal.WindowStack, window)
 	end)
 
 	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
@@ -69,11 +84,11 @@ function ImGui:Start()
 		if ImGuiInternal.Status ~= "Started" then
 			return
 		end
+		ImGui:DebugWindow()
 
 		ImGui:EndFrameMouseUpdate()
 
-		table.remove(ImGuiInternal.WindowStack, 1)
-
+		ImGui:CleanWindowElements()
 		--todo Add mouse moving window from empty space
 	end)
 end
@@ -96,14 +111,14 @@ end
 	Generally for cleaning and updating last frame data.
 ]]
 function ImGui:CleanWindowElements()
-	for index: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
+	for windowIndex: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
 		window.WasActive = window.Active
 		window.Active = false
 		window.JustCreated = false
 
 		if (window.WasActive == false) or (window.Open[1] == false) then
 			table.remove(ImGuiInternal.WindowFocusOrder, window.FocusOrder)
-			ImGuiInternal.Windows[index] = nil
+			ImGuiInternal.Windows[windowIndex] = nil
 
 			if ImGuiInternal.ActiveWindow == window then
 				ImGui:SetActive(0, nil)
@@ -125,10 +140,6 @@ function ImGui:CleanWindowElements()
 		end
 
 		-- loop through all menubars
-
-		window.RedrawThisFrame = window.RedrawNextFrame
-		window.RedrawNextFrame = false
-
 		for name: string, menubar: Types.WindowMenu in window.Window.Menubar.Menus do
 			menubar.Id = name
 			-- menubar.WasActive = menubar.Active
@@ -141,7 +152,24 @@ function ImGui:CleanWindowElements()
 			-- 	window.Window.Menubar.Menus[name] = nil
 			-- end
 		end
+
 		-- loop through all window elements
+		local frame: Types.ElementFrame = window.Window.Frame
+
+		for elementIndex: number, element: Types.ImGuiText in frame.Elements do
+			if element.Active == false then
+				element:Destroy()
+				table.remove(frame.Elements, elementIndex)
+			end
+
+			element.Active = false
+		end
+
+		frame.DrawCursor.Position = frame.DrawCursor.StartPosition
+		frame.DrawCursor.PreviousPosition = frame.DrawCursor.StartPosition
+
+		window.RedrawThisFrame = window.RedrawNextFrame
+		window.RedrawNextFrame = false
 	end
 end
 
@@ -465,27 +493,17 @@ end
 	:Begin()
 	:End()
 ]]
-function ImGui:Begin(
-	windowName: string,
-	open: { boolean }?,
-	flags: Types.WindowFlags | nil,
-	optional_arugments: { [string]: any } | nil
-)
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil)
 	-- just create a set of default flags
 	flags = flags or Flags.WindowFlags.new() :: Types.WindowFlags
 
+	-- if the window is not open at all (based on previous window data)
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
 		return false
 	end
 
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
-
-	if optional_arugments ~= nil then
-		for argument: string, value: any in optional_arugments do
-			window[argument] = value
-		end
-	end
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
@@ -505,6 +523,8 @@ function ImGui:Begin(
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
 
 	table.insert(ImGuiInternal.WindowStack, window)
+	ImGuiInternal.CurrentWindow = window
+	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
 
 	if flags.ChildWindow == true then
 		ImGuiInternal.ChildWindowCount += 1
@@ -514,11 +534,11 @@ function ImGui:Begin(
 		print("Popup window created!")
 	end
 
+	-- don't know why exactly?
 	if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
 		window.Collapsed = true
 	end
 
-	ImGuiInternal.CurrentWindow = window
 	if firstFrameCall == true then
 		local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
 
@@ -547,6 +567,8 @@ function ImGui:Begin(
 			window:DrawTitle()
 			ImGui:HandleWindowTitleBar(window)
 		end
+
+		window:DrawFrame()
 	end
 
 	window.LastFrameActive = frameId
@@ -573,6 +595,74 @@ function ImGui:End()
 
 	table.remove(ImGuiInternal.WindowStack)
 	ImGuiInternal.CurrentWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
+	table.remove(ImGuiInternal.ElementFrameStack)
+end
+
+function ImGui:Text(text: string, ...)
+	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
+	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+		return
+	end
+
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
+		return
+	end
+
+	local args: { any } = { ... }
+	if #args > 0 then
+		text = text:format(...)
+	end
+
+	-- grab the active element
+
+	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+	local textFrame: Types.ImGuiText? = nil
+
+	for _, element: Types.ImGuiText in frame.Elements do
+		if (element.Text ~= nil) and (element.Text == text) then
+			textFrame = element
+			break
+		end
+	end
+
+	if textFrame == nil then
+		textFrame = Text.new(text, window, frame)
+		textFrame:DrawText(frame.DrawCursor.Position)
+		table.insert(frame.Elements, textFrame)
+	else
+		textFrame:UpdatePosition(frame.DrawCursor.Position)
+	end
+
+	textFrame.Active = true
+
+	frame.DrawCursor.PreviousPosition = frame.DrawCursor.Position
+	frame.DrawCursor.Position += Vector2.new(0, textFrame.Size.Y + Style.Sizes.ItemSpacing.Y)
+end
+
+function ImGui:Indent()
+	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
+	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+		return
+	end
+
+	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+
+	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
+	frame.DrawCursor.Position += Vector2.new(Style.Sizes.IndentSpacing)
+end
+
+function ImGui:Unindent()
+	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
+	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+		return
+	end
+
+	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+
+	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
+	frame.DrawCursor.Position -= Vector2.new(Style.Sizes.IndentSpacing)
 end
 
 return ImGui

@@ -1,5 +1,5 @@
 local textService: TextService = game:GetService("TextService")
-local httpService: HttpService = game:GetService("HttpService")
+local contentProvider: ContentProvider = game:GetService("ContentProvider")
 
 local Style = require(script.Parent.Style)
 
@@ -7,7 +7,12 @@ local Utility = {}
 
 Utility.DefaultFramePaddedHeight = Style.Sizes.TextMinHeight + 2 * Style.Sizes.FramePadding.Y
 
-local largeVector2: Vector2 = Vector2.new(4096, 4096)
+contentProvider:PreloadAsync({ Style.Font.Family })
+local TEXT_PARAMS: GetTextBoundsParams = Instance.new("GetTextBoundsParams")
+TEXT_PARAMS.Font = Style.Font
+TEXT_PARAMS.Size = Style.Sizes.TextSize
+TEXT_PARAMS.Width = 4096
+
 local mouseX: number = 0
 local mouseY: number = 0
 
@@ -26,11 +31,8 @@ function Utility.IsCursorInBox(absolutePosition: Vector2, absoluteSize: Vector2)
 end
 
 function Utility.CalculateTextSize(text: string): (Vector2)
-	return textService:GetTextSize(text, Style.Sizes.TextSize, Enum.Font.Arial, largeVector2)
-end
-
-function Utility.GenerateRandomId()
-	return httpService:GenerateGUID(false):gsub("=", "")
+	TEXT_PARAMS.Text = text
+	return textService:GetTextBoundsAsync(TEXT_PARAMS)
 end
 
 return Utility

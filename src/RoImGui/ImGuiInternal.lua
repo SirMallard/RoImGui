@@ -39,8 +39,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	WindowStack = {},
 	WindowFocusOrder = {},
 
-	NextWindowData = {},
-
+	ElementFrameStack = {},
 	ChildWindowCount = 0,
 
 	MouseButton1 = {

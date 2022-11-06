@@ -76,4 +76,5 @@ ImGui_Style_Colours.TabUnfocusedActive = ImGui_Style_Colours.TabActive:Lerp(ImGu
 return {
 	Sizes = ImGui_Style_Size,
 	Colours = ImGui_Style_Colours,
+	Font = Font.new("rbxasset://fonts/families/Arial.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
 }

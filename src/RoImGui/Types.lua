@@ -1,3 +1,4 @@
+local TextService = game:GetService("TextService")
 export type Color4 = {
 	Color: Color3,
 	Transparency: number,
@@ -115,9 +116,10 @@ export type WindowFlags = BitFlag & {
 
 export type DrawCursor = {
 	Position: Vector2,
+	PreviousPosition: Vector2,
+
 	StartPosition: Vector2,
 	MaximumPosition: Vector2,
-	PreviousPosition: Vector2,
 }
 
 --[[
@@ -163,9 +165,11 @@ export type WindowMenubar = {
 	MinimumSize: Vector2,
 }
 
-export type WindowFrame = {
+export type ElementFrame = {
 	Instance: Frame?,
 	MinimumSize: Vector2,
+	Elements: { ImGuiText },
+	DrawCursor: DrawCursor,
 }
 
 export type ImGuiWindow = {
@@ -184,8 +188,6 @@ export type ImGuiWindow = {
 	LastFrameActive: number,
 	FocusOrder: number,
 
-	DrawCursor: DrawCursor,
-
 	Position: Vector2,
 	Size: Vector2,
 	MinimumSize: Vector2,
@@ -194,6 +196,7 @@ export type ImGuiWindow = {
 	Active: boolean,
 	WasActive: boolean,
 	Appearing: boolean,
+	Collapsed: boolean,
 	Open: { boolean },
 
 	RedrawNextFrame: boolean, -- DO NOT SET, changed internally based on .RedrawNextFrame
@@ -203,7 +206,7 @@ export type ImGuiWindow = {
 		Instance: Frame?,
 		Title: WindowTitle,
 		Menubar: WindowMenubar,
-		Frame: WindowFrame,
+		Frame: ElementFrame,
 	},
 
 	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
@@ -214,12 +217,31 @@ export type ImGuiWindow = {
 
 	SetAllStates: (ImGuiWindow, ButtonState) -> (),
 
-	DrawWindow: (ImGuiWindow, stack: number?) -> (),
-	DrawTitle: (ImGuiWindow) -> (),
+	DrawWindow: (self: ImGuiWindow, stack: number?) -> (),
+	DrawTitle: (self: ImGuiWindow) -> (),
+	DrawFrame: (self: ImGuiWindow) -> (),
 
 	Destroy: (ImGuiWindow) -> (),
 
 	[any]: any,
+}
+
+export type ImGuiText = {
+	Text: string,
+	Id: ImGuiId,
+	ParentFrame: ElementFrame,
+	Window: ImGuiWindow,
+
+	Active: boolean,
+
+	Position: Vector2,
+	Size: Vector2,
+	Instance: TextLabel,
+
+	new: (text: string, window: ImGuiWindow, parentInstance: GuiBase2d) -> (),
+	DrawText: (self: ImGuiText, position: Vector2) -> (),
+	UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
+	Destroy: (self: ImGuiText) -> (),
 }
 
 export type ImGui = {
@@ -227,8 +249,15 @@ export type ImGui = {
 	Stop: (ImGui) -> (),
 	Pause: (ImGui) -> (),
 
-	Begin: (ImGui, string, { boolean }?, WindowFlags?, { [string]: any }?) -> (boolean),
-	End: (ImGui) -> (),
+	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> (boolean),
+	End: (self: ImGui) -> (),
+
+	Text: (self: ImGui, text: string, ...any) -> (),
+
+	Indent: (self: ImGui) -> (),
+	Unindent: (self: ImGui) -> (),
+
+	DebugWindow: (self: ImGui) -> (),
 
 	CleanWindowElements: (ImGui) -> (),
 	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
@@ -289,6 +318,8 @@ export type ImGuiInternal = {
 	Windows: { [string]: ImGuiWindow }, -- all windows
 	WindowStack: { ImGuiWindow }, -- most recently created window in order for parenting reasons. window removed on :End(), so will be empty at the end
 	WindowFocusOrder: { ImGuiWindow }, -- root windows in focus order of back to front. (highest index is highest zindex)
+
+	ElementFrameStack: { ElementFrame }, -- the stack of element frames which are where content is put. Contains the DrawCursor
 
 	ChildWindowCount: number,
 
