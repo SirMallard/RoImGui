@@ -257,7 +257,7 @@ function Window:DrawTitle()
 
 		local text: TextLabel = Instance.new("TextLabel")
 		text.Name = "text"
-		text.Position = UDim2.fromOffset(collapseWidth or 0, -1)
+		text.Position = UDim2.fromOffset(collapseWidth or 0, 1)
 		text.Size = UDim2.new(1, -collapseWidth - closeWidth, 0, Style.Sizes.TextSize)
 
 		text.BackgroundColor3 = COLOR3_WHITE

@@ -14,9 +14,13 @@ local frameId: number = -1
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
+ImGui.Flags = Flags
+ImGui.Types = script.Types
+
 function ImGui:DebugWindow()
-	local flags: Types.WindowFlags = Flags.WindowFlags.new() :: Types.WindowFlags
+	local flags: Types.WindowFlags = Flags.WindowFlags()
 	flags.NoClose = true
+	flags.NoCollapse = true
 
 	ImGui:Begin("Debug", { true }, flags)
 	local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
@@ -495,7 +499,7 @@ end
 ]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil)
 	-- just create a set of default flags
-	flags = flags or Flags.WindowFlags.new() :: Types.WindowFlags
+	flags = flags or Flags.WindowFlags()
 
 	-- if the window is not open at all (based on previous window data)
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
@@ -545,7 +549,6 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		ImGui:UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
-		flags.NoClose = open == nil
 		window.Open = open or { true }
 		window:DrawWindow()
 

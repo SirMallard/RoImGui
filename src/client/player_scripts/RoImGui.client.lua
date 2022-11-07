@@ -1,13 +1,18 @@
 local replicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
 local runService: RunService = game:GetService("RunService")
 local RoImGui = require(replicatedStorage:WaitForChild("Modules"):WaitForChild("RoImGui"))
+local Types = require(RoImGui.Types)
 
 RoImGui:Start()
 
 local childOpen: { boolean } = { true }
 
+local firstFlags: Types.WindowFlags = RoImGui.Flags.WindowFlags()
+firstFlags.NoClose = true
+firstFlags.NoCollapse = true
+
 runService.RenderStepped:Connect(function(_: number)
-	if RoImGui:Begin("First Window", { true }) then
+	if RoImGui:Begin("First Window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
 	end
 	RoImGui:End()

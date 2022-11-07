@@ -1,7 +1,20 @@
-local BitFlags = require(script.Parent.BitFlags)
+local Types = require(script.Parent.Types)
+
 local Flags = {}
 
-local WindowFlags = BitFlags("WindowFlags", {
+local function BitFlags(flags: { [string]: boolean })
+	return function()
+		local self = {}
+
+		for flag: string, value: boolean in flags do
+			self[flag] = value
+		end
+
+		return self
+	end
+end
+
+local WindowFlags: () -> (Types.WindowFlags) = BitFlags({
 	NoTitleBar = false,
 	NoResize = false,
 	NoMove = false,
@@ -18,7 +31,7 @@ local WindowFlags = BitFlags("WindowFlags", {
 	Popup = false,
 	Modal = false,
 	ChildMenu = false,
-})
+}) :: () -> (Types.WindowFlags)
 
 Flags.WindowFlags = WindowFlags
 

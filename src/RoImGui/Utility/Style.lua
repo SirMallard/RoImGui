@@ -13,7 +13,7 @@ local ImGui_Style_Size: Types.ImGuiStyleSize = {
 	GrabMinSize = 12,
 
 	TextMinHeight = 12,
-	TextSize = 13, -- best size we can use because size 12 fonts doesn't match
+	TextSize = 12, -- best size we can use.
 }
 
 local ImGui_Style_Colours: Types.ImGuiStyleColour = {} :: Types.ImGuiStyleColour

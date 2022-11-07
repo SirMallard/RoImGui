@@ -1,3 +1,4 @@
+local ProximityPromptService = game:GetService("ProximityPromptService")
 export type Color4 = {
 	Color: Color3,
 	Transparency: number,
@@ -89,12 +90,9 @@ export type ImGuiStyleColour = {
 
 export type ImGuiId = string | number
 
-export type BitFlag = {
-	type: string,
-	[string]: boolean,
-}
+export type WindowFlags = {
+	type: "WindowFlags",
 
-export type WindowFlags = BitFlag & {
 	NoTitleBar: boolean,
 	NoResize: boolean,
 	NoMove: boolean,
@@ -257,6 +255,11 @@ export type ImGui = {
 	Unindent: (self: ImGui) -> (),
 
 	DebugWindow: (self: ImGui) -> (),
+
+	Flags: {
+		WindowFlags: () -> (WindowFlags),
+	},
+	Types: ModuleScript,
 
 	CleanWindowElements: (ImGui) -> (),
 	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
