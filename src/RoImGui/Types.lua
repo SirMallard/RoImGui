@@ -88,7 +88,10 @@ export type ImGuiStyleColour = {
 	Transparent: Color4,
 }
 
-export type ImGuiId = string | number
+export type ImGuiId = string
+export type ImGuiHash = string
+
+export type Class = "Window" | "Text" | "Checkbox"
 
 export type WindowFlags = {
 	type: "WindowFlags",
@@ -129,8 +132,9 @@ export type DrawCursor = {
 export type ButtonState = number
 
 export type Button = {
-	Instance: GuiBase2d?,
 	Id: ImGuiId,
+	Hash: ImGuiHash,
+	Instance: GuiBase2d?,
 	State: ButtonState,
 	PreviousState: ButtonState,
 }
@@ -140,13 +144,15 @@ export type WindowTitleButton = Button & {
 }
 
 export type WindowMenu = {
-	Instance: Frame?,
 	Id: ImGuiId,
+	Hash: ImGuiHash,
+	Instance: Frame?,
 	WasUpdated: boolean,
 }
 
 export type WindowTitle = {
 	Id: ImGuiId,
+	Hash: ImGuiHash,
 	Instance: Frame?,
 	Text: string?,
 	Collapse: WindowTitleButton,
@@ -155,6 +161,8 @@ export type WindowTitle = {
 }
 
 export type WindowMenubar = {
+	Id: ImGuiId,
+	Hash: ImGuiHash,
 	Instance: Frame?,
 	Menus: {
 		[string]: WindowMenu,
@@ -163,6 +171,9 @@ export type WindowMenubar = {
 }
 
 export type ElementFrame = {
+	Class: "ElementFrame",
+	Id: ImGuiId,
+	Hash: ImGuiHash,
 	Instance: Frame?,
 	MinimumSize: Vector2,
 	Elements: { ImGuiText },
@@ -170,8 +181,10 @@ export type ElementFrame = {
 }
 
 export type ImGuiWindow = {
+	Class: Class,
 	Name: string,
 	Id: ImGuiId,
+	Hash: ImGuiHash,
 	Flags: WindowFlags,
 
 	ParentWindow: ImGuiWindow?, -- the parent window
@@ -224,8 +237,10 @@ export type ImGuiWindow = {
 }
 
 export type ImGuiText = {
+	Class: Class,
 	Text: string,
 	Id: ImGuiId,
+	Hash: ImGuiHash,
 	ParentFrame: ElementFrame,
 	Window: ImGuiWindow,
 
@@ -235,11 +250,37 @@ export type ImGuiText = {
 	Size: Vector2,
 	Instance: TextLabel,
 
-	new: (text: string, window: ImGuiWindow, parentInstance: GuiBase2d) -> (),
+	new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
 	DrawText: (self: ImGuiText, position: Vector2) -> (),
 	UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
 	Destroy: (self: ImGuiText) -> (),
 }
+
+export type ImGuiCheckbox = {
+	Class: Class,
+	Text: string,
+	Id: ImGuiId,
+	Hash: ImGuiHash,
+	ParentFrame: ElementFrame,
+	Window: ImGuiWindow,
+	Value: { boolean },
+
+	State: ButtonState,
+	PreviousState: ButtonState,
+
+	Active: boolean,
+
+	Position: Vector2,
+	Size: Vector2,
+	Instance: Frame,
+
+	new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
+	DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
+	UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
+	Destroy: (self: ImGuiCheckbox) -> (),
+}
+
+export type Element = ImGuiText | ImGuiCheckbox
 
 export type ImGui = {
 	Start: (ImGui) -> (),
@@ -250,6 +291,8 @@ export type ImGui = {
 	End: (self: ImGui) -> (),
 
 	Text: (self: ImGui, text: string, ...any) -> (),
+
+	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
 
 	Indent: (self: ImGui) -> (),
 	Unindent: (self: ImGui) -> (),
@@ -267,7 +310,8 @@ export type ImGui = {
 	UpdateWindowLinks: (ImGui, ImGuiWindow, WindowFlags, ImGuiWindow?) -> (),
 	EndFrameMouseUpdate: (ImGui) -> (),
 
-	AdvanceDrawCursor: (ImGui, Vector2, number?, number?) -> (),
+	GetActiveElementFrame: (self: ImGui) -> (),
+	GetElementById: (self: ImGui, id: ImGuiId, class: string, elementFrame: ElementFrame) -> (Element?),
 	GetWindowById: (ImGui, string) -> (ImGuiWindow?),
 	CreateWindow: (ImGui, string, WindowFlags) -> (ImGuiWindow),
 	HandleWindowTitleBar: (ImGui, ImGuiWindow) -> (),

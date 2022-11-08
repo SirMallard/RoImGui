@@ -25,6 +25,7 @@ runService.RenderStepped:Connect(function(_: number)
 		RoImGui:End()
 		RoImGui:Text("One line")
 		RoImGui:Text("One line\nwith another line")
+		RoImGui:Checkbox("A textbox", { false })
 	end
 	RoImGui:End()
 

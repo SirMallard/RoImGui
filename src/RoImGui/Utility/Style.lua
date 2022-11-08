@@ -4,7 +4,7 @@ local Color4 = require(script.Parent.Color4)
 local ImGui_Style_Size: Types.ImGuiStyleSize = {
 	WindowPadding = Vector2.new(8, 8),
 	FramePadding = Vector2.new(4, 3),
-	ItemSpacing = Vector2.new(8, 8),
+	ItemSpacing = Vector2.new(8, 4),
 	ItemInnerSpacing = Vector2.new(4, 4),
 	CellPadding = Vector2.new(4, 2),
 
@@ -12,8 +12,8 @@ local ImGui_Style_Size: Types.ImGuiStyleSize = {
 	ScrollbarSize = 14,
 	GrabMinSize = 12,
 
-	TextMinHeight = 12,
-	TextSize = 12, -- best size we can use.
+	TextMinHeight = 13,
+	TextSize = 13, -- best size we can use.
 }
 
 local ImGui_Style_Colours: Types.ImGuiStyleColour = {} :: Types.ImGuiStyleColour

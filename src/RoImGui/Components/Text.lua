@@ -1,6 +1,7 @@
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility.Utility)
+local Hash = require(script.Parent.Parent.Utility.Hash)
 
 local Text = {}
 Text.__index = Text
@@ -13,6 +14,10 @@ function Text.new(text: string, window: Types.ImGuiWindow, parentFrame: Types.El
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
 	self.Text = text
+	self.Class = "Text"
+	self.Id = parentFrame.Id .. ">" .. self.Text
+	self.Hash = Hash(self.Id)
+
 	self.ParentFrame = parentFrame
 	self.Window = window
 

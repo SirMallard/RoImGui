@@ -6,8 +6,10 @@ local Types = require(script.Types)
 local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
 local Text = require(components.Text)
+local Checkbox = require(components.Checkbox)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
+local Hash = require(script.Utility.Hash)
 local Flags = require(script.Flags)
 
 local frameId: number = -1
@@ -15,6 +17,7 @@ local frameId: number = -1
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
 ImGui.Flags = Flags
+
 ImGui.Types = script.Types
 
 function ImGui:DebugWindow()
@@ -330,10 +333,6 @@ end
 	Additional functions
 
 ]]
-function ImGui:AdvanceDrawCursor(size: Vector2, yOffset: number?, xOffset: number?)
-	ImGuiInternal.DrawPosition.Y += size.Y + (yOffset or 0)
-	ImGuiInternal.DrawPosition.X += (xOffset or 0)
-end
 
 function ImGui:GetWindowById(windowName: string): (Types.ImGuiWindow?)
 	return ImGuiInternal.Windows[windowName] or nil
@@ -601,47 +600,98 @@ function ImGui:End()
 	table.remove(ImGuiInternal.ElementFrameStack)
 end
 
-function ImGui:Text(text: string, ...)
+-- Gets the top element frame from the element frame stack.
+-- Returns the most recent frame for placing all the elements into.
+function ImGui:GetActiveElementFrame(): ()
 	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
 	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
 		return
 	end
 
-	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	return ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+end
 
-	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
-		return
-	end
+-- Loops through all children in the element frame and checks the id and class for the desired element.
+function ImGui:GetElementById(id: Types.ImGuiId, class: string, elementFrame: Types.ElementFrame): (Types.Element?)
+	local element: Types.Element
 
-	local args: { any } = { ... }
-	if #args > 0 then
-		text = text:format(...)
-	end
-
-	-- grab the active element
-
-	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
-	local textFrame: Types.ImGuiText? = nil
-
-	for _, element: Types.ImGuiText in frame.Elements do
-		if (element.Text ~= nil) and (element.Text == text) then
-			textFrame = element
+	for _, childElement: Types.ImGuiText in elementFrame.Elements do
+		if (childElement.Id == id) and (childElement.Class == class) then
+			element = childElement
 			break
 		end
 	end
 
-	if textFrame == nil then
-		textFrame = Text.new(text, window, frame)
-		textFrame:DrawText(frame.DrawCursor.Position)
-		table.insert(frame.Elements, textFrame)
-	else
-		textFrame:UpdatePosition(frame.DrawCursor.Position)
+	return element
+end
+
+function ImGui:Text(textString: string, ...)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- We don't draw if it is going to be redrawn next frame.
+	-- Don't remove because the text is parented to an instance and when it redraws next frame
+	-- the instance is destroyed so the text only appears for a frame and is then destroyed
+	-- so we don't draw at all.
+	-- Settings the text to redraw next frame would already happen, so why render at all.
+	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
+		return
 	end
 
-	textFrame.Active = true
+	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
+	if elementFrame == nil then
+		return
+	end
 
-	frame.DrawCursor.PreviousPosition = frame.DrawCursor.Position
-	frame.DrawCursor.Position += Vector2.new(0, textFrame.Size.Y + Style.Sizes.ItemSpacing.Y)
+	-- format with the args
+	local args: { any } = { ... }
+	if #args > 0 then
+		textString = textString:format(...)
+	end
+
+	local text: Types.ImGuiText? = ImGui:GetElementById(elementFrame.Id .. ">" .. textString, "Text", elementFrame)
+
+	if text == nil then
+		text = Text.new(textString, window, elementFrame)
+		text:DrawText(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, text)
+	else
+		text:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	text.Active = true
+
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
+end
+
+function ImGui:Checkbox(text: string, value: { boolean })
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:Text()
+	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
+		return
+	end
+
+	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
+	if elementFrame == nil then
+		return
+	end
+
+	local checkbox: Types.ImGuiCheckbox? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Checkbox", elementFrame)
+
+	if checkbox == nil then
+		checkbox = Checkbox.new(text, value, window, elementFrame)
+		checkbox:DrawCheckbox(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, checkbox)
+	else
+		checkbox:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	checkbox.Active = true
+
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
+	elementFrame.DrawCursor.Position += Vector2.new(0, checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
 function ImGui:Indent()

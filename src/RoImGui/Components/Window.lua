@@ -1,6 +1,7 @@
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility.Utility)
+local Hash = require(script.Parent.Parent.Utility.Hash)
 local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Window = {}
@@ -31,7 +32,9 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName
+	self.Class = "Window"
 	self.Id = windowName
+	self.Hash = Hash(self.Id)
 
 	self.ParentWindow = parentWindow or nil
 	self.RootWindow = parentWindow and parentWindow.RootWindow or nil
@@ -62,26 +65,32 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Window = {
 		Title = {
 			Id = self.Id .. ">Title",
+			Hash = Hash(self.Id .. ">Title"),
 			Text = "",
 			Collapse = {
 				Id = self.Id .. ">Title>Collapse",
+				Hash = Hash(self.Id .. ">Title>Collapse"),
 				State = 0,
 				PreviousState = 0,
 			},
 			Close = {
 				Id = self.Id .. ">Title>Close",
+				Hash = Hash(self.Id .. ">Title>Close"),
 				State = 0,
 				PreviousState = 0,
 			},
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
+			Id = self.Id .. ">Menubar",
+			Hash = Hash(self.Id .. ">Menubar"),
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Frame = {
+			Id = self.Id .. ">Frame",
+			Hash = Hash(self.Id .. ">Frame"),
 			MinimumSize = Vector2.new(0, 0),
-
 			DrawCursor = {
 				Position = Vector2.zero, -- Kept locally to the frame
 				PreviousPosition = Vector2.zero,
@@ -100,13 +109,13 @@ function Window:UpdateTitleColour()
 	local title: Frame? = self.Window.Title.Instance
 
 	if title ~= nil then
-		local titleColor: Types.Color4 = if self.Collapsed == true
+		local titleColour: Types.Color4 = if self.Collapsed == true
 			then Style.Colours.TitleBgCollapsed
 			elseif ImGuiInternal.NavWindow == self then Style.Colours.TitleBgActive
 			else Style.Colours.TitleBg
 
-		title.BackgroundColor3 = titleColor.Color
-		title.Transparency = titleColor.Transparency
+		title.BackgroundColor3 = titleColour.Color
+		title.Transparency = titleColour.Transparency
 	end
 end
 
