@@ -10,15 +10,15 @@ Text.ClassName = "ImGuiText"
 local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function Text.new(text: string, window: Types.ImGuiWindow, parentFrame: Types.ElementFrame)
+function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
 	self.Text = text
 	self.Class = "Text"
-	self.Id = parentFrame.Id .. ">" .. self.Text
+	self.Id = elementFrame.Id .. ">" .. self.Text
 	self.Hash = Hash(self.Id)
 
-	self.ParentFrame = parentFrame
+	self.ElementFrame = elementFrame
 	self.Window = window
 
 	self.Active = true
@@ -34,7 +34,7 @@ function Text:DrawText(position: Vector2)
 		self.Instance = nil
 	end
 
-	if self.ParentFrame.Instance == nil then
+	if self.ElementFrame.Instance == nil then
 		return
 	end
 
@@ -57,7 +57,7 @@ function Text:DrawText(position: Vector2)
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
 
-	text.Parent = self.ParentFrame.Instance
+	text.Parent = self.ElementFrame.Instance
 	self.Instance = text
 	self.Size = textSize
 end

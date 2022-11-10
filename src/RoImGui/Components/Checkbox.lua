@@ -10,19 +10,20 @@ Checkbox.ClassName = "ImGuiCheckbox"
 local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindow, parentFrame: Types.ElementFrame)
+function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiCheckbox = setmetatable({}, Checkbox) :: Types.ImGuiCheckbox
 
 	self.Text = text
 	self.Class = "Checkbox"
-	self.Id = parentFrame.Id .. ">" .. self.Text
+	self.Id = elementFrame.Id .. ">" .. self.Text
 	self.Hash = Hash(self.Id)
 	self.Value = value
+	self.InternalValue = value[1]
 
 	self.State = 0
 	self.PreviousState = 0
 
-	self.ParentFrame = parentFrame
+	self.ElementFrame = elementFrame
 	self.Window = window
 
 	self.Active = true
@@ -38,7 +39,7 @@ function Checkbox:DrawCheckbox(position: Vector2)
 		self.Instance = nil
 	end
 
-	if self.ParentFrame.Instance == nil then
+	if self.ElementFrame.Instance == nil then
 		return
 	end
 
@@ -74,17 +75,21 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	text.TextXAlignment = Enum.TextXAlignment.Left
 	text.Parent = checkbox
 
-	local box: Frame = Instance.new("Frame")
-	box.Name = "checkbox"
-	box.Size = UDim2.fromOffset(boxSize, boxSize)
+	local icon: ImageLabel = Instance.new("ImageLabel")
+	icon.Name = "checkbox"
+	icon.Size = UDim2.fromOffset(boxSize, boxSize)
 
-	box.BackgroundColor3 = Style.Colours.FrameBg.Color
-	box.BackgroundTransparency = Style.Colours.FrameBg.Transparency
-	box.BorderColor3 = COLOR3_BLACK
-	box.BorderSizePixel = 0
-	box.Parent = checkbox
+	icon.BackgroundColor3 = Style.Colours.FrameBg.Color
+	icon.BackgroundTransparency = Style.Colours.FrameBg.Transparency
+	icon.BorderColor3 = COLOR3_BLACK
+	icon.BorderSizePixel = 0
 
-	checkbox.Parent = self.ParentFrame.Instance
+	icon.Image = "rbxassetid://11505661049"
+	icon.ImageColor3 = Style.Colours.CheckMark.Color
+	icon.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+	icon.Parent = checkbox
+
+	checkbox.Parent = self.ElementFrame.Instance
 	self.Instance = checkbox
 	self.Size = Vector2.new(boxInterval + textSize.X, boxSize)
 end
@@ -94,6 +99,21 @@ function Checkbox:UpdatePosition(position: Vector2)
 		self:DrawCheckbox(position)
 	else
 		self.Instance.Position = UDim2.fromOffset(position.X, position.Y)
+	end
+end
+
+function Checkbox:UpdateCheckmark(pressed: boolean)
+	if self.Instance == nil then
+		return
+	end
+
+	if pressed == true then
+		self.Value[1] = not self.Value[1]
+		self.InternalValue = self.Value[1]
+		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+	elseif self.InternalValue ~= self.Value[1] then
+		self.InternalValue = self.Value[1]
+		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
 	end
 end
 

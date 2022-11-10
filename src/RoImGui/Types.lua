@@ -1,4 +1,3 @@
-local ProximityPromptService = game:GetService("ProximityPromptService")
 export type Color4 = {
 	Color: Color3,
 	Transparency: number,
@@ -16,6 +15,8 @@ type Color4Object = {
 	["fromAlpha"]: (number, number, number, number) -> (Color4),
 	["fromColor3"]: (Color3, number?) -> (Color4),
 }
+
+type ButtonStyle = { [number]: Color4 }
 
 export type ImGuiStyleSize = {
 	WindowPadding: Vector2,
@@ -88,10 +89,18 @@ export type ImGuiStyleColour = {
 	Transparent: Color4,
 }
 
-export type ImGuiId = string
+export type ImGuiButtonStyles = {
+	TitleButton: ButtonStyle,
+	Checkbox: ButtonStyle,
+	Button: ButtonStyle,
+
+	[string]: ButtonStyle,
+}
+
+export type ImGuiId = string | number
 export type ImGuiHash = string
 
-export type Class = "Window" | "Text" | "Checkbox"
+export type Class = "Window" | "Title" | "Menubar" | "Menu" | "ElementFrame" | "Text" | "Checkbox" | "Button" | ""
 
 export type WindowFlags = {
 	type: "WindowFlags",
@@ -134,6 +143,7 @@ export type ButtonState = number
 export type Button = {
 	Id: ImGuiId,
 	Hash: ImGuiHash,
+	Class: Class,
 	Instance: GuiBase2d?,
 	State: ButtonState,
 	PreviousState: ButtonState,
@@ -144,6 +154,7 @@ export type WindowTitleButton = Button & {
 }
 
 export type WindowMenu = {
+	Class: Class,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
 	Instance: Frame?,
@@ -151,6 +162,7 @@ export type WindowMenu = {
 }
 
 export type WindowTitle = {
+	Class: Class,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
 	Instance: Frame?,
@@ -161,6 +173,7 @@ export type WindowTitle = {
 }
 
 export type WindowMenubar = {
+	Class: Class,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
 	Instance: Frame?,
@@ -171,7 +184,7 @@ export type WindowMenubar = {
 }
 
 export type ElementFrame = {
-	Class: "ElementFrame",
+	Class: Class,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
 	Instance: Frame?,
@@ -241,7 +254,7 @@ export type ImGuiText = {
 	Text: string,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
-	ParentFrame: ElementFrame,
+	ElementFrame: ElementFrame,
 	Window: ImGuiWindow,
 
 	Active: boolean,
@@ -261,9 +274,10 @@ export type ImGuiCheckbox = {
 	Text: string,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
-	ParentFrame: ElementFrame,
+	ElementFrame: ElementFrame,
 	Window: ImGuiWindow,
 	Value: { boolean },
+	InternalValue: boolean,
 
 	State: ButtonState,
 	PreviousState: ButtonState,
@@ -277,6 +291,8 @@ export type ImGuiCheckbox = {
 	new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
 	DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
 	UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
+
+	UpdateCheckmark: (self: ImGuiCheckbox, pressed: boolean) -> (),
 	Destroy: (self: ImGuiCheckbox) -> (),
 }
 
@@ -319,8 +335,9 @@ export type ImGui = {
 	StartWindowMove: (ImGui, ImGuiWindow) -> (),
 	UpdateWindowMove: (ImGui) -> (),
 
-	SetActive: (ImGui, ImGuiId, ImGuiWindow?) -> (),
-	SetNavWindow: (ImGui, ImGuiWindow?) -> (),
+	SetActive: (self: ImGui, id: ImGuiId, class: Class, window: ImGuiWindow?) -> (),
+	SetHover: (self: ImGui, id: ImGuiId, class: Class) -> (),
+	SetNavWindow: (self: ImGui, window: ImGuiWindow?) -> (),
 }
 
 export type MouseButtonData = {
@@ -349,7 +366,9 @@ export type ImGuiInternal = {
 	Status: string,
 
 	HoverId: ImGuiId,
+	HoverClass: Class,
 	ActiveId: ImGuiId,
+	ActiveClass: Class,
 
 	HoldOffset: Vector2?,
 

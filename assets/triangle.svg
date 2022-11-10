@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   sodipodi:docname="triangle.svg"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 357.18748 357.18751"
+   height="1350"
+   width="1350"
+   inkscape:export-filename="C:\Users\jonat\Documents\Roblox\Projects\RoImGui\assets\triangle@540.png"
+   inkscape:export-xdpi="38.400002"
+   inkscape:export-ydpi="38.400002"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     width="1024px"
+     units="px"
+     inkscape:pagecheckerboard="true"
+     showgrid="true"
+     inkscape:document-rotation="0"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="px"
+     inkscape:cy="853.51948"
+     inkscape:cx="-88.774582"
+     inkscape:zoom="0.46747615"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:object-paths="true"
+     inkscape:snap-nodes="true"
+     inkscape:object-nodes="true"
+     inkscape:snap-bbox="true"
+     inkscape:bbox-paths="true"
+     inkscape:bbox-nodes="true"
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:snap-midpoints="true"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-center="true"
+     inkscape:snap-text-baseline="true"
+     inkscape:snap-page="true">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4070"
+       originx="71.437499"
+       spacingx="35.718749"
+       spacingy="35.718749"
+       empspacing="2"
+       originy="71.437499" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
+    <path
+       sodipodi:type="star"
+       style="fill:#ffffff;stroke:none;stroke-width:135;stroke-linecap:square;stroke-linejoin:round"
+       id="path5612"
+       inkscape:flatsided="true"
+       sodipodi:sides="3"
+       sodipodi:cx="675"
+       sodipodi:cy="675"
+       sodipodi:r1="540"
+       sodipodi:r2="270"
+       sodipodi:arg1="1.5707963"
+       sodipodi:arg2="2.6179939"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 675.00001,1215 -467.65374,-809.99999 935.30743,-2e-5 z"
+       transform="scale(0.26458333)"
+       inkscape:transform-center-y="35.718751" />
+  </g>
+</svg>

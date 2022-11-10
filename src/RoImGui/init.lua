@@ -23,27 +23,28 @@ ImGui.Types = script.Types
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
 	flags.NoClose = true
-	flags.NoCollapse = true
+	-- flags.NoCollapse = true
 
-	ImGui:Begin("Debug", { true }, flags)
+	if ImGui:Begin("Debug", { true }, flags) then
+		ImGui:Text("Elements:")
+		ImGui:Indent()
+		ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
+		ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
+		ImGui:Unindent()
+
+		ImGui:Text("Windows:")
+		ImGui:Indent()
+		ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
+		ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
+		ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
+		ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
+		ImGui:Unindent()
+
+		ImGui:End()
+	end
+
 	local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
 	window.Active = true
-
-	ImGui:Text("Elements:")
-	ImGui:Indent()
-	ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
-	ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
-	ImGui:Unindent()
-
-	ImGui:Text("Windows:")
-	ImGui:Indent()
-	ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
-	ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
-	ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
-	ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
-	ImGui:Unindent()
-
-	ImGui:End()
 end
 
 --[[
@@ -78,7 +79,7 @@ function ImGui:Start()
 			return
 		end
 
-		ImGuiInternal.HoverId = 0
+		ImGui:SetHover(0, "")
 
 		ImGuiInternal:UpdateMouseInputs(deltaTime)
 		ImGui:UpdateWindowMove()
@@ -128,7 +129,7 @@ function ImGui:CleanWindowElements()
 			ImGuiInternal.Windows[windowIndex] = nil
 
 			if ImGuiInternal.ActiveWindow == window then
-				ImGui:SetActive(0, nil)
+				ImGui:SetActive(0, "", nil)
 			end
 			if ImGuiInternal.NavWindow == window then
 				ImGui:SetNavWindow(nil)
@@ -266,8 +267,14 @@ end
 	ItemHoverable()
 	ButtonBehaviour()
 ]]
-function ItemHoverable(position: Vector2, size: Vector2, id: Types.ImGuiId, window: Types.ImGuiWindow)
-	if ImGuiInternal.HoverId ~= 0 and ImGuiInternal.Hover ~= id then
+function ItemHoverable(
+	position: Vector2,
+	size: Vector2,
+	id: Types.ImGuiId,
+	class: Types.Class,
+	window: Types.ImGuiWindow
+)
+	if (ImGuiInternal.HoverId ~= 0) and ((ImGuiInternal.HoverId ~= id) and (ImGuiInternal.HoverClass ~= class)) then
 		return false
 	end
 
@@ -275,7 +282,7 @@ function ItemHoverable(position: Vector2, size: Vector2, id: Types.ImGuiId, wind
 		return false
 	end
 
-	if ImGuiInternal.ActiveId ~= 0 and ImGuiInternal.ActiveId ~= id then
+	if (ImGuiInternal.ActiveId ~= 0) and ((ImGuiInternal.ActiveId ~= id) and (ImGuiInternal.ActiveClass ~= class)) then
 		return false
 	end
 
@@ -296,37 +303,79 @@ function ButtonBehaviour(
 	position: Vector2,
 	size: Vector2,
 	id: Types.ImGuiId,
+	class: Types.Class,
 	window: Types.ImGuiWindow
 ): (boolean, boolean, boolean)
 	-- Todo: create the UI ids so I can reference the current id.
 	-- Todo: check whether the active and hovered are currently this button.
 	-- Todo: all button checking behaviour.
 
-	local hovered: boolean = ItemHoverable(position, size, id, window)
+	local hovered: boolean = ItemHoverable(position, size, id, class, window)
 	local held: boolean, pressed: boolean = false, false
 
 	if hovered == true then
-		ImGuiInternal.HoverId = id
+		ImGui:SetHover(id, class)
 		if (ImGuiInternal.MouseButton1.DownOnThisFrame == true) and (ImGuiInternal.ActiveId ~= id) then
-			ImGui:SetActive(id, window)
+			ImGui:SetActive(id, class, window)
 
 			ImGui:SetNavWindow(window)
 			ImGui:UpdateWindowFocusOrder(window)
 		end
 	end
 
-	if ImGuiInternal.ActiveId == id then
+	if (ImGuiInternal.ActiveId == id) and (ImGuiInternal.ActiveClass == class) then
 		if ImGuiInternal.MouseButton1.Down == true then
 			held = true
 		else
 			if hovered == true then
 				pressed = true
 			end
-			ImGui:SetActive(0, nil)
+			ImGui:SetActive(0, "", nil)
 		end
 	end
 
 	return pressed, hovered, held
+end
+
+--[[
+	Used for updating the colour and state of a button by most button objects.
+	The logic is in order of precedence for the colours.
+]]
+function ButtonLogic(
+	instance: Frame | ImageLabel,
+	hovered: boolean,
+	held: boolean,
+	button: Types.Button,
+	styleType: number,
+	styles: { [number]: Types.Color4 }
+)
+	local color3: string = if styleType == 0 then "BackgroundColor3" else "ImageColor3"
+	local transparency: string = if styleType == 0 then "BackgroundTransparency" else "ImageTransparency"
+
+	local state: number = button.State
+	local newState: number = -1
+
+	if hovered == true then
+		if (held == true) and (state ~= 2) then
+			instance[color3] = styles[2].Color
+			instance[transparency] = styles[2].Transparency
+			newState = 2
+		elseif (held == false) and (state ~= 1) then
+			instance[color3] = styles[1].Color
+			instance[transparency] = styles[1].Transparency
+			newState = 1
+		end
+	elseif state ~= 0 then
+		instance[color3] = styles[0].Color
+		instance[transparency] = styles[0].Transparency
+		newState = 0
+	end
+
+	if newState ~= -1 then
+		button.State = newState
+	end
+
+	return newState
 end
 
 --[[
@@ -367,9 +416,15 @@ function ImGui:SetNavWindow(window: Types.ImGuiWindow | nil)
 	end
 end
 
-function ImGui:SetActive(id: Types.ImGuiId, window: Types.ImGuiWindow | nil)
+function ImGui:SetActive(id: Types.ImGuiId, class: Types.Class, window: Types.ImGuiWindow | nil)
 	ImGuiInternal.ActiveId = id
+	ImGuiInternal.ActiveClass = class
 	ImGuiInternal.ActiveWindow = window
+end
+
+function ImGui:SetHover(id: Types.ImGuiId, class: Types.Class)
+	ImGuiInternal.HoverId = id
+	ImGuiInternal.HoverClass = class
 end
 
 --[[
@@ -385,29 +440,14 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 		local instance: ImageLabel = collapse.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
-			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, collapse.Id, window)
+			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, collapse.Id, collapse.Class, window)
 
 		focusOnButton = pressed or hovered or held
 
 		-- Setting the color of the buttons
 		-- Prevents a double call to update colour and transparency
-		if hovered == true then
-			if held == true and collapse.State ~= 2 then
-				instance.ImageColor3 = Style.Colours.ButtonActive.Color
-				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				collapse.State = 2
 
-				window:UpdateTitleColour()
-			elseif collapse.State ~= 1 then
-				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
-				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				collapse.State = 1
-			end
-		elseif collapse.State ~= 0 then
-			instance.ImageColor3 = Style.Colours.Button.Color
-			instance.ImageTransparency = 1
-			collapse.State = 0
-		end
+		ButtonLogic(instance, hovered, held, collapse :: Types.Button, 1, Style.ButtonStyles.TitleButton)
 
 		if pressed == true then
 			window.Collapsed = not window.Collapsed
@@ -420,27 +460,11 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 		local instance: ImageLabel = close.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
-			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, close.Id, window)
+			ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, close.Id, close.Class, window)
 
 		focusOnButton = pressed or hovered or held
 
-		if hovered == true then
-			if held == true and close.State ~= 2 then
-				instance.ImageColor3 = Style.Colours.ButtonActive.Color
-				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				close.State = 2
-
-				window:UpdateTitleColour()
-			elseif close.State ~= 1 then
-				instance.ImageColor3 = Style.Colours.ButtonHovered.Color
-				instance.ImageTransparency = Style.Colours.ButtonActive.Transparency
-				close.State = 1
-			end
-		elseif close.State ~= 0 then
-			instance.ImageColor3 = Style.Colours.Button.Color
-			instance.ImageTransparency = 1
-			close.State = 0
-		end
+		ButtonLogic(instance, hovered, held, close :: Types.Button, 1, Style.ButtonStyles.TitleButton)
 
 		if pressed == true then
 			window.Open[1] = false
@@ -452,7 +476,8 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	if (focusOnButton == false) and (title.Instance ~= nil) then
 		local instance: Frame = title.Instance
 
-		local hovered: boolean = ItemHoverable(instance.AbsolutePosition, instance.AbsoluteSize, title.Id, window)
+		local hovered: boolean =
+			ItemHoverable(instance.AbsolutePosition, instance.AbsoluteSize, title.Id, title.Class, window)
 
 		if (hovered == true) and (ImGuiInternal.MouseButton1.ClicksThisFrame == 2) then
 			window.Collapsed = not window.Collapsed
@@ -481,10 +506,10 @@ function ImGui:UpdateWindowMove()
 		window.Position += ImGuiInternal.MouseCursor.Delta
 		window:UpdatePosition()
 		ImGui:UpdateWindowFocusOrder(window)
-		ImGui:SetActive(0, nil)
+		ImGui:SetActive(0, "", nil)
 	else
 		ImGuiInternal.MovingWindow = nil
-		ImGui:SetActive(0, nil)
+		ImGui:SetActive(0, "", nil)
 	end
 end
 
@@ -500,7 +525,10 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	-- just create a set of default flags
 	flags = flags or Flags.WindowFlags()
 
-	-- if the window is not open at all (based on previous window data)
+	-- if the window is not open at all because the open value is false then we return instantly
+	-- this ensures that the window is not created at all since it will not be visible
+	-- additionally, we do not need to check the window open value, since it is updated every frame
+	-- and is equal to the open variable which is checked here
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
 		return false
 	end
@@ -537,10 +565,10 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		print("Popup window created!")
 	end
 
-	-- don't know why exactly?
-	if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
-		window.Collapsed = true
-	end
+	-- don't know why exactly, but it doesn't seem to be an issue.
+	-- if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
+	-- 	window.Collapsed = true
+	-- end
 
 	if firstFrameCall == true then
 		local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
@@ -577,9 +605,16 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 
 	ImGuiInternal.ActiveWindow = window
 
-	-- A lot of internal code in here!f
+	-- A lot of internal code in here!
 
-	local skipWindow: boolean = (window.Collapsed == true) or (window.Active == false) or (window.Open[1] == false)
+	-- if the window is not active, not sure if it can be false or the window is collapsed
+	-- collapsing will still render the title bar
+	local skipWindow: boolean = (window.Collapsed == true) or (window.Active == false)
+
+	-- I have decided that every :End() call must be wrapped in the return value of the :Start() method
+	if skipWindow == true then
+		ImGui:End()
+	end
 
 	return not skipWindow
 end
@@ -633,7 +668,7 @@ function ImGui:Text(textString: string, ...)
 	-- the instance is destroyed so the text only appears for a frame and is then destroyed
 	-- so we don't draw at all.
 	-- Settings the text to redraw next frame would already happen, so why render at all.
-	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
 		return
 	end
 
@@ -668,7 +703,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:Text()
-	if (window.Collapsed == true) or (window.RedrawNextFrame == true) then
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
 		return
 	end
 
@@ -689,6 +724,15 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	end
 
 	checkbox.Active = true
+
+	local instance: Frame = checkbox.Instance
+
+	local pressed: boolean, hovered: boolean, held: boolean =
+		ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, checkbox.Id, checkbox.Class, window)
+
+	ButtonLogic(instance.checkbox, hovered, held, checkbox :: Types.Button, 0, Style.ButtonStyles.Checkbox)
+
+	checkbox:UpdateCheckmark(pressed)
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
 	elementFrame.DrawCursor.Position += Vector2.new(0, checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)

@@ -6,30 +6,30 @@ local Types = require(RoImGui.Types)
 RoImGui:Start()
 
 local childOpen: { boolean } = { true }
+local booleanValue: { boolean } = { false }
 
 local firstFlags: Types.WindowFlags = RoImGui.Flags.WindowFlags()
 firstFlags.NoClose = true
 firstFlags.NoCollapse = true
 
 runService.RenderStepped:Connect(function(_: number)
-	if RoImGui:Begin("First Window", { true }, firstFlags) then
+	if RoImGui:Begin("One window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
+		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+		RoImGui:End()
 	end
-	RoImGui:End()
-
-	RoImGui:Begin("Second Wider Window", { true })
-	RoImGui:End()
 
 	if RoImGui:Begin("A super-duper really long window name!", { true }) then
-		RoImGui:Begin("Child window!", childOpen)
-		RoImGui:End()
 		RoImGui:Text("One line")
 		RoImGui:Text("One line\nwith another line")
-		RoImGui:Checkbox("A textbox", { false })
+		RoImGui:Checkbox("A textbox", childOpen)
+		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+		RoImGui:End()
 	end
-	RoImGui:End()
 
-	if RoImGui:Begin("First Window") then
-		RoImGui:Text("2. Created inside another begin.")
+	if RoImGui:Begin("Child window!", childOpen) then
+		RoImGui:Text("This is a child window.")
+		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+		RoImGui:End()
 	end
 end)

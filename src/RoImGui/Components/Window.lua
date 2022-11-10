@@ -64,16 +64,19 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 
 	self.Window = {
 		Title = {
+			Class = "Title",
 			Id = self.Id .. ">Title",
 			Hash = Hash(self.Id .. ">Title"),
 			Text = "",
 			Collapse = {
+				Class = "Button",
 				Id = self.Id .. ">Title>Collapse",
 				Hash = Hash(self.Id .. ">Title>Collapse"),
 				State = 0,
 				PreviousState = 0,
 			},
 			Close = {
+				Class = "Button",
 				Id = self.Id .. ">Title>Close",
 				Hash = Hash(self.Id .. ">Title>Close"),
 				State = 0,
@@ -82,12 +85,14 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
+			Class = "Menuba",
 			Id = self.Id .. ">Menubar",
 			Hash = Hash(self.Id .. ">Menubar"),
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Frame = {
+			Class = "ElementFrame",
 			Id = self.Id .. ">Frame",
 			Hash = Hash(self.Id .. ">Frame"),
 			MinimumSize = Vector2.new(0, 0),
@@ -266,7 +271,7 @@ function Window:DrawTitle()
 
 		local text: TextLabel = Instance.new("TextLabel")
 		text.Name = "text"
-		text.Position = UDim2.fromOffset(collapseWidth or 0, 1)
+		text.Position = UDim2.fromOffset(collapseWidth or 0, 0)
 		text.Size = UDim2.new(1, -collapseWidth - closeWidth, 0, Style.Sizes.TextSize)
 
 		text.BackgroundColor3 = COLOR3_WHITE
@@ -286,9 +291,8 @@ function Window:DrawTitle()
 		if self.Flags.NoCollapse == false then
 			local dropdown: ImageLabel = Instance.new("ImageLabel")
 			dropdown.Name = "dropdown"
-			dropdown.Position = UDim2.fromOffset(-1, -2)
+			dropdown.Position = UDim2.fromOffset(-1, -1)
 			dropdown.Size = UDim2.fromOffset(15, 15)
-			dropdown.Rotation = (self.Collapsed == true) and -90 or 0
 
 			dropdown.BackgroundColor3 = COLOR3_WHITE
 			dropdown.BackgroundTransparency = 1
@@ -302,15 +306,16 @@ function Window:DrawTitle()
 			local icon: ImageLabel = Instance.new("ImageLabel")
 			icon.Name = "icon"
 			icon.AnchorPoint = Vector2.new(0.5, 0.5)
-			icon.Position = UDim2.new(0.5, 0, 0.5, 1)
-			icon.Size = UDim2.fromOffset(11, 9)
+			icon.Position = UDim2.new(0.5, 0, 0.5, 0)
+			icon.Size = UDim2.fromScale(1, 1)
+			icon.Rotation = (self.Collapsed == true) and -90 or 0
 
 			icon.BackgroundColor3 = COLOR3_WHITE
 			icon.BackgroundTransparency = 1
 			icon.BorderColor3 = COLOR3_BLACK
 			icon.BorderSizePixel = 0
 
-			icon.Image = "rbxassetid://1248849582"
+			icon.Image = "rbxassetid://11523280019"
 			icon.ImageColor3 = Style.Colours.Text.Color
 			icon.ImageTransparency = Style.Colours.Text.Transparency
 			icon.Parent = dropdown
@@ -323,7 +328,7 @@ function Window:DrawTitle()
 			local close: ImageLabel = Instance.new("ImageLabel")
 			close.Name = "close"
 			close.AnchorPoint = Vector2.new(1, 0)
-			close.Position = UDim2.new(1, 1, 0, -2)
+			close.Position = UDim2.new(1, 1, 0, -1)
 			close.Size = UDim2.fromOffset(15, 15)
 
 			close.BackgroundColor3 = COLOR3_WHITE
@@ -339,14 +344,14 @@ function Window:DrawTitle()
 			icon.Name = "close"
 			icon.AnchorPoint = Vector2.new(0.5, 0.5)
 			icon.Position = UDim2.new(0.5, 0, 0.5, 0)
-			icon.Size = UDim2.fromOffset(13, 13)
+			icon.Size = UDim2.fromScale(1, 1)
 
 			icon.BackgroundColor3 = COLOR3_WHITE
 			icon.BackgroundTransparency = 1
 			icon.BorderColor3 = COLOR3_BLACK
 			icon.BorderSizePixel = 0
 
-			icon.Image = "rbxassetid://3926305904"
+			icon.Image = "rbxassetid://11506648985"
 			icon.ImageRectOffset = Vector2.new(284, 4)
 			icon.ImageRectSize = Vector2.new(24, 24)
 			icon.ImageColor3 = Style.Colours.Text.Color
