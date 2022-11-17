@@ -7,9 +7,9 @@ local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 local Window = require(components.Window)
 local Text = require(components.Text)
 local Checkbox = require(components.Checkbox)
+local Button = require(components.Button)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
-local Hash = require(script.Utility.Hash)
 local Flags = require(script.Flags)
 
 local frameId: number = -1
@@ -17,7 +17,6 @@ local frameId: number = -1
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
 ImGui.Flags = Flags
-
 ImGui.Types = script.Types
 
 function ImGui:DebugWindow()
@@ -39,7 +38,6 @@ function ImGui:DebugWindow()
 		ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
 		ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
 		ImGui:Unindent()
-
 		ImGui:End()
 	end
 
@@ -246,11 +244,13 @@ function ImGui:EndFrameMouseUpdate()
 		((ImGuiInternal.MouseButton1.Down == true) and (ImGuiInternal.MovingWindow ~= nil))
 		or (ImGuiInternal.MouseButton1.DownOnThisFrame == true)
 	then
-		local rootWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow ~= nil
-				and ImGuiInternal.HoveredWindow.RootWindow
-			or nil
+		local hoveredWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow
+		local rootWindow: Types.ImGuiWindow? = hoveredWindow ~= nil and hoveredWindow.RootWindow or nil
 		if rootWindow ~= nil then
-			ImGui:StartWindowMove(ImGuiInternal.HoveredWindow)
+			local windowSize: Vector2 = hoveredWindow.Size
+			local windowPosition: Vector2 = hoveredWindow.Position
+
+			ImGui:StartWindowMove(hoveredWindow)
 		elseif (rootWindow == nil) and (ImGuiInternal.NavWindow ~= nil) then
 			ImGui:SetNavWindow(nil)
 		end
@@ -427,6 +427,31 @@ function ImGui:SetHover(id: Types.ImGuiId, class: Types.Class)
 	ImGuiInternal.HoverClass = class
 end
 
+-- Gets the top element frame from the element frame stack.
+-- Returns the most recent frame for placing all the elements into.
+function ImGui:GetActiveElementFrame(): ()
+	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
+	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+		return
+	end
+
+	return ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+end
+
+-- Loops through all children in the element frame and checks the id and class for the desired element.
+function ImGui:GetElementById(id: Types.ImGuiId, class: string, elementFrame: Types.ElementFrame): (Types.Element?)
+	local element: Types.Element
+
+	for _, childElement: Types.ImGuiText in elementFrame.Elements do
+		if (childElement.Id == id) and (childElement.Class == class) then
+			element = childElement
+			break
+		end
+	end
+
+	return element
+end
+
 --[[
 	Manages the activity on the title bar excluding moving:
 		- Checks for close and collapse buttons and updates accordingly.
@@ -521,7 +546,7 @@ end
 	:Begin()
 	:End()
 ]]
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil)
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): (boolean)
 	-- just create a set of default flags
 	flags = flags or Flags.WindowFlags()
 
@@ -530,25 +555,16 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	-- additionally, we do not need to check the window open value, since it is updated every frame
 	-- and is equal to the open variable which is checked here
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
-		return false
+		return
 	end
 
+	-- grab the previous window if we have already created one, else we create a new one
+	-- therefore, we are not preserving state between frames
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
-	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
-
-	if flags.Popup == true then
-		windowApearing = true -- OpenPopupStack required to check
-	end
-
-	window.Appearing = windowApearing
-
-	if firstFrameCall == true then
-		window.Flags = flags
-		window.LastFrameActive = frameId
-	end
+	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1)) or (flags.Popup == true)
 
 	local parentWindowFromStack: Types.ImGuiWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
@@ -556,6 +572,9 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	table.insert(ImGuiInternal.WindowStack, window)
 	ImGuiInternal.CurrentWindow = window
 	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
+	window.Appearing = windowApearing
+	window.LastFrameActive = frameId
+	ImGuiInternal.ActiveWindow = window
 
 	if flags.ChildWindow == true then
 		ImGuiInternal.ChildWindowCount += 1
@@ -571,27 +590,27 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	-- end
 
 	if firstFrameCall == true then
-		local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
+		window.Flags = flags
+		-- local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
 
 		ImGui:UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
-		window.Open = open or { true }
-		window:DrawWindow()
+		window.Open = open or { true } -- we default to
 
-		if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
-			tooltip = tooltip
-		end
+		-- if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
+		-- end
 
-		if windowApearing == true then
-			if (flags.Popup == true) and (flags.Modal == false) then
-				window.Position = window.Position
-			end
-		end
+		-- if windowApearing == true then
+		-- 	if (flags.Popup == true) and (flags.Modal == false) then
+		-- 	end
+		-- end
 
 		if flags.ChildWindow == true then
 			table.insert(parentWindow.ChildWindows, window)
 		end
+
+		window:DrawWindow()
 
 		if flags.NoTitleBar == false then
 			window:DrawTitle()
@@ -601,22 +620,20 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		window:DrawFrame()
 	end
 
-	window.LastFrameActive = frameId
-
-	ImGuiInternal.ActiveWindow = window
-
 	-- A lot of internal code in here!
 
 	-- if the window is not active, not sure if it can be false or the window is collapsed
-	-- collapsing will still render the title bar
-	local skipWindow: boolean = (window.Collapsed == true) or (window.Active == false)
+	-- collapsing will still render the title bar which is why we go through all of this process.
+	local skipElements: boolean = (window.Collapsed == true) or (window.Active == false)
+	window.SkipElements = skipElements
 
-	-- I have decided that every :End() call must be wrapped in the return value of the :Start() method
-	if skipWindow == true then
+	-- based on the issue about when to end elements, because this window can have no child
+	-- elements we end it entirely.
+	if skipElements == true then
 		ImGui:End()
 	end
 
-	return not skipWindow
+	return not skipElements
 end
 
 function ImGui:End()
@@ -633,31 +650,6 @@ function ImGui:End()
 	table.remove(ImGuiInternal.WindowStack)
 	ImGuiInternal.CurrentWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
 	table.remove(ImGuiInternal.ElementFrameStack)
-end
-
--- Gets the top element frame from the element frame stack.
--- Returns the most recent frame for placing all the elements into.
-function ImGui:GetActiveElementFrame(): ()
-	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
-	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
-		return
-	end
-
-	return ImGuiInternal.ElementFrameStack[elementFrameStackLength]
-end
-
--- Loops through all children in the element frame and checks the id and class for the desired element.
-function ImGui:GetElementById(id: Types.ImGuiId, class: string, elementFrame: Types.ElementFrame): (Types.Element?)
-	local element: Types.Element
-
-	for _, childElement: Types.ImGuiText in elementFrame.Elements do
-		if (childElement.Id == id) and (childElement.Class == class) then
-			element = childElement
-			break
-		end
-	end
-
-	return element
 end
 
 function ImGui:Text(textString: string, ...)
@@ -738,9 +730,51 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	elementFrame.DrawCursor.Position += Vector2.new(0, checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
+function ImGui:Button(text: string): (boolean)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:Text()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
+	if elementFrame == nil then
+		return false
+	end
+
+	local button: Types.ImGuiButton? = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Button", elementFrame)
+
+	if button == nil then
+		button = Button.new(text, window, elementFrame)
+		button:DrawButton(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, button)
+	else
+		button:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	button.Active = true
+
+	local instance: TextLabel = button.Instance
+
+	local pressed: boolean, hovered: boolean, held: boolean =
+		ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, button.Id, button.Class, window)
+
+	ButtonLogic(instance, hovered, held, button :: Types.Button, 0, Style.ButtonStyles.Button)
+
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
+	elementFrame.DrawCursor.Position += Vector2.new(0, button.Size.Y + Style.Sizes.ItemSpacing.Y)
+
+	return pressed
+end
+
 function ImGui:Indent()
 	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
-	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+	if
+		(ImGuiInternal.CurrentWindow == nil)
+		or (elementFrameStackLength == 0)
+		or (ImGuiInternal.CurrentWindow.SkipElements == true)
+	then
 		return
 	end
 
@@ -752,7 +786,11 @@ end
 
 function ImGui:Unindent()
 	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
-	if (ImGuiInternal.CurrentWindow == nil) or (elementFrameStackLength == 0) then
+	if
+		(ImGuiInternal.CurrentWindow == nil)
+		or (elementFrameStackLength == 0)
+		or (ImGuiInternal.CurrentWindow.SkipElements == true)
+	then
 		return
 	end
 

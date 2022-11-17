@@ -222,6 +222,8 @@ export type ImGuiWindow = {
 	Collapsed: boolean,
 	Open: { boolean },
 
+	SkipElements: boolean,
+
 	RedrawNextFrame: boolean, -- DO NOT SET, changed internally based on .RedrawNextFrame
 	RedrawThisFrame: boolean, -- Calls a complete redraw for the next frame. Everything gets wiped. Used when collapsing a window.
 
@@ -259,7 +261,6 @@ export type ImGuiText = {
 
 	Active: boolean,
 
-	Position: Vector2,
 	Size: Vector2,
 	Instance: TextLabel,
 
@@ -284,7 +285,6 @@ export type ImGuiCheckbox = {
 
 	Active: boolean,
 
-	Position: Vector2,
 	Size: Vector2,
 	Instance: Frame,
 
@@ -296,7 +296,30 @@ export type ImGuiCheckbox = {
 	Destroy: (self: ImGuiCheckbox) -> (),
 }
 
-export type Element = ImGuiText | ImGuiCheckbox
+export type ImGuiButton = {
+	Class: Class,
+	Text: string,
+	Id: ImGuiId,
+	Hash: ImGuiHash,
+	ElementFrame: ElementFrame,
+	Window: ImGuiWindow,
+
+	State: ButtonState,
+	PreviousState: ButtonState,
+
+	Active: boolean,
+
+	Size: Vector2,
+	Instance: TextLabel,
+
+	new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (boolean),
+	DrawButton: (self: ImGuiButton, position: Vector2) -> (),
+	UpdatePosition: (self: ImGuiButton, position: Vector2) -> (),
+
+	Destroy: (self: ImGuiButton) -> (),
+}
+
+export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton
 
 export type ImGui = {
 	Start: (ImGui) -> (),
@@ -307,8 +330,8 @@ export type ImGui = {
 	End: (self: ImGui) -> (),
 
 	Text: (self: ImGui, text: string, ...any) -> (),
-
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
+	Button: (self: ImGui, text: string) -> (boolean),
 
 	Indent: (self: ImGui) -> (),
 	Unindent: (self: ImGui) -> (),

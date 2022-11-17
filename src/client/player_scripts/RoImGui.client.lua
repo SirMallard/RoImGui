@@ -16,6 +16,16 @@ runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("One window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
 		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+		if RoImGui:Button("Child Window") then
+			print("Clicked")
+			childOpen[1] = not childOpen[1]
+		end
+		RoImGui:End()
+	end
+
+	if RoImGui:Begin("Child window!", childOpen) then
+		RoImGui:Text("This is a child window.")
+		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
 		RoImGui:End()
 	end
 
@@ -23,12 +33,6 @@ runService.RenderStepped:Connect(function(_: number)
 		RoImGui:Text("One line")
 		RoImGui:Text("One line\nwith another line")
 		RoImGui:Checkbox("A textbox", childOpen)
-		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
-		RoImGui:End()
-	end
-
-	if RoImGui:Begin("Child window!", childOpen) then
-		RoImGui:Text("This is a child window.")
 		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
 		RoImGui:End()
 	end

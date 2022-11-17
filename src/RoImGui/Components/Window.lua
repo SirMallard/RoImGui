@@ -58,6 +58,7 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Appearing = false
 	self.Collapsed = false
 	self.Open = { true }
+	self.SkipElements = false
 
 	self.RedrawThisFrame = false -- DO NOT SET, changed internally based on .RedrawNextFrame
 	self.RedrawNextFrame = false -- Calls a complete redraw for the next frame. Everything gets wiped. Used when
@@ -169,7 +170,6 @@ function Window:DrawWindow(stack: number?)
 	if (instance == nil) or (self.RedrawThisFrame == true) then
 		if instance ~= nil then
 			instance:Destroy()
-			self.Window.Instance = nil
 		end
 		if self.RedrawThisFrame == true then
 			self:SetAllStates(0)
@@ -218,20 +218,16 @@ function Window:DrawTitle()
 	then
 		if instance ~= nil then
 			instance:Destroy()
-			windowTitle.Instance = nil
 		end
 
 		if windowTitle.Collapse.Instance ~= nil then
 			windowTitle.Collapse.Instance:Destroy()
-			windowTitle.Collapse.Instance = nil
 		end
 		if windowTitle.Close.Instance ~= nil then
 			windowTitle.Close.Instance:Destroy()
-			windowTitle.Close.Instance = nil
 		end
 		if windowTitle.Instance ~= nil then
 			windowTitle.Instance:Destroy()
-			windowTitle.Instance = nil
 		end
 		windowTitle.Text = nil
 
@@ -373,7 +369,6 @@ function Window:DrawFrame()
 	if (instance == nil) or (self.RedrawThisFrame == true) then
 		if instance ~= nil then
 			instance:Destroy()
-			self.Window.Frame.Instance = nil
 		end
 
 		if self.Collapsed == true then
@@ -411,7 +406,6 @@ end
 function Window:Destroy()
 	if self.Window.Instance ~= nil then
 		self.Window.Instance:Destroy()
-		self.Window.Instance = nil
 	end
 
 	setmetatable(self, nil)
