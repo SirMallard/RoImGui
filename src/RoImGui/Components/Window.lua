@@ -8,8 +8,8 @@ local Window = {}
 Window.__index = Window
 Window.ClassName = "ImGuiWindow"
 
-local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
-local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 --[[
 	Notes on drawing:
@@ -23,9 +23,6 @@ local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 				- Window name change
 			- Updated:
 				- Button hover or highlights.
-
-
-
 ]]
 
 function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): (Types.ImGuiWindow)
@@ -38,9 +35,6 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 
 	self.ParentWindow = parentWindow or nil
 	self.RootWindow = parentWindow and parentWindow.RootWindow or nil
-	-- self.PopupRootWindow = nil
-	-- self.ParentWindowFromStack = nil
-	-- self.PopupParentRootWindow = nil
 	self.ChildWindows = {}
 
 	self.LastFrameActive = -1
@@ -86,7 +80,7 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
-			Class = "Menuba",
+			Class = "Menubar",
 			Id = self.Id .. ">Menubar",
 			Hash = Hash(self.Id .. ">Menubar"),
 			Menus = {},
@@ -115,12 +109,12 @@ function Window:UpdateTitleColour()
 	local title: Frame? = self.Window.Title.Instance
 
 	if title ~= nil then
-		local titleColour: Types.Color4 = if self.Collapsed == true
+		local titleColour: Types.Colour4 = if self.Collapsed == true
 			then Style.Colours.TitleBgCollapsed
 			elseif ImGuiInternal.NavWindow == self then Style.Colours.TitleBgActive
 			else Style.Colours.TitleBg
 
-		title.BackgroundColor3 = titleColour.Color
+		title.BackgroundColor3 = titleColour.Colour
 		title.Transparency = titleColour.Transparency
 	end
 end
@@ -192,7 +186,7 @@ function Window:DrawWindow(stack: number?)
 		local stroke: UIStroke = Instance.new("UIStroke")
 		stroke.Name = "stroke"
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		stroke.Color = Style.Colours.Border.Color
+		stroke.Color = Style.Colours.Border.Colour
 		stroke.LineJoinMode = Enum.LineJoinMode.Miter
 		stroke.Transparency = Style.Colours.Border.Transparency
 		stroke.Parent = window
@@ -245,14 +239,14 @@ function Window:DrawTitle()
 		title.Position = UDim2.fromScale(0, 0)
 		title.Size = UDim2.new(1, 0, 0, Utility.DefaultFramePaddedHeight)
 
-		local titleColor: Types.Color4 = if self.Collapsed == true
+		local titleColor: Types.Colour4 = if self.Collapsed == true
 			then Style.Colours.TitleBgCollapsed
 			elseif ImGuiInternal.NavWindow == self then Style.Colours.TitleBgActive
 			else Style.Colours.TitleBg
 
-		title.BackgroundColor3 = titleColor.Color
+		title.BackgroundColor3 = titleColor.Colour
 		title.Transparency = titleColor.Transparency
-		title.BorderColor3 = COLOR3_BLACK
+		title.BorderColor3 = COLOUR3_BLACK
 		title.BorderSizePixel = 0
 
 		title.ClipsDescendants = true
@@ -270,14 +264,14 @@ function Window:DrawTitle()
 		text.Position = UDim2.fromOffset(collapseWidth or 0, 0)
 		text.Size = UDim2.new(1, -collapseWidth - closeWidth, 0, Style.Sizes.TextSize)
 
-		text.BackgroundColor3 = COLOR3_WHITE
+		text.BackgroundColor3 = COLOUR3_WHITE
 		text.BackgroundTransparency = 1
-		text.BorderColor3 = COLOR3_BLACK
+		text.BorderColor3 = COLOUR3_BLACK
 		text.BorderSizePixel = 0
 
 		text.Text = self.Name
 		text.FontFace = Style.Font
-		text.TextColor3 = Style.Colours.Text.Color
+		text.TextColor3 = Style.Colours.Text.Colour
 		text.TextSize = Style.Sizes.TextSize
 		text.TextWrapped = false
 		text.TextXAlignment = Enum.TextXAlignment.Left
@@ -290,13 +284,13 @@ function Window:DrawTitle()
 			dropdown.Position = UDim2.fromOffset(-1, -1)
 			dropdown.Size = UDim2.fromOffset(15, 15)
 
-			dropdown.BackgroundColor3 = COLOR3_WHITE
+			dropdown.BackgroundColor3 = COLOUR3_WHITE
 			dropdown.BackgroundTransparency = 1
-			dropdown.BorderColor3 = COLOR3_BLACK
+			dropdown.BorderColor3 = COLOUR3_BLACK
 			dropdown.BorderSizePixel = 0
 
 			dropdown.Image = "rbxassetid://4673889148"
-			dropdown.ImageColor3 = Style.Colours.Button.Color
+			dropdown.ImageColor3 = Style.Colours.Button.Colour
 			dropdown.ImageTransparency = 1
 
 			local icon: ImageLabel = Instance.new("ImageLabel")
@@ -306,13 +300,13 @@ function Window:DrawTitle()
 			icon.Size = UDim2.fromScale(1, 1)
 			icon.Rotation = (self.Collapsed == true) and -90 or 0
 
-			icon.BackgroundColor3 = COLOR3_WHITE
+			icon.BackgroundColor3 = COLOUR3_WHITE
 			icon.BackgroundTransparency = 1
-			icon.BorderColor3 = COLOR3_BLACK
+			icon.BorderColor3 = COLOUR3_BLACK
 			icon.BorderSizePixel = 0
 
 			icon.Image = "rbxassetid://11523280019"
-			icon.ImageColor3 = Style.Colours.Text.Color
+			icon.ImageColor3 = Style.Colours.Text.Colour
 			icon.ImageTransparency = Style.Colours.Text.Transparency
 			icon.Parent = dropdown
 
@@ -327,13 +321,13 @@ function Window:DrawTitle()
 			close.Position = UDim2.new(1, 1, 0, -1)
 			close.Size = UDim2.fromOffset(15, 15)
 
-			close.BackgroundColor3 = COLOR3_WHITE
+			close.BackgroundColor3 = COLOUR3_WHITE
 			close.BackgroundTransparency = 1
-			close.BorderColor3 = COLOR3_BLACK
+			close.BorderColor3 = COLOUR3_BLACK
 			close.BorderSizePixel = 0
 
 			close.Image = "rbxassetid://4673889148"
-			close.ImageColor3 = Style.Colours.Button.Color
+			close.ImageColor3 = Style.Colours.Button.Colour
 			close.ImageTransparency = 1
 
 			local icon = Instance.new("ImageLabel")
@@ -342,15 +336,15 @@ function Window:DrawTitle()
 			icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 			icon.Size = UDim2.fromScale(1, 1)
 
-			icon.BackgroundColor3 = COLOR3_WHITE
+			icon.BackgroundColor3 = COLOUR3_WHITE
 			icon.BackgroundTransparency = 1
-			icon.BorderColor3 = COLOR3_BLACK
+			icon.BorderColor3 = COLOUR3_BLACK
 			icon.BorderSizePixel = 0
 
 			icon.Image = "rbxassetid://11506648985"
 			icon.ImageRectOffset = Vector2.new(284, 4)
 			icon.ImageRectSize = Vector2.new(24, 24)
-			icon.ImageColor3 = Style.Colours.Text.Color
+			icon.ImageColor3 = Style.Colours.Text.Colour
 			icon.ImageTransparency = Style.Colours.Text.Transparency
 			icon.Parent = close
 
@@ -382,9 +376,9 @@ function Window:DrawFrame()
 		frame.Position = UDim2.fromOffset(0, titleAndMenuBarSize)
 		frame.Size = UDim2.new(1, 0, 1, -titleAndMenuBarSize)
 
-		frame.BackgroundColor3 = Style.Colours.WindowBg.Color
+		frame.BackgroundColor3 = Style.Colours.WindowBg.Colour
 		frame.BackgroundTransparency = Style.Colours.WindowBg.Transparency
-		frame.BorderColor3 = COLOR3_BLACK
+		frame.BorderColor3 = COLOUR3_BLACK
 		frame.BorderSizePixel = 0
 
 		frame.ClipsDescendants = true

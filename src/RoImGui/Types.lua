@@ -1,23 +1,32 @@
-export type Color4 = {
-	Color: Color3,
-	Transparency: number,
-	Alpha: number,
-	R: number,
-	G: number,
-	B: number,
-	Lerp: (Color4, Color4, number) -> (Color4),
+--[[
+		=<>= COLOUR4 =<>=
+]]
+export type Colour4 = typeof(setmetatable(
+	{} :: {
+		Colour: Color3,
+		Transparency: number,
+		Alpha: number,
+		R: number,
+		G: number,
+		B: number,
+	},
+	{} :: {
+		ClassName: string,
+		__index: any,
 
-	[any]: any,
-}
+		new: (red: number, green: number, blue: number, transparency: number) -> (Colour4),
+		fromAlpha: (red: number, green: number, blue: number, alpha: number) -> (Colour4),
+		fromColor3: (colour: Color3, transparency: number?) -> (Colour4),
 
-type Color4Object = {
-	["new"]: (number, number, number, number) -> (Color4),
-	["fromAlpha"]: (number, number, number, number) -> (Color4),
-	["fromColor3"]: (Color3, number?) -> (Color4),
-}
+		Lerp: (other_colour4: Colour4, alpha: number) -> (),
+	}
+))
 
-type ButtonStyle = { [number]: Color4 }
+export type ButtonStyle = { [number]: Colour4 }
 
+--[[
+		=<>= STYLES =<>=
+]]
 export type ImGuiStyleSize = {
 	WindowPadding: Vector2,
 	FramePadding: Vector2,
@@ -34,59 +43,59 @@ export type ImGuiStyleSize = {
 }
 
 export type ImGuiStyleColour = {
-	Text: Color4,
-	TextDisabled: Color4,
-	WindowBg: Color4,
-	ChildBg: Color4,
-	PopupBg: Color4,
-	Border: Color4,
-	BorderShadow: Color4,
-	FrameBg: Color4,
-	FrameBgHovered: Color4,
-	FrameBgActive: Color4,
-	TitleBg: Color4,
-	TitleBgActive: Color4,
-	TitleBgCollapsed: Color4,
-	MenuBarBg: Color4,
-	ScrollbarBg: Color4,
-	ScrollbarGrab: Color4,
-	ScrollbarGrabHovered: Color4,
-	ScrollbarGrabActive: Color4,
-	CheckMark: Color4,
-	SliderGrab: Color4,
-	SliderGrabActive: Color4,
-	Button: Color4,
-	ButtonHovered: Color4,
-	ButtonActive: Color4,
-	Header: Color4,
-	HeaderHovered: Color4,
-	HeaderActive: Color4,
-	SeparatorHovered: Color4,
-	SeparatorActive: Color4,
-	ResizeGrip: Color4,
-	ResizeGripHovered: Color4,
-	ResizeGripActive: Color4,
-	PlotLines: Color4,
-	PlotLinesHovered: Color4,
-	PlotHistogram: Color4,
-	PlotHistogramHovered: Color4,
-	TableHeaderBg: Color4,
-	TableBorderStrong: Color4,
-	TableRowBgAlt: Color4,
-	TextSelectedBg: Color4,
-	DragDropTarget: Color4,
-	NavHighlight: Color4,
-	NavWindowingHighlight: Color4,
-	NavWindowingDimBg: Color4,
-	ModalWindowDimBg: Color4,
-	Separator: Color4,
-	Tab: Color4,
-	TabHovered: Color4,
-	TabActive: Color4,
-	TabUnfocused: Color4,
-	TabUnfocusedActive: Color4,
+	Text: Colour4,
+	TextDisabled: Colour4,
+	WindowBg: Colour4,
+	ChildBg: Colour4,
+	PopupBg: Colour4,
+	Border: Colour4,
+	BorderShadow: Colour4,
+	FrameBg: Colour4,
+	FrameBgHovered: Colour4,
+	FrameBgActive: Colour4,
+	TitleBg: Colour4,
+	TitleBgActive: Colour4,
+	TitleBgCollapsed: Colour4,
+	MenuBarBg: Colour4,
+	ScrollbarBg: Colour4,
+	ScrollbarGrab: Colour4,
+	ScrollbarGrabHovered: Colour4,
+	ScrollbarGrabActive: Colour4,
+	CheckMark: Colour4,
+	SliderGrab: Colour4,
+	SliderGrabActive: Colour4,
+	Button: Colour4,
+	ButtonHovered: Colour4,
+	ButtonActive: Colour4,
+	Header: Colour4,
+	HeaderHovered: Colour4,
+	HeaderActive: Colour4,
+	SeparatorHovered: Colour4,
+	SeparatorActive: Colour4,
+	ResizeGrip: Colour4,
+	ResizeGripHovered: Colour4,
+	ResizeGripActive: Colour4,
+	PlotLines: Colour4,
+	PlotLinesHovered: Colour4,
+	PlotHistogram: Colour4,
+	PlotHistogramHovered: Colour4,
+	TableHeaderBg: Colour4,
+	TableBorderStrong: Colour4,
+	TableRowBgAlt: Colour4,
+	TextSelectedBg: Colour4,
+	DragDropTarget: Colour4,
+	NavHighlight: Colour4,
+	NavWindowingHighlight: Colour4,
+	NavWindowingDimBg: Colour4,
+	ModalWindowDimBg: Colour4,
+	Separator: Colour4,
+	Tab: Colour4,
+	TabHovered: Colour4,
+	TabActive: Colour4,
+	TabUnfocused: Colour4,
+	TabUnfocusedActive: Colour4,
 
-	Transparent: Color4,
+	Transparent: Colour4,
 }
 
 export type ImGuiButtonStyles = {
@@ -97,11 +106,26 @@ export type ImGuiButtonStyles = {
 	[string]: ButtonStyle,
 }
 
-export type ImGuiId = string | number
+--[[
+		=<>= VALUES =<>=
+]]
+export type ImGuiId = string
 export type ImGuiHash = string
+
+--[[
+	The Internal ButtonState used by all buttons:
+		0 - None
+		1 - Hovered
+		2 - Held
+		3 - Active
+]]
+export type ButtonState = number
 
 export type Class = "Window" | "Title" | "Menubar" | "Menu" | "ElementFrame" | "Text" | "Checkbox" | "Button" | ""
 
+--[[
+		=<>= FLAGS =<>=
+]]
 export type WindowFlags = {
 	type: "WindowFlags",
 
@@ -132,24 +156,16 @@ export type DrawCursor = {
 }
 
 --[[
-	The Internal ButtonState used by all buttons:
-		0 - None
-		1 - Hovered
-		2 - Held
-		3 - Active
+		=<>= BUTTON TYPE =<>=
 ]]
-export type ButtonState = number
 
-export type Button = {
+export type WindowTitleButton = {
+	Class: Class,
 	Id: ImGuiId,
 	Hash: ImGuiHash,
-	Class: Class,
 	Instance: GuiBase2d?,
 	State: ButtonState,
 	PreviousState: ButtonState,
-}
-
-export type WindowTitleButton = Button & {
 	Instance: ImageLabel?,
 }
 
@@ -158,7 +174,6 @@ export type WindowMenu = {
 	Id: ImGuiId,
 	Hash: ImGuiHash,
 	Instance: Frame?,
-	WasUpdated: boolean,
 }
 
 export type WindowTitle = {
@@ -193,133 +208,160 @@ export type ElementFrame = {
 	DrawCursor: DrawCursor,
 }
 
-export type ImGuiWindow = {
-	Class: Class,
-	Name: string,
-	Id: ImGuiId,
-	Hash: ImGuiHash,
-	Flags: WindowFlags,
+export type ImGuiWindow = typeof(setmetatable(
+	{} :: {
+		Class: Class,
+		Id: ImGuiId,
+		Hash: ImGuiHash,
+		Name: string,
+		Flags: WindowFlags,
 
-	ParentWindow: ImGuiWindow?, -- the parent window
-	RootWindow: ImGuiWindow?, -- the top most window in the window stack
-	PopupRootWindow: ImGuiWindow?, -- the popup parent of the window
-	PopupParentRootWindow: ImGuiWindow?, -- the parent window which initiated the popup for title highlighting
-	ParentWindowFromStack: ImGuiWindow?, -- the stacked parent, may be different to the parentWindow
+		ParentWindow: ImGuiWindow?, -- the parent window
+		RootWindow: ImGuiWindow?, -- the top most window in the window stack
+		PopupRootWindow: ImGuiWindow?, -- the popup parent of the window
+		PopupParentRootWindow: ImGuiWindow?, -- the parent window which initiated the popup for title highlighting
+		ParentWindowFromStack: ImGuiWindow?, -- the stacked parent, may be different to the parentWindow
 
-	ChildWindows: { ImGuiWindow },
+		ChildWindows: { ImGuiWindow },
 
-	LastFrameActive: number,
-	FocusOrder: number,
+		LastFrameActive: number,
+		FocusOrder: number,
 
-	Position: Vector2,
-	Size: Vector2,
-	MinimumSize: Vector2,
+		Position: Vector2,
+		Size: Vector2,
+		MinimumSize: Vector2,
 
-	State: ButtonState,
-	Active: boolean,
-	WasActive: boolean,
-	Appearing: boolean,
-	Collapsed: boolean,
-	Open: { boolean },
+		State: ButtonState,
+		Active: boolean,
+		WasActive: boolean,
+		Appearing: boolean,
+		Collapsed: boolean,
+		Open: { boolean },
 
-	SkipElements: boolean,
+		SkipElements: boolean,
 
-	RedrawNextFrame: boolean, -- DO NOT SET, changed internally based on .RedrawNextFrame
-	RedrawThisFrame: boolean, -- Calls a complete redraw for the next frame. Everything gets wiped. Used when collapsing a window.
+		RedrawNextFrame: boolean, -- DO NOT SET, changed internally based on .RedrawNextFrame
+		RedrawThisFrame: boolean, -- Calls a complete redraw for the next frame. Everything gets wiped. Used when collapsing a window.
 
-	Window: {
-		Instance: Frame?,
-		Title: WindowTitle,
-		Menubar: WindowMenubar,
-		Frame: ElementFrame,
+		Window: {
+			Instance: Frame?,
+			Title: WindowTitle,
+			Menubar: WindowMenubar,
+			Frame: ElementFrame,
+		},
 	},
+	{} :: {
+		ClassName: string,
+		__index: any,
 
-	new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
+		new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> (ImGuiWindow),
 
-	UpdateTitleColour: (ImGuiWindow) -> (),
-	UpdatePosition: (ImGuiWindow) -> (),
-	UpdateSize: (ImGuiWindow) -> (),
+		UpdateTitleColour: (self: ImGuiWindow) -> (),
+		UpdatePosition: (self: ImGuiWindow) -> (),
+		UpdateSize: (self: ImGuiWindow) -> (),
+		SetAllStates: (self: ImGuiWindow, state: ButtonState) -> (),
+		DrawWindow: (self: ImGuiWindow, stack: number?) -> (),
+		DrawTitle: (self: ImGuiWindow) -> (),
+		DrawFrame: (self: ImGuiWindow) -> (),
 
-	SetAllStates: (ImGuiWindow, ButtonState) -> (),
+		Destroy: (self: ImGuiWindow) -> (),
+	}
+))
 
-	DrawWindow: (self: ImGuiWindow, stack: number?) -> (),
-	DrawTitle: (self: ImGuiWindow) -> (),
-	DrawFrame: (self: ImGuiWindow) -> (),
+export type ImGuiText = typeof(setmetatable(
+	{} :: {
+		Class: Class,
+		Text: string,
+		Id: ImGuiId,
+		Hash: ImGuiHash,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
 
-	Destroy: (ImGuiWindow) -> (),
+		Active: boolean,
 
-	[any]: any,
-}
+		Size: Vector2,
+		Instance: TextLabel,
+	},
+	{} :: {
+		ClassName: string,
+		__index: any,
 
-export type ImGuiText = {
-	Class: Class,
-	Text: string,
-	Id: ImGuiId,
-	Hash: ImGuiHash,
-	ElementFrame: ElementFrame,
-	Window: ImGuiWindow,
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
 
-	Active: boolean,
+		DrawText: (self: ImGuiText, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
+		UpdateColour: (self: ImGuiText) -> (),
 
-	Size: Vector2,
-	Instance: TextLabel,
+		Destroy: (self: ImGuiText) -> (),
+	}
+))
 
-	new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
-	DrawText: (self: ImGuiText, position: Vector2) -> (),
-	UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
-	Destroy: (self: ImGuiText) -> (),
-}
+export type ImGuiCheckbox = typeof(setmetatable(
+	{} :: {
+		Class: Class,
+		Text: string,
+		Id: ImGuiId,
+		Hash: ImGuiHash,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
+		Value: { boolean },
+		InternalValue: boolean,
 
-export type ImGuiCheckbox = {
-	Class: Class,
-	Text: string,
-	Id: ImGuiId,
-	Hash: ImGuiHash,
-	ElementFrame: ElementFrame,
-	Window: ImGuiWindow,
-	Value: { boolean },
-	InternalValue: boolean,
+		State: ButtonState,
+		PreviousState: ButtonState,
 
-	State: ButtonState,
-	PreviousState: ButtonState,
+		Active: boolean,
 
-	Active: boolean,
+		Size: Vector2,
+		Instance: Frame,
+	},
+	{} :: {
+		ClassName: string,
+		__index: any,
 
-	Size: Vector2,
-	Instance: Frame,
+		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
 
-	new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
-	DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
-	UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
+		DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
+		UpdateCheckmark: (self: ImGuiCheckbox, pressed: boolean) -> (),
 
-	UpdateCheckmark: (self: ImGuiCheckbox, pressed: boolean) -> (),
-	Destroy: (self: ImGuiCheckbox) -> (),
-}
+		Destroy: (self: ImGuiCheckbox) -> (),
+	}
+))
 
-export type ImGuiButton = {
-	Class: Class,
-	Text: string,
-	Id: ImGuiId,
-	Hash: ImGuiHash,
-	ElementFrame: ElementFrame,
-	Window: ImGuiWindow,
+export type ImGuiButton = typeof(setmetatable(
+	{} :: {
+		Class: Class,
+		Text: string,
+		Id: ImGuiId,
+		Hash: ImGuiHash,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
 
-	State: ButtonState,
-	PreviousState: ButtonState,
+		State: ButtonState,
+		PreviousState: ButtonState,
 
-	Active: boolean,
+		Active: boolean,
 
-	Size: Vector2,
-	Instance: TextLabel,
+		Size: Vector2,
+		Instance: TextLabel,
+	},
+	{} :: {
+		ClassName: string,
+		__index: any,
 
-	new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (boolean),
-	DrawButton: (self: ImGuiButton, position: Vector2) -> (),
-	UpdatePosition: (self: ImGuiButton, position: Vector2) -> (),
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (boolean),
 
-	Destroy: (self: ImGuiButton) -> (),
-}
+		DrawButton: (self: ImGuiButton, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiButton, position: Vector2) -> (),
+
+		Destroy: (self: ImGuiButton) -> (),
+	}
+))
 
 export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton
+
+export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox
 
 export type ImGui = {
 	Start: (ImGui) -> (),
@@ -330,6 +372,9 @@ export type ImGui = {
 	End: (self: ImGui) -> (),
 
 	Text: (self: ImGui, text: string, ...any) -> (),
+	TextDisabled: (self: ImGui, text: string, ...any) -> (),
+	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
+
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
 	Button: (self: ImGui, text: string) -> (boolean),
 
@@ -342,6 +387,7 @@ export type ImGui = {
 		WindowFlags: () -> (WindowFlags),
 	},
 	Types: ModuleScript,
+	Colour4: ModuleScript,
 
 	CleanWindowElements: (ImGui) -> (),
 	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
@@ -361,6 +407,9 @@ export type ImGui = {
 	SetActive: (self: ImGui, id: ImGuiId, class: Class, window: ImGuiWindow?) -> (),
 	SetHover: (self: ImGui, id: ImGuiId, class: Class) -> (),
 	SetNavWindow: (self: ImGui, window: ImGuiWindow?) -> (),
+
+	PushColour: (self: ImGui, index: string, colours: Colour4) -> (),
+	PopColour: (self: ImGui, index: string) -> (),
 }
 
 export type MouseButtonData = {
@@ -418,6 +467,13 @@ export type ImGuiInternal = {
 		Position: Vector2,
 		Delta: Vector2,
 		Magnitude: number,
+	},
+
+	NextItemData: {
+		Style: {
+			Colours: { [string]: Colour4 },
+			Sizes: { [string]: Vector2 | number },
+		},
 	},
 
 	UpdateTime: (ImGuiInternal, number) -> (),

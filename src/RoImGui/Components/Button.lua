@@ -1,5 +1,5 @@
-local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
+local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 local Hash = require(script.Parent.Parent.Utility.Hash)
 
@@ -7,8 +7,8 @@ local Button = {}
 Button.__index = Button
 Button.ClassName = "ImGuiButton"
 
-local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
-local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+-- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function Button.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiButton = setmetatable({}, Button) :: Types.ImGuiButton
@@ -49,14 +49,14 @@ function Button:DrawButton(position: Vector2)
 	button.Position = UDim2.fromOffset(position.X, position.Y)
 	button.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
 
-	button.BackgroundColor3 = Style.Colours.Button.Color
+	button.BackgroundColor3 = Style.Colours.Button.Colour
 	button.BackgroundTransparency = Style.Colours.Button.Transparency
-	button.BorderColor3 = COLOR3_BLACK
+	button.BorderColor3 = COLOUR3_BLACK
 	button.BorderSizePixel = 0
 
 	button.Text = self.Text
 	button.FontFace = Style.Font
-	button.TextColor3 = Style.Colours.Text.Color
+	button.TextColor3 = Style.Colours.Text.Colour
 	button.TextSize = Style.Sizes.TextSize
 	button.TextWrapped = false
 	button.TextXAlignment = Enum.TextXAlignment.Left

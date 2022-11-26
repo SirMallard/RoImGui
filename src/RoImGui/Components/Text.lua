@@ -1,5 +1,5 @@
-local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
+local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 local Hash = require(script.Parent.Parent.Utility.Hash)
 
@@ -7,8 +7,8 @@ local Text = {}
 Text.__index = Text
 Text.ClassName = "ImGuiText"
 
-local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
-local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
@@ -45,14 +45,15 @@ function Text:DrawText(position: Vector2)
 	text.Position = UDim2.fromOffset(position.X, position.Y)
 	text.Size = UDim2.fromOffset(textSize.X, textSize.Y)
 
-	text.BackgroundColor3 = COLOR3_WHITE
+	text.BackgroundColor3 = COLOUR3_WHITE
 	text.BackgroundTransparency = 1
-	text.BorderColor3 = COLOR3_BLACK
+	text.BorderColor3 = COLOUR3_BLACK
 	text.BorderSizePixel = 0
 
 	text.Text = self.Text
 	text.FontFace = Style.Font
-	text.TextColor3 = Style.Colours.Text.Color
+	text.TextColor3 = Style.Colours.Text.Colour
+	text.TextTransparency = Style.Colours.Text.Transparency
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
@@ -60,6 +61,14 @@ function Text:DrawText(position: Vector2)
 	text.Parent = self.ElementFrame.Instance
 	self.Instance = text
 	self.Size = textSize
+end
+
+function Text:UpdateColour()
+	if self.Instance == nil then
+		return
+	end
+	self.Instance.TextColor3 = Style.Colours.Text.Colour
+	self.Instance.TextTransparency = Style.Colours.Text.Transparency
 end
 
 function Text:UpdatePosition(position: Vector2)

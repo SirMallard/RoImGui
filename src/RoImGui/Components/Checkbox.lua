@@ -1,5 +1,5 @@
-local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
+local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 local Hash = require(script.Parent.Parent.Utility.Hash)
 
@@ -7,8 +7,8 @@ local Checkbox = {}
 Checkbox.__index = Checkbox
 Checkbox.ClassName = "ImGuiCheckbox"
 
-local COLOR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
-local COLOR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiCheckbox = setmetatable({}, Checkbox) :: Types.ImGuiCheckbox
@@ -52,9 +52,9 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	checkbox.Position = UDim2.fromOffset(position.X, position.Y)
 	checkbox.Size = UDim2.fromOffset(boxInterval + textSize.X, boxSize)
 
-	checkbox.BackgroundColor3 = COLOR3_WHITE
+	checkbox.BackgroundColor3 = COLOUR3_WHITE
 	checkbox.BackgroundTransparency = 1
-	checkbox.BorderColor3 = COLOR3_BLACK
+	checkbox.BorderColor3 = COLOUR3_BLACK
 	checkbox.BorderSizePixel = 0
 
 	local text: TextLabel = Instance.new("TextLabel")
@@ -62,14 +62,14 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	text.Position = UDim2.fromOffset(boxInterval, Style.Sizes.FramePadding.Y)
 	text.Size = UDim2.new(1, -boxInterval, 0, textSize.Y)
 
-	text.BackgroundColor3 = COLOR3_WHITE
+	text.BackgroundColor3 = COLOUR3_WHITE
 	text.BackgroundTransparency = 1
-	text.BorderColor3 = COLOR3_BLACK
+	text.BorderColor3 = COLOUR3_BLACK
 	text.BorderSizePixel = 0
 
 	text.Text = self.Text
 	text.FontFace = Style.Font
-	text.TextColor3 = Style.Colours.Text.Color
+	text.TextColor3 = Style.Colours.Text.Colour
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
@@ -79,13 +79,13 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	icon.Name = "checkbox"
 	icon.Size = UDim2.fromOffset(boxSize, boxSize)
 
-	icon.BackgroundColor3 = Style.Colours.FrameBg.Color
+	icon.BackgroundColor3 = Style.Colours.FrameBg.Colour
 	icon.BackgroundTransparency = Style.Colours.FrameBg.Transparency
-	icon.BorderColor3 = COLOR3_BLACK
+	icon.BorderColor3 = COLOUR3_BLACK
 	icon.BorderSizePixel = 0
 
 	icon.Image = "rbxassetid://11505661049"
-	icon.ImageColor3 = Style.Colours.CheckMark.Color
+	icon.ImageColor3 = Style.Colours.CheckMark.Colour
 	icon.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
 	icon.Parent = checkbox
 

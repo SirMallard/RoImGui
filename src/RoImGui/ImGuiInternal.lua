@@ -22,8 +22,8 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	ElapsedTime = 0,
 	GuiInset = Vector2.zero,
 
-	HoverId = 0,
-	ActiveId = 0,
+	HoverId = "",
+	ActiveId = "",
 
 	HoldOffset = Vector2.zero,
 
@@ -76,6 +76,13 @@ local ImGuiInternal: Types.ImGuiInternal = {
 		Position = Vector2.zero,
 		Delta = Vector2.zero,
 		Magnitude = 0,
+	},
+
+	NextItemData = {
+		Style = {
+			Colours = {},
+			Sizes = {},
+		},
 	},
 
 	Status = "Stopped",

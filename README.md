@@ -38,9 +38,9 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
 - [ ] Text
   - [x] Text
   - [x] Indent
-  - [ ] Disabled
+  - [x] Disabled
   - [ ] Bullet
-  - [ ] Coloured
+  - [x] Coloured
   - [ ] Tree Node
   - [ ] Selectable
 - [ ] Button

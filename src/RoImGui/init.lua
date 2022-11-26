@@ -18,6 +18,7 @@ local ImGui: Types.ImGui = {} :: Types.ImGui
 
 ImGui.Flags = Flags
 ImGui.Types = script.Types
+ImGui.Colour4 = script.Utility.Colour4
 
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
@@ -77,7 +78,7 @@ function ImGui:Start()
 			return
 		end
 
-		ImGui:SetHover(0, "")
+		ImGui:SetHover("", "")
 
 		ImGuiInternal:UpdateMouseInputs(deltaTime)
 		ImGui:UpdateWindowMove()
@@ -120,14 +121,13 @@ function ImGui:CleanWindowElements()
 	for windowIndex: string, window: Types.ImGuiWindow in ImGuiInternal.Windows do
 		window.WasActive = window.Active
 		window.Active = false
-		window.JustCreated = false
 
 		if (window.WasActive == false) or (window.Open[1] == false) then
 			table.remove(ImGuiInternal.WindowFocusOrder, window.FocusOrder)
 			ImGuiInternal.Windows[windowIndex] = nil
 
 			if ImGuiInternal.ActiveWindow == window then
-				ImGui:SetActive(0, "", nil)
+				ImGui:SetActive("", "", nil)
 			end
 			if ImGuiInternal.NavWindow == window then
 				ImGui:SetNavWindow(nil)
@@ -236,7 +236,7 @@ function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowF
 end
 
 function ImGui:EndFrameMouseUpdate()
-	if (ImGuiInternal.ActiveId ~= 0) or (ImGuiInternal.HoverId ~= 0) then
+	if (ImGuiInternal.ActiveId ~= "") or (ImGuiInternal.HoverId ~= "") then
 		return
 	end
 
@@ -247,8 +247,8 @@ function ImGui:EndFrameMouseUpdate()
 		local hoveredWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow
 		local rootWindow: Types.ImGuiWindow? = hoveredWindow ~= nil and hoveredWindow.RootWindow or nil
 		if rootWindow ~= nil then
-			local windowSize: Vector2 = hoveredWindow.Size
-			local windowPosition: Vector2 = hoveredWindow.Position
+			-- local windowSize: Vector2 = hoveredWindow.Size
+			-- local windowPosition: Vector2 = hoveredWindow.Position
 
 			ImGui:StartWindowMove(hoveredWindow)
 		elseif (rootWindow == nil) and (ImGuiInternal.NavWindow ~= nil) then
@@ -274,7 +274,7 @@ function ItemHoverable(
 	class: Types.Class,
 	window: Types.ImGuiWindow
 )
-	if (ImGuiInternal.HoverId ~= 0) and ((ImGuiInternal.HoverId ~= id) and (ImGuiInternal.HoverClass ~= class)) then
+	if (ImGuiInternal.HoverId ~= "") and ((ImGuiInternal.HoverId ~= id) and (ImGuiInternal.HoverClass ~= class)) then
 		return false
 	end
 
@@ -282,7 +282,7 @@ function ItemHoverable(
 		return false
 	end
 
-	if (ImGuiInternal.ActiveId ~= 0) and ((ImGuiInternal.ActiveId ~= id) and (ImGuiInternal.ActiveClass ~= class)) then
+	if (ImGuiInternal.ActiveId ~= "") and ((ImGuiInternal.ActiveId ~= id) and (ImGuiInternal.ActiveClass ~= class)) then
 		return false
 	end
 
@@ -330,7 +330,7 @@ function ButtonBehaviour(
 			if hovered == true then
 				pressed = true
 			end
-			ImGui:SetActive(0, "", nil)
+			ImGui:SetActive("", "", nil)
 		end
 	end
 
@@ -342,14 +342,14 @@ end
 	The logic is in order of precedence for the colours.
 ]]
 function ButtonLogic(
-	instance: Frame | ImageLabel,
+	instance: Frame | ImageLabel | TextLabel,
 	hovered: boolean,
 	held: boolean,
 	button: Types.Button,
 	styleType: number,
-	styles: { [number]: Types.Color4 }
+	styles: Types.ButtonStyle
 )
-	local color3: string = if styleType == 0 then "BackgroundColor3" else "ImageColor3"
+	local colour: string = if styleType == 0 then "BackgroundColor3" else "ImageColor3"
 	local transparency: string = if styleType == 0 then "BackgroundTransparency" else "ImageTransparency"
 
 	local state: number = button.State
@@ -357,16 +357,16 @@ function ButtonLogic(
 
 	if hovered == true then
 		if (held == true) and (state ~= 2) then
-			instance[color3] = styles[2].Color
+			instance[colour] = styles[2].Colour
 			instance[transparency] = styles[2].Transparency
 			newState = 2
 		elseif (held == false) and (state ~= 1) then
-			instance[color3] = styles[1].Color
+			instance[colour] = styles[1].Colour
 			instance[transparency] = styles[1].Transparency
 			newState = 1
 		end
 	elseif state ~= 0 then
-		instance[color3] = styles[0].Color
+		instance[colour] = styles[0].Colour
 		instance[transparency] = styles[0].Transparency
 		newState = 0
 	end
@@ -452,6 +452,14 @@ function ImGui:GetElementById(id: Types.ImGuiId, class: string, elementFrame: Ty
 	return element
 end
 
+function ImGui:PushColour(index: string, colour: Types.Colour4)
+	Style.Colours[index] = colour
+end
+
+function ImGui:PopColour(index: string)
+	Style.Colours[index] = table.clone(Style.Backup.Colours[index])
+end
+
 --[[
 	Manages the activity on the title bar excluding moving:
 		- Checks for close and collapse buttons and updates accordingly.
@@ -469,10 +477,10 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 		focusOnButton = pressed or hovered or held
 
-		-- Setting the color of the buttons
+		-- Setting the colour of the buttons
 		-- Prevents a double call to update colour and transparency
 
-		ButtonLogic(instance, hovered, held, collapse :: Types.Button, 1, Style.ButtonStyles.TitleButton)
+		ButtonLogic(instance, hovered, held, collapse, 1, Style.ButtonStyles.TitleButton)
 
 		if pressed == true then
 			window.Collapsed = not window.Collapsed
@@ -531,10 +539,10 @@ function ImGui:UpdateWindowMove()
 		window.Position += ImGuiInternal.MouseCursor.Delta
 		window:UpdatePosition()
 		ImGui:UpdateWindowFocusOrder(window)
-		ImGui:SetActive(0, "", nil)
+		ImGui:SetActive("", "", nil)
 	else
 		ImGuiInternal.MovingWindow = nil
-		ImGui:SetActive(0, "", nil)
+		ImGui:SetActive("", "", nil)
 	end
 end
 
@@ -555,7 +563,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	-- additionally, we do not need to check the window open value, since it is updated every frame
 	-- and is equal to the open variable which is checked here
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
-		return
+		return false
 	end
 
 	-- grab the previous window if we have already created one, else we create a new one
@@ -682,6 +690,7 @@ function ImGui:Text(textString: string, ...)
 		text:DrawText(elementFrame.DrawCursor.Position)
 		table.insert(elementFrame.Elements, text)
 	else
+		text:UpdateColour()
 		text:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
@@ -689,6 +698,18 @@ function ImGui:Text(textString: string, ...)
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
 	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
+end
+
+function ImGui:TextDisabled(textString: string, ...)
+	ImGui:PushColour("Text", Style.Colours.TextDisabled)
+	ImGui:Text(textString, ...)
+	ImGui:PopColour("Text")
+end
+
+function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...)
+	ImGui:PushColour("Text", colour)
+	ImGui:Text(textString, ...)
+	ImGui:PopColour("Text")
 end
 
 function ImGui:Checkbox(text: string, value: { boolean })
