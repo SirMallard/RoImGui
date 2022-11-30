@@ -34,6 +34,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	-- MovingWindow = nil,
 	-- CurrentWindow = nil,
 	-- NavWindow = nil,
+	-- ResizingWindow = nil,
 
 	Windows = {},
 	WindowStack = {},

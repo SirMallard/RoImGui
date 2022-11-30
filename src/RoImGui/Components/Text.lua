@@ -63,14 +63,6 @@ function Text:DrawText(position: Vector2)
 	self.Size = textSize
 end
 
-function Text:UpdateColour()
-	if self.Instance == nil then
-		return
-	end
-	self.Instance.TextColor3 = Style.Colours.Text.Colour
-	self.Instance.TextTransparency = Style.Colours.Text.Transparency
-end
-
 function Text:UpdatePosition(position: Vector2)
 	if self.Instance == nil then
 		self:DrawText(position)

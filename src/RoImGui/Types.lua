@@ -40,6 +40,9 @@ export type ImGuiStyleSize = {
 
 	TextMinHeight: number,
 	TextSize: number,
+
+	ResizeOuterPadding: number,
+	ResizeInnerPadding: number,
 }
 
 export type ImGuiStyleColour = {
@@ -121,7 +124,18 @@ export type ImGuiHash = string
 ]]
 export type ButtonState = number
 
-export type Class = "Window" | "Title" | "Menubar" | "Menu" | "ElementFrame" | "Text" | "Checkbox" | "Button" | ""
+export type Class =
+	"Window"
+	| "Title"
+	| "Menubar"
+	| "Menu"
+	| "ElementFrame"
+	| "Text"
+	| "Checkbox"
+	| "Button"
+	| ""
+	| "Corner"
+	| "Side"
 
 --[[
 		=<>= FLAGS =<>=
@@ -290,7 +304,6 @@ export type ImGuiText = typeof(setmetatable(
 
 		DrawText: (self: ImGuiText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
-		UpdateColour: (self: ImGuiText) -> (),
 
 		Destroy: (self: ImGuiText) -> (),
 	}
@@ -364,9 +377,9 @@ export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton
 export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox
 
 export type ImGui = {
-	Start: (ImGui) -> (),
-	Stop: (ImGui) -> (),
-	Pause: (ImGui) -> (),
+	Start: (self: ImGui) -> (),
+	Stop: (self: ImGui) -> (),
+	Pause: (self: ImGui) -> (),
 
 	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> (boolean),
 	End: (self: ImGui) -> (),
@@ -389,20 +402,20 @@ export type ImGui = {
 	Types: ModuleScript,
 	Colour4: ModuleScript,
 
-	CleanWindowElements: (ImGui) -> (),
-	UpdateWindowFocusOrder: (ImGui, ImGuiWindow?) -> (),
-	FindHoveredWindow: (ImGui) -> (),
-	UpdateWindowLinks: (ImGui, ImGuiWindow, WindowFlags, ImGuiWindow?) -> (),
+	CleanWindowElements: (self: ImGui) -> (),
+	UpdateWindowFocusOrder: (self: ImGui, window: ImGuiWindow?) -> (),
+	FindHoveredWindow: (self: ImGui) -> (),
+	UpdateWindowLinks: (self: ImGui, window: ImGuiWindow, flags: WindowFlags, parentWindow: ImGuiWindow?) -> (),
 	EndFrameMouseUpdate: (ImGui) -> (),
 
 	GetActiveElementFrame: (self: ImGui) -> (),
 	GetElementById: (self: ImGui, id: ImGuiId, class: string, elementFrame: ElementFrame) -> (Element?),
-	GetWindowById: (ImGui, string) -> (ImGuiWindow?),
-	CreateWindow: (ImGui, string, WindowFlags) -> (ImGuiWindow),
-	HandleWindowTitleBar: (ImGui, ImGuiWindow) -> (),
+	GetWindowById: (self: ImGui, id: ImGuiId) -> (ImGuiWindow?),
+	CreateWindow: (self: ImGui, id: ImGuiId, flags: WindowFlags) -> (ImGuiWindow),
+	HandleWindowTitleBar: (self: ImGui, window: ImGuiWindow) -> (),
 
-	StartWindowMove: (ImGui, ImGuiWindow) -> (),
-	UpdateWindowMove: (ImGui) -> (),
+	UpdateWindowMove: (self: ImGui) -> (),
+	UpdateWindowResize: (self: ImGui) -> (),
 
 	SetActive: (self: ImGui, id: ImGuiId, class: Class, window: ImGuiWindow?) -> (),
 	SetHover: (self: ImGui, id: ImGuiId, class: Class) -> (),
@@ -451,6 +464,7 @@ export type ImGuiInternal = {
 	MovingWindow: ImGuiWindow?,
 	CurrentWindow: ImGuiWindow?,
 	NavWindow: ImGuiWindow?,
+	ResizingWindow: ImGuiWindow?,
 
 	Windows: { [string]: ImGuiWindow }, -- all windows
 	WindowStack: { ImGuiWindow }, -- most recently created window in order for parenting reasons. window removed on :End(), so will be empty at the end

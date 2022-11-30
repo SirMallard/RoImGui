@@ -20,6 +20,13 @@ ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
 
+local CORNER_SIZES = {
+	[1] = Vector2.new(0, 0),
+	[2] = Vector2.new(1, 0),
+	[3] = Vector2.new(1, 0),
+	[4] = Vector2.new(0, 1),
+}
+
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
 	flags.NoClose = true
@@ -38,6 +45,7 @@ function ImGui:DebugWindow()
 		ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
 		ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
 		ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
+		ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
 		ImGui:Unindent()
 		ImGui:End()
 	end
@@ -81,6 +89,7 @@ function ImGui:Start()
 		ImGui:SetHover("", "")
 
 		ImGuiInternal:UpdateMouseInputs(deltaTime)
+		ImGui:UpdateWindowResize()
 		ImGui:UpdateWindowMove()
 		ImGui:FindHoveredWindow()
 	end)
@@ -94,7 +103,6 @@ function ImGui:Start()
 		ImGui:DebugWindow()
 
 		ImGui:EndFrameMouseUpdate()
-
 		ImGui:CleanWindowElements()
 		--todo Add mouse moving window from empty space
 	end)
@@ -140,6 +148,9 @@ function ImGui:CleanWindowElements()
 			end
 			if ImGuiInternal.CurrentWindow == window then
 				ImGuiInternal.CurrentWindow = nil
+			end
+			if ImGuiInternal.ResizingWindow == window then
+				ImGuiInternal.ResizingWindow = nil
 			end
 
 			window:Destroy()
@@ -240,18 +251,25 @@ function ImGui:EndFrameMouseUpdate()
 		return
 	end
 
-	if
-		((ImGuiInternal.MouseButton1.Down == true) and (ImGuiInternal.MovingWindow ~= nil))
-		or (ImGuiInternal.MouseButton1.DownOnThisFrame == true)
-	then
+	if ImGuiInternal.MouseButton1.DownOnThisFrame == true then
 		local hoveredWindow: Types.ImGuiWindow? = ImGuiInternal.HoveredWindow
-		local rootWindow: Types.ImGuiWindow? = hoveredWindow ~= nil and hoveredWindow.RootWindow or nil
-		if rootWindow ~= nil then
-			-- local windowSize: Vector2 = hoveredWindow.Size
-			-- local windowPosition: Vector2 = hoveredWindow.Position
 
-			ImGui:StartWindowMove(hoveredWindow)
-		elseif (rootWindow == nil) and (ImGuiInternal.NavWindow ~= nil) then
+		if hoveredWindow ~= nil then
+			if hoveredWindow.Window.Instance == nil then
+				return
+			end
+
+			ImGui:SetNavWindow(hoveredWindow)
+			ImGui:UpdateWindowFocusOrder(hoveredWindow)
+
+			local position: Vector2 = hoveredWindow.Window.Instance.AbsolutePosition
+			local size: Vector2 = hoveredWindow.Window.Instance.AbsoluteSize
+
+			for _, corner: Vector2 in CORNER_SIZES do
+			end
+
+			ImGuiInternal.MovingWindow = hoveredWindow
+		elseif ImGuiInternal.NavWindow ~= nil then
 			ImGui:SetNavWindow(nil)
 		end
 	end
@@ -521,13 +539,6 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 end
 
-function ImGui:StartWindowMove(window: Types.ImGuiWindow)
-	ImGui:SetNavWindow(window)
-	ImGui:UpdateWindowFocusOrder(window)
-
-	ImGuiInternal.MovingWindow = window
-end
-
 function ImGui:UpdateWindowMove()
 	local window: Types.ImGuiWindow? = ImGuiInternal.MovingWindow
 
@@ -542,6 +553,21 @@ function ImGui:UpdateWindowMove()
 		ImGui:SetActive("", "", nil)
 	else
 		ImGuiInternal.MovingWindow = nil
+		ImGui:SetActive("", "", nil)
+	end
+end
+
+function ImGui:UpdateWindowResize()
+	local window: Types.ImGuiWindow? = ImGuiInternal.ResizingWindow
+
+	if window == nil then
+		return
+	end
+
+	if ImGuiInternal.MouseButton1.Down == true then
+		print("Resizing")
+	else
+		ImGuiInternal.ResizingWindow = nil
 		ImGui:SetActive("", "", nil)
 	end
 end
@@ -690,7 +716,6 @@ function ImGui:Text(textString: string, ...)
 		text:DrawText(elementFrame.DrawCursor.Position)
 		table.insert(elementFrame.Elements, text)
 	else
-		text:UpdateColour()
 		text:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
@@ -786,7 +811,11 @@ function ImGui:Button(text: string): (boolean)
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
 	elementFrame.DrawCursor.Position += Vector2.new(0, button.Size.Y + Style.Sizes.ItemSpacing.Y)
 
-	return pressed
+	-- some weird RobloxLSP bug
+	if pressed == true then
+		return true
+	end
+	return false
 end
 
 function ImGui:Indent()

@@ -14,6 +14,9 @@ local Sizes: Types.ImGuiStyleSize = {
 
 	TextMinHeight = 13,
 	TextSize = 13, -- best size we can use.
+
+	ResizeOuterPadding = 4,
+	ResizeInnerPadding = 2,
 }
 
 local Colours: Types.ImGuiStyleColour = {} :: Types.ImGuiStyleColour
