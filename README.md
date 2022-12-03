@@ -34,7 +34,7 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
     - [ ] Dropdown
   - [x] Frame
   - [x] Moving
-  - [ ] Resizing
+  - [x] Resizing
 - [ ] Text
   - [x] Text
   - [x] Indent

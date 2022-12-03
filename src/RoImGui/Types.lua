@@ -136,6 +136,7 @@ export type Class =
 	| ""
 	| "Corner"
 	| "Side"
+	| "Resize"
 
 --[[
 		=<>= FLAGS =<>=
@@ -222,6 +223,14 @@ export type ElementFrame = {
 	DrawCursor: DrawCursor,
 }
 
+export type ResizeElement = {
+	Class: Class,
+	Id: ImGuiId,
+	Hash: ImGuiHash,
+	State: ButtonState,
+	Instance: Frame | ImageLabel?,
+}
+
 export type ImGuiWindow = typeof(setmetatable(
 	{} :: {
 		Class: Class,
@@ -262,6 +271,18 @@ export type ImGuiWindow = typeof(setmetatable(
 			Title: WindowTitle,
 			Menubar: WindowMenubar,
 			Frame: ElementFrame,
+			Resize: {
+				Class: Class,
+				Id: ImGuiId,
+				Hash: ImGuiHash,
+				Instance: Frame?,
+				Top: ResizeElement,
+				Bottom: ResizeElement,
+				Left: ResizeElement,
+				Right: ResizeElement,
+				BottomLeft: ResizeElement,
+				BottomRight: ResizeElement,
+			},
 		},
 	},
 	{} :: {
@@ -374,7 +395,7 @@ export type ImGuiButton = typeof(setmetatable(
 
 export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton
 
-export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox
+export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox | ResizeElement
 
 export type ImGui = {
 	Start: (self: ImGui) -> (),
@@ -413,6 +434,7 @@ export type ImGui = {
 	GetWindowById: (self: ImGui, id: ImGuiId) -> (ImGuiWindow?),
 	CreateWindow: (self: ImGui, id: ImGuiId, flags: WindowFlags) -> (ImGuiWindow),
 	HandleWindowTitleBar: (self: ImGui, window: ImGuiWindow) -> (),
+	HandleWindowBorder: (self: ImGui, window: ImGuiWindow) -> (),
 
 	UpdateWindowMove: (self: ImGui) -> (),
 	UpdateWindowResize: (self: ImGui) -> (),
@@ -466,6 +488,8 @@ export type ImGuiInternal = {
 	NavWindow: ImGuiWindow?,
 	ResizingWindow: ImGuiWindow?,
 
+	ResizeSize: Vector2,
+
 	Windows: { [string]: ImGuiWindow }, -- all windows
 	WindowStack: { ImGuiWindow }, -- most recently created window in order for parenting reasons. window removed on :End(), so will be empty at the end
 	WindowFocusOrder: { ImGuiWindow }, -- root windows in focus order of back to front. (highest index is highest zindex)
@@ -483,6 +507,8 @@ export type ImGuiInternal = {
 		Magnitude: number,
 	},
 
+	ScreenSize: Vector2,
+
 	NextItemData: {
 		Style: {
 			Colours: { [string]: Colour4 },
@@ -490,9 +516,8 @@ export type ImGuiInternal = {
 		},
 	},
 
-	UpdateTime: (ImGuiInternal, number) -> (),
-
-	[any]: any,
+	UpdateMouseInputs: (self: ImGuiInternal) -> (),
+	UpdateTime: (self: ImGuiInternal, deltaTime: number) -> (),
 }
 
 return {}

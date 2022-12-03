@@ -36,6 +36,8 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	-- NavWindow = nil,
 	-- ResizingWindow = nil,
 
+	ResizeSize = Vector2.zero,
+
 	Windows = {},
 	WindowStack = {},
 	WindowFocusOrder = {},
@@ -78,6 +80,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 		Delta = Vector2.zero,
 		Magnitude = 0,
 	},
+	ScreenSize = Vector2.zero,
 
 	NextItemData = {
 		Style = {
@@ -143,7 +146,9 @@ end
 
 function ImGuiInternal:UpdateMouseInputs()
 	-- Set up the data for the frame.
+	self.ScreenSize = ImGuiInternal.Viewport.AbsoluteSize
 	local position: Vector2 = userInputService:GetMouseLocation() - self.GuiInset
+	position = Vector2.new(math.clamp(position.X, 0, self.ScreenSize.X), math.clamp(position.Y, 0, self.ScreenSize.Y))
 	self.MouseCursor.Delta = position - self.MouseCursor.Position
 	self.MouseCursor.Position = position
 	self.MouseCursor.Magnitude = self.MouseCursor.Delta.Magnitude

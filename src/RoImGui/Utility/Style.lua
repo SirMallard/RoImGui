@@ -16,7 +16,7 @@ local Sizes: Types.ImGuiStyleSize = {
 	TextSize = 13, -- best size we can use.
 
 	ResizeOuterPadding = 4,
-	ResizeInnerPadding = 2,
+	ResizeInnerPadding = 10,
 }
 
 local Colours: Types.ImGuiStyleColour = {} :: Types.ImGuiStyleColour
@@ -91,6 +91,21 @@ local ButtonStyles: Types.ImGuiButtonStyles = {
 		[0] = Colours.Button,
 		[1] = Colours.ButtonHovered,
 		[2] = Colours.ButtonActive,
+	},
+	SideResize = {
+		[0] = Colours.Transparent,
+		[1] = Colours.Transparent,
+		[2] = Colours.SeparatorActive,
+	},
+	CornerResize = {
+		[0] = Colours.Transparent,
+		[1] = Colours.ResizeGripHovered,
+		[2] = Colours.ResizeGripActive,
+	},
+	CornerResizeVisible = {
+		[0] = Colours.ResizeGrip,
+		[1] = Colours.ResizeGripHovered,
+		[2] = Colours.ResizeGripActive,
 	},
 }
 

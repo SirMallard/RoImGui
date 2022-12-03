@@ -43,7 +43,7 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Flags = flags
 
 	self.Position = Vector2.new(60, 60) -- Default starting positon.
-	self.Size = self.Id == "Debug" and Vector2.new(300, 200) or Vector2.new(60, 120)
+	self.Size = Vector2.new(60, 120)
 	self.MinimumSize = Vector2.new(Style.Sizes.WindowPadding.X * 2 + Style.Sizes.ItemInnerSpacing.X + 30, 60)
 
 	self.State = 0
@@ -90,7 +90,7 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			Class = "ElementFrame",
 			Id = self.Id .. ">Frame",
 			Hash = Hash(self.Id .. ">Frame"),
-			MinimumSize = Vector2.new(0, 0),
+			MinimumSize = Vector2.new(0, Style.Sizes.TextSize),
 			DrawCursor = {
 				Position = Vector2.zero, -- Kept locally to the frame
 				PreviousPosition = Vector2.zero,
@@ -99,6 +99,47 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 				MaximumPosition = Vector2.new(60, 60),
 			},
 			Elements = {},
+		},
+		Resize = {
+			Class = "Resize",
+			Id = self.Id .. ">Resize",
+			Hash = Hash(self.Id .. ">Resize"),
+			Top = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>Top",
+				Hash = Hash(self.Id .. ">Resize>Top"),
+				State = 0,
+			},
+			Bottom = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>Bottom",
+				Hash = Hash(self.Id .. ">Resize>Bottom"),
+				State = 0,
+			},
+			Left = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>Left",
+				Hash = Hash(self.Id .. ">Resize>Left"),
+				State = 0,
+			},
+			Right = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>Right",
+				Hash = Hash(self.Id .. ">Resize>Right"),
+				State = 0,
+			},
+			BottomLeft = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>BottomLeft",
+				Hash = Hash(self.Id .. ">Resize>BottomLeft"),
+				State = 0,
+			},
+			BottomRight = {
+				Class = "Side",
+				Id = self.Id .. ">Resize>BottomRight",
+				Hash = Hash(self.Id .. ">Resize>BottomRight"),
+				State = 0,
+			},
 		},
 	}
 
@@ -172,7 +213,6 @@ function Window:DrawWindow(stack: number?)
 		local window: Frame = Instance.new("Frame")
 		window.Name = "window:" .. self.Name
 		window.ZIndex = stack or self.FocusOrder
-
 		window.Position = UDim2.fromOffset(self.Position.X, self.Position.Y)
 		window.Size = UDim2.fromScale(1, 1)
 
@@ -181,8 +221,6 @@ function Window:DrawWindow(stack: number?)
 		window.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		window.BorderSizePixel = 0
 
-		window.ClipsDescendants = true
-
 		local stroke: UIStroke = Instance.new("UIStroke")
 		stroke.Name = "stroke"
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -190,6 +228,119 @@ function Window:DrawWindow(stack: number?)
 		stroke.LineJoinMode = Enum.LineJoinMode.Miter
 		stroke.Transparency = Style.Colours.Border.Transparency
 		stroke.Parent = window
+
+		if self.Window.Resize.Instance ~= nil then
+			self.Window.Resize.Instance:Destroy()
+		end
+		if (self.Flags.NoResize == false) and (self.Collapsed == false) then
+			local resize: Frame = Instance.new("Frame")
+			resize.Name = "resize"
+			resize.ZIndex = 2
+			resize.AnchorPoint = Vector2.new(0.5, 0.5)
+			resize.Position = UDim2.fromScale(0.5, 0.5)
+			resize.Size = UDim2.new(1, 4, 1, 4)
+
+			resize.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			resize.BackgroundTransparency = 1
+			resize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			resize.BorderSizePixel = 0
+			resize.ClipsDescendants = true
+
+			local top: Frame = Instance.new("Frame")
+			top.Name = "top"
+			top.Position = UDim2.fromOffset(2, 0)
+			top.Size = UDim2.new(1, -4, 0, 2)
+
+			top.BackgroundColor3 = Style.Colours.SeparatorActive.Colour
+			top.BackgroundTransparency = 1
+			top.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			top.BorderSizePixel = 0
+
+			top.Parent = resize
+
+			local bottom: Frame = Instance.new("Frame")
+			bottom.Name = "bottom"
+			bottom.AnchorPoint = Vector2.new(0, 2)
+			bottom.Position = UDim2.new(0, 1, 1, 0)
+			bottom.Size = UDim2.new(1, -5, 0, 2)
+
+			bottom.BackgroundColor3 = Style.Colours.SeparatorActive.Colour
+			bottom.BackgroundTransparency = 1
+			bottom.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			bottom.BorderSizePixel = 0
+
+			bottom.Parent = resize
+
+			local left = Instance.new("Frame")
+			left.Name = "left"
+			left.Position = UDim2.fromOffset(0, 2)
+			left.Size = UDim2.new(0, 2, 1, -4)
+
+			left.BackgroundColor3 = Style.Colours.SeparatorActive.Colour
+			left.BackgroundTransparency = 1
+			left.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			left.BorderSizePixel = 0
+
+			left.Parent = resize
+
+			local right = Instance.new("Frame")
+			right.Name = "right"
+			right.AnchorPoint = Vector2.new(1, 0)
+			right.Position = UDim2.new(1, 0, 0, 2)
+			right.Size = UDim2.new(0, 2, 1, -5)
+
+			right.BackgroundColor3 = Style.Colours.SeparatorActive.Colour
+			right.BackgroundTransparency = 1
+			right.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			right.BorderSizePixel = 0
+
+			right.Parent = resize
+
+			local bottom_right = Instance.new("ImageLabel")
+			bottom_right.Name = "bottom_right"
+			bottom_right.AnchorPoint = Vector2.new(1, 1)
+			bottom_right.Position = UDim2.new(1, -2, 1, -2)
+			bottom_right.Size = UDim2.fromOffset(Style.Sizes.TextSize, Style.Sizes.TextSize)
+
+			bottom_right.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			bottom_right.BackgroundTransparency = 1
+			bottom_right.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			bottom_right.BorderSizePixel = 0
+
+			bottom_right.Image = "rbxassetid://11723377444"
+			bottom_right.ImageColor3 = Style.Colours.ResizeGrip.Colour
+			bottom_right.ImageTransparency = Style.Colours.ResizeGrip.Transparency
+
+			bottom_right.Parent = resize
+
+			local bottom_left = Instance.new("ImageLabel")
+			bottom_left.Name = "bottom_left"
+			bottom_left.AnchorPoint = Vector2.new(0, 1)
+			bottom_left.Position = UDim2.new(0, 2, 1, -2)
+			bottom_left.Size = UDim2.fromOffset(13, 13)
+			bottom_left.Rotation = 90
+
+			bottom_left.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			bottom_left.BackgroundTransparency = 1
+			bottom_left.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			bottom_left.BorderSizePixel = 0
+
+			bottom_left.Image = "rbxassetid://11723377444"
+			bottom_left.ImageColor3 = Style.Colours.ResizeGrip.Colour
+			bottom_left.ImageTransparency = 1
+
+			bottom_left.Parent = resize
+
+			resize.Parent = window
+
+			self.Window.Resize.Instance = resize
+			self.Window.Resize.Top.Instance = top
+			self.Window.Resize.Bottom.Instance = bottom
+			self.Window.Resize.Left.Instance = left
+			self.Window.Resize.Right.Instance = right
+			self.Window.Resize.BottomLeft.Instance = bottom_left
+			self.Window.Resize.BottomRight.Instance = bottom_right
+		end
 
 		window.Parent = ImGuiInternal.Viewport
 		self.Window.Instance = window

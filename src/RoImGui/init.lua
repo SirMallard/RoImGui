@@ -20,13 +20,6 @@ ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
 
-local CORNER_SIZES = {
-	[1] = Vector2.new(0, 0),
-	[2] = Vector2.new(1, 0),
-	[3] = Vector2.new(1, 0),
-	[4] = Vector2.new(0, 1),
-}
-
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
 	flags.NoClose = true
@@ -46,6 +39,12 @@ function ImGui:DebugWindow()
 		ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
 		ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
 		ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
+		ImGui:Unindent()
+		ImGui:Text("Resizing:")
+		ImGui:Indent()
+		ImGui:Text("Mouse Position: (%s)", ImGuiInternal.MouseCursor.Position)
+		ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
+		ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
 		ImGui:Unindent()
 		ImGui:End()
 	end
@@ -72,8 +71,9 @@ function ImGui:Start()
 	-- first.
 
 	-- These are not unbound because they are rendered first and last because they connected first to the events.
-	-- A later call to :BindToRenderStep() with the same priority will be called after. Therefore to ensure this
-	-- callback happens first and before any other bindings, it must be connected first and stay bound.
+	-- A later call to :BindToRenderStep() with the same priority will be placed at the end of the call stack.
+	-- Therefore to ensure this callback happens first and before any other bindings, it must be connected first
+	-- and stay bound.
 	runService:BindToRenderStep("ImGuiRender", Enum.RenderPriority.First.Value, function(deltaTime: number)
 		if ImGuiInternal.Status == "Paused" then
 			return
@@ -88,13 +88,13 @@ function ImGui:Start()
 
 		ImGui:SetHover("", "")
 
-		ImGuiInternal:UpdateMouseInputs(deltaTime)
+		ImGuiInternal:UpdateMouseInputs()
 		ImGui:UpdateWindowResize()
 		ImGui:UpdateWindowMove()
 		ImGui:FindHoveredWindow()
 	end)
 
-	-- A later call to :RenderStepped() will be called before. Therefore to ensure this callback happens last and
+	-- Calling :RenderStepped() will schedule the function to the front of the call stack. Therefore to ensure this callback happens last and
 	-- after any other bindings, it must be connected first and stay bound.
 	runService.RenderStepped:Connect(function()
 		if ImGuiInternal.Status ~= "Started" then
@@ -177,9 +177,9 @@ function ImGui:CleanWindowElements()
 			if element.Active == false then
 				element:Destroy()
 				table.remove(frame.Elements, elementIndex)
+			else
+				element.Active = false
 			end
-
-			element.Active = false
 		end
 
 		frame.DrawCursor.Position = frame.DrawCursor.StartPosition
@@ -222,8 +222,31 @@ function ImGui:FindHoveredWindow()
 			continue
 		end
 
-		if Utility.IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) == false then
-			continue
+		if window.Flags.NoResize == true then
+			if Utility.IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) == false then
+				continue
+			end
+		else
+			local position: Vector2 = instance.AbsolutePosition
+			local size: Vector2 = instance.AbsoluteSize
+			local outer: number = Style.Sizes.ResizeOuterPadding
+			local inner: number = Style.Sizes.ResizeInnerPadding
+
+			if
+				(
+					Utility.IsCursorInBox(
+						position + Vector2.new(-outer, inner),
+						size + Vector2.new(2 * outer, outer - inner)
+					) == false
+				)
+				and (Utility.IsCursorInBox(position, Vector2.new(size.X, inner)) == false)
+				and (
+					Utility.IsCursorInBox(position + Vector2.new(inner, -outer), Vector2.new(size.X - 2 * inner, outer))
+					== false
+				)
+			then
+				continue
+			end
 		end
 
 		ImGuiInternal.HoveredWindow = window
@@ -261,14 +284,8 @@ function ImGui:EndFrameMouseUpdate()
 
 			ImGui:SetNavWindow(hoveredWindow)
 			ImGui:UpdateWindowFocusOrder(hoveredWindow)
-
-			local position: Vector2 = hoveredWindow.Window.Instance.AbsolutePosition
-			local size: Vector2 = hoveredWindow.Window.Instance.AbsoluteSize
-
-			for _, corner: Vector2 in CORNER_SIZES do
-			end
-
 			ImGuiInternal.MovingWindow = hoveredWindow
+			ImGuiInternal.HoldOffset = ImGuiInternal.MouseCursor.Position - hoveredWindow.Position
 		elseif ImGuiInternal.NavWindow ~= nil then
 			ImGui:SetNavWindow(nil)
 		end
@@ -539,6 +556,109 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 end
 
+function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
+	if ImGuiInternal.ResizingWindow ~= nil then
+		return
+	end
+
+	local position: Vector2 = window.Position
+	local size: Vector2 = window.Size
+	local mousePosition: Vector2 = ImGuiInternal.MouseCursor.Position
+
+	local outerPadding: number = Style.Sizes.ResizeOuterPadding
+	local innerPadding: number = Style.Sizes.ResizeInnerPadding
+	local padding: number = outerPadding + innerPadding
+
+	local function ResizeBehaviour(
+		element: Types.ResizeElement,
+		positionPadding: Vector2,
+		resizeSize: Vector2,
+		styleType: number,
+		buttonStyle: Types.ButtonStyle,
+		resize: Vector2,
+		offset: Vector2
+	)
+		local _, hovered: boolean, held: boolean =
+			ButtonBehaviour(position + positionPadding, resizeSize, element.Id, element.Class, window)
+
+		ButtonLogic(element.Instance, hovered, held, element, styleType, buttonStyle)
+
+		if held == true then
+			ImGuiInternal.ResizingWindow = window
+			ImGui:SetNavWindow(window)
+
+			ImGuiInternal.ResizeSize = resize
+			ImGuiInternal.HoldOffset = offset
+		end
+	end
+
+	-- Top Side
+	ResizeBehaviour(
+		window.Window.Resize.Top,
+		Vector2.new(innerPadding, -outerPadding),
+		Vector2.new(size.X - 2 * padding, outerPadding * 2),
+		0,
+		Style.ButtonStyles.SideResize,
+		-Vector2.yAxis,
+		(mousePosition - position) * Vector2.yAxis
+	)
+
+	-- Bottom Side
+	ResizeBehaviour(
+		window.Window.Resize.Bottom,
+		Vector2.new(innerPadding, -innerPadding + size.Y),
+		Vector2.new(size.X - 2 * padding, outerPadding * 2),
+		0,
+		Style.ButtonStyles.SideResize,
+		Vector2.yAxis,
+		(mousePosition - position - size) * Vector2.yAxis
+	)
+
+	-- Left Side
+	ResizeBehaviour(
+		window.Window.Resize.Left,
+		Vector2.new(-outerPadding, innerPadding),
+		Vector2.new(outerPadding * 2, size.Y - 2 * padding),
+		0,
+		Style.ButtonStyles.SideResize,
+		-Vector2.xAxis,
+		(mousePosition - position) * Vector2.xAxis
+	)
+
+	-- Right Side
+	ResizeBehaviour(
+		window.Window.Resize.Right,
+		Vector2.new(-innerPadding + size.X, innerPadding),
+		Vector2.new(outerPadding * 2, size.Y - 2 * padding),
+		0,
+		Style.ButtonStyles.SideResize,
+		Vector2.xAxis,
+		(mousePosition - position - size) * Vector2.xAxis
+	)
+
+	-- Bottom Left Corner
+	ResizeBehaviour(
+		window.Window.Resize.BottomLeft,
+		Vector2.new(-outerPadding, -innerPadding + size.Y),
+		Vector2.one * padding,
+		1,
+		Style.ButtonStyles.CornerResize,
+		Vector2.new(-1, 1),
+		mousePosition - position - size * Vector2.yAxis
+	)
+
+	-- Bottom Right Corner
+	ResizeBehaviour(
+		window.Window.Resize.BottomRight,
+		Vector2.new(-innerPadding + size.X, -innerPadding + size.Y),
+		Vector2.one * padding,
+		1,
+		Style.ButtonStyles.CornerResizeVisible,
+		Vector2.one,
+		mousePosition - position - size
+	)
+end
+
 function ImGui:UpdateWindowMove()
 	local window: Types.ImGuiWindow? = ImGuiInternal.MovingWindow
 
@@ -547,11 +667,12 @@ function ImGui:UpdateWindowMove()
 	end
 
 	if ImGuiInternal.MouseButton1.Down == true then
-		window.Position += ImGuiInternal.MouseCursor.Delta
+		window.Position = ImGuiInternal.MouseCursor.Position - ImGuiInternal.HoldOffset
 		window:UpdatePosition()
 		ImGui:UpdateWindowFocusOrder(window)
 		ImGui:SetActive("", "", nil)
 	else
+		ImGuiInternal.HoldOffset = Vector2.zero
 		ImGuiInternal.MovingWindow = nil
 		ImGui:SetActive("", "", nil)
 	end
@@ -565,9 +686,66 @@ function ImGui:UpdateWindowResize()
 	end
 
 	if ImGuiInternal.MouseButton1.Down == true then
-		print("Resizing")
+		local position: Vector2 = window.Position
+		local size: Vector2 = window.Size
+		local minimumSize: Vector2 = window.MinimumSize
+		local offset: Vector2 = ImGuiInternal.HoldOffset
+		local resizeSize: Vector2 = ImGuiInternal.ResizeSize
+		local screenSize: Vector2 = ImGuiInternal.ScreenSize
+		local newPosition: Vector2 = position
+		local newSize: Vector2 = size
+
+		local mousePosition: Vector2 = ImGuiInternal.MouseCursor.Position
+
+		if resizeSize.X > 0 then
+			newSize = Vector2.new(
+				math.clamp(mousePosition.X - position.X - offset.X, minimumSize.X, screenSize.X - position.X),
+				newSize.Y
+			)
+		elseif resizeSize.X < 0 then
+			newSize = Vector2.new(
+				math.clamp(
+					position.X + size.X - mousePosition.X + offset.X,
+					minimumSize.X,
+					screenSize.X - position.X - minimumSize.X
+				),
+				newSize.Y
+			)
+			newPosition = Vector2.new(
+				math.clamp(mousePosition.X - offset.X, -offset.X, position.X + size.X - minimumSize.X - offset.X),
+				newPosition.Y
+			)
+		end
+
+		if resizeSize.Y > 0 then
+			newSize = Vector2.new(
+				newSize.X,
+				math.clamp(mousePosition.Y - position.Y - offset.Y, minimumSize.Y, screenSize.Y - position.Y)
+			)
+		elseif resizeSize.Y < 0 then
+			newSize = Vector2.new(
+				newSize.X,
+				math.clamp(
+					position.Y + size.Y - mousePosition.Y + offset.Y,
+					minimumSize.Y,
+					screenSize.Y - position.Y - minimumSize.Y
+				)
+			)
+			newPosition = Vector2.new(
+				newPosition.X,
+				math.clamp(mousePosition.Y - offset.Y, -offset.Y, position.Y + size.Y - minimumSize.Y - offset.Y)
+			)
+		end
+
+		window.Position = newPosition
+		window.Size = newSize
+
+		window:UpdatePosition()
+		window:UpdateSize()
 	else
 		ImGuiInternal.ResizingWindow = nil
+		ImGuiInternal.HoldOffset = Vector2.zero
+		ImGuiInternal.ResizeSize = Vector2.zero
 		ImGui:SetActive("", "", nil)
 	end
 end
@@ -651,6 +829,10 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 			ImGui:HandleWindowTitleBar(window)
 		end
 
+		if (flags.NoResize == false) and (window.Collapsed == false) then
+			ImGui:HandleWindowBorder(window)
+		end
+
 		window:DrawFrame()
 	end
 
@@ -706,7 +888,10 @@ function ImGui:Text(textString: string, ...)
 	-- format with the args
 	local args: { any } = { ... }
 	if #args > 0 then
-		textString = textString:format(...)
+		for index: number, arg: any in args do
+			args[index] = tostring(arg)
+		end
+		textString = textString:format(table.unpack(args))
 	end
 
 	local text: Types.ImGuiText? = ImGui:GetElementById(elementFrame.Id .. ">" .. textString, "Text", elementFrame)
