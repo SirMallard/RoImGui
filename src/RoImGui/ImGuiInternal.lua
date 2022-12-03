@@ -1,5 +1,8 @@
+local guiService: GuiService = game:GetService("GuiService")
+
 local Types = require(script.Parent.Types)
 local Utility = require(script.Parent.Utility.Utility)
+local Style = require(script.Parent.Utility.Style)
 
 local userInputService: UserInputService = game:GetService("UserInputService")
 local players: Players = game:GetService("Players")
@@ -26,8 +29,6 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	ActiveId = "",
 
 	HoldOffset = Vector2.zero,
-
-	Viewport = Instance.new("ScreenGui"),
 
 	-- ActiveWindow = nil,
 	-- HoveredWindow = nil,
@@ -89,15 +90,63 @@ local ImGuiInternal: Types.ImGuiInternal = {
 		},
 	},
 
+	Debug = {},
+
 	Status = "Stopped",
 } :: Types.ImGuiInternal
 
-ImGuiInternal.Viewport.Name = "RoImGui"
-ImGuiInternal.Viewport.ResetOnSpawn = false
-ImGuiInternal.Viewport.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ImGuiInternal.Viewport.IgnoreGuiInset = false
-ImGuiInternal.Viewport.DisplayOrder = 100
-ImGuiInternal.Viewport.Parent = playerGui
+function ImGuiInternal:Initialise()
+	local viewport: ScreenGui = Instance.new("ScreenGui")
+	viewport.Name = "RoImGui"
+	viewport.ResetOnSpawn = false
+	viewport.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	viewport.IgnoreGuiInset = false
+	viewport.DisplayOrder = 100
+	viewport.Parent = playerGui
+
+	local debugElements: Frame = Instance.new("Frame")
+	debugElements.Name = "debug_elements"
+	debugElements.ZIndex = 5
+	debugElements.AnchorPoint = Vector2.new(0.5, 0.5)
+	debugElements.Position = UDim2.fromScale(0.5, 0.5)
+	debugElements.Size = UDim2.fromScale(1, 1)
+
+	debugElements.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	debugElements.BackgroundTransparency = 1
+	debugElements.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	debugElements.BorderSizePixel = 0
+
+	debugElements.Parent = viewport
+
+	local hoverELement: Frame = Instance.new("Frame")
+	hoverELement.Name = "hover_element"
+	hoverELement.ZIndex = 2
+
+	hoverELement.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	hoverELement.BackgroundTransparency = 1
+	hoverELement.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	hoverELement.BorderSizePixel = 0
+
+	hoverELement.Parent = debugElements
+
+	local stroke: UIStroke = Instance.new("UIStroke")
+	stroke.Name = "stroke"
+	stroke.Thickness = 1
+	stroke.Color = Style.Colours.DragDropTarget.Colour
+	stroke.Transparency = Style.Colours.DragDropTarget.Transparency
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.LineJoinMode = Enum.LineJoinMode.Miter
+	stroke.Enabled = false
+
+	stroke.Parent = hoverELement
+
+	ImGuiInternal.Debug.HoverElement = hoverELement
+	ImGuiInternal.Debug.HoverDebug = { false }
+	ImGuiInternal.Viewport = viewport
+
+	ImGuiInternal.Status = "Started"
+	ImGuiInternal.GuiInset = guiService:GetGuiInset()
+end
 
 function UpdateMouseButton(mouseButtonData: Types.MouseButtonData, button: Enum.UserInputType)
 	mouseButtonData.DownOnThisFrame = false

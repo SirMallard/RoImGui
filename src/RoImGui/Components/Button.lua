@@ -19,10 +19,10 @@ function Button.new(text: string, window: Types.ImGuiWindow, elementFrame: Types
 	self.Hash = Hash(self.Id)
 
 	self.State = 0
-	self.PreviousState = 0
 
 	self.ElementFrame = elementFrame
 	self.Window = window
+	self.LastFrameActive = 0
 
 	self.Active = true
 
@@ -99,6 +99,7 @@ end
 
 function Button:Destroy()
 	if self.Instance ~= nil then
+		self.Instance.Parent = nil
 		self.Instance:Destroy()
 		self.Instance = nil
 	end

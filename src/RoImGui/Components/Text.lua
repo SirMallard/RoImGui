@@ -20,6 +20,7 @@ function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.E
 
 	self.ElementFrame = elementFrame
 	self.Window = window
+	self.LastFrameActive = 0
 
 	self.Active = true
 
@@ -73,6 +74,7 @@ end
 
 function Text:Destroy()
 	if self.Instance ~= nil then
+		self.Instance.Parent = nil
 		self.Instance:Destroy()
 		self.Instance = nil
 	end

@@ -180,7 +180,6 @@ export type WindowTitleButton = {
 	Hash: ImGuiHash,
 	Instance: GuiBase2d?,
 	State: ButtonState,
-	PreviousState: ButtonState,
 	Instance: ImageLabel?,
 }
 
@@ -311,6 +310,7 @@ export type ImGuiText = typeof(setmetatable(
 		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
+		LastFrameActive: number,
 
 		Active: boolean,
 
@@ -338,11 +338,11 @@ export type ImGuiCheckbox = typeof(setmetatable(
 		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
+		LastFrameActive: number,
 		Value: { boolean },
 		InternalValue: boolean,
 
 		State: ButtonState,
-		PreviousState: ButtonState,
 
 		Active: boolean,
 
@@ -371,9 +371,9 @@ export type ImGuiButton = typeof(setmetatable(
 		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
+		LastFrameActive: number,
 
 		State: ButtonState,
-		PreviousState: ButtonState,
 
 		Active: boolean,
 
@@ -516,6 +516,12 @@ export type ImGuiInternal = {
 		},
 	},
 
+	Debug: {
+		HoverDebug: { boolean },
+		HoverElement: Frame,
+	},
+
+	Initialise: (self: ImGuiInternal) -> (),
 	UpdateMouseInputs: (self: ImGuiInternal) -> (),
 	UpdateTime: (self: ImGuiInternal, deltaTime: number) -> (),
 }

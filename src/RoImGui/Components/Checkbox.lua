@@ -21,10 +21,10 @@ function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindo
 	self.InternalValue = value[1]
 
 	self.State = 0
-	self.PreviousState = 0
 
 	self.ElementFrame = elementFrame
 	self.Window = window
+	self.LastFrameActive = 0
 
 	self.Active = true
 
@@ -119,6 +119,7 @@ end
 
 function Checkbox:Destroy()
 	if self.Instance ~= nil then
+		self.Instance.Parent = nil
 		self.Instance:Destroy()
 		self.Instance = nil
 	end

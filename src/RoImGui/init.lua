@@ -1,4 +1,3 @@
-local guiService: GuiService = game:GetService("GuiService")
 local runService: RunService = game:GetService("RunService")
 
 local components = script.Components
@@ -46,7 +45,14 @@ function ImGui:DebugWindow()
 		ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
 		ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
 		ImGui:Unindent()
+		ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
 		ImGui:End()
+	end
+
+	if ImGuiInternal.Debug.HoverDebug[1] == true and ImGuiInternal.HoverId ~= "" then
+		ImGuiInternal.Debug.HoverElement.stroke.Enabled = true
+	else
+		ImGuiInternal.Debug.HoverElement.stroke.Enabled = false
 	end
 
 	local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
@@ -63,9 +69,7 @@ end
 function ImGui:Start()
 	assert((ImGuiInternal.Status ~= "Started"), "Cannot call :Start() without stopping or pausing first.")
 
-	ImGuiInternal.Status = "Started"
-
-	ImGuiInternal.GuiInset = guiService:GetGuiInset()
+	ImGuiInternal:Initialise()
 
 	-- These will be called at the very start and very end of each render stepped, as long as they are connected
 	-- first.
@@ -104,7 +108,6 @@ function ImGui:Start()
 
 		ImGui:EndFrameMouseUpdate()
 		ImGui:CleanWindowElements()
-		--todo Add mouse moving window from empty space
 	end)
 end
 
@@ -173,11 +176,14 @@ function ImGui:CleanWindowElements()
 		-- loop through all window elements
 		local frame: Types.ElementFrame = window.Window.Frame
 
-		for elementIndex: number, element: Types.ImGuiText in frame.Elements do
-			if element.Active == false then
+		for elementIndex: number, element: Types.Element in frame.Elements do
+			if element.LastFrameActive < frameId then
 				element:Destroy()
 				table.remove(frame.Elements, elementIndex)
 			else
+				-- if element.Class == "Text" and element.Text:sub(1, 14) == "Mouse Position" then
+				-- 	print(frameId, element.Text:sub(17))
+				-- end
 				element.Active = false
 			end
 		end
@@ -323,6 +329,11 @@ function ItemHoverable(
 
 	if Utility.IsCursorInBox(position, size) == false then
 		return false
+	end
+
+	if ImGuiInternal.Debug.HoverDebug[1] == true then
+		ImGuiInternal.Debug.HoverElement.Position = UDim2.fromOffset(position.X, position.Y)
+		ImGuiInternal.Debug.HoverElement.Size = UDim2.fromOffset(size.X, size.Y)
 	end
 
 	return true
@@ -503,6 +514,7 @@ end
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	local focusOnButton: boolean = false
 
+	-- Collapse button
 	local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
 	if window.Flags.NoCollapse == false and collapse.Instance ~= nil then
 		local instance: ImageLabel = collapse.Instance
@@ -517,12 +529,14 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 		ButtonLogic(instance, hovered, held, collapse, 1, Style.ButtonStyles.TitleButton)
 
+		-- The collapse button has been pressed
 		if pressed == true then
 			window.Collapsed = not window.Collapsed
 			window.RedrawNextFrame = true
 		end
 	end
 
+	-- Close button
 	local close: Types.WindowTitleButton = window.Window.Title.Close
 	if window.Flags.NoClose == false and close.Instance ~= nil then
 		local instance: ImageLabel = close.Instance
@@ -534,14 +548,16 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 		ButtonLogic(instance, hovered, held, close :: Types.Button, 1, Style.ButtonStyles.TitleButton)
 
+		-- The close button has been pressed
 		if pressed == true then
 			window.Open[1] = false
 			window.RedrawNextFrame = true
 		end
 	end
 
+	-- Window background double click which will nto work when the window cannot collapse
 	local title: Types.WindowTitle = window.Window.Title
-	if (focusOnButton == false) and (title.Instance ~= nil) then
+	if (focusOnButton == false) and (title.Instance ~= nil) and (window.Flags.NoCollapse == false) then
 		local instance: Frame = title.Instance
 
 		local hovered: boolean =
@@ -606,8 +622,8 @@ function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	-- Bottom Side
 	ResizeBehaviour(
 		window.Window.Resize.Bottom,
-		Vector2.new(innerPadding, -innerPadding + size.Y),
-		Vector2.new(size.X - 2 * padding, outerPadding * 2),
+		Vector2.new(innerPadding, -outerPadding + size.Y),
+		Vector2.new(size.X - 2 * innerPadding, outerPadding * 2),
 		0,
 		Style.ButtonStyles.SideResize,
 		Vector2.yAxis,
@@ -628,8 +644,8 @@ function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	-- Right Side
 	ResizeBehaviour(
 		window.Window.Resize.Right,
-		Vector2.new(-innerPadding + size.X, innerPadding),
-		Vector2.new(outerPadding * 2, size.Y - 2 * padding),
+		Vector2.new(-outerPadding + size.X, innerPadding),
+		Vector2.new(outerPadding * 2, size.Y - 2 * innerPadding),
 		0,
 		Style.ButtonStyles.SideResize,
 		Vector2.xAxis,
@@ -712,7 +728,7 @@ function ImGui:UpdateWindowResize()
 				newSize.Y
 			)
 			newPosition = Vector2.new(
-				math.clamp(mousePosition.X - offset.X, -offset.X, position.X + size.X - minimumSize.X - offset.X),
+				math.clamp(mousePosition.X - offset.X, 0, position.X + size.X - minimumSize.X),
 				newPosition.Y
 			)
 		end
@@ -733,7 +749,7 @@ function ImGui:UpdateWindowResize()
 			)
 			newPosition = Vector2.new(
 				newPosition.X,
-				math.clamp(mousePosition.Y - offset.Y, -offset.Y, position.Y + size.Y - minimumSize.Y - offset.Y)
+				math.clamp(mousePosition.Y - offset.Y, -offset.Y, position.Y + size.Y - minimumSize.Y)
 			)
 		end
 
@@ -757,6 +773,18 @@ end
 
 	:Begin()
 	:End()
+
+	Element functions
+
+	:Text()
+	:TextDisabled()
+	:TextColoured()
+
+	:Checkbox()
+	:Button()
+
+	:Indent()
+	:UnIndent()
 ]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): (boolean)
 	-- just create a set of default flags
@@ -905,6 +933,7 @@ function ImGui:Text(textString: string, ...)
 	end
 
 	text.Active = true
+	text.LastFrameActive = frameId
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
 	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
@@ -947,6 +976,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	end
 
 	checkbox.Active = true
+	checkbox.LastFrameActive = frameId
 
 	local instance: Frame = checkbox.Instance
 
@@ -985,6 +1015,7 @@ function ImGui:Button(text: string): (boolean)
 	end
 
 	button.Active = true
+	button.LastFrameActive = frameId
 
 	local instance: TextLabel = button.Instance
 
