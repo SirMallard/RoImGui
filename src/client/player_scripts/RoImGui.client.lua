@@ -40,6 +40,7 @@ runService.RenderStepped:Connect(function(_: number)
 		RoImGui:TextDisabled("This text is disabled!")
 		RoImGui:Text("Inbetween text!")
 		RoImGui:TextColoured(colour, "Rainbow Text!")
+		RoImGui:BulletText("A line with a bullet point!")
 		RoImGui:End()
 	end
 end)

@@ -896,7 +896,11 @@ function ImGui:End()
 	table.remove(ImGuiInternal.ElementFrameStack)
 end
 
-function ImGui:Text(textString: string, ...)
+function ImGui:Text(textString: string, ...: any)
+	ImGui:TextV(textString, false, ...)
+end
+
+function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- We don't draw if it is going to be redrawn next frame.
@@ -922,10 +926,14 @@ function ImGui:Text(textString: string, ...)
 		textString = textString:format(table.unpack(args))
 	end
 
-	local text: Types.ImGuiText? = ImGui:GetElementById(elementFrame.Id .. ">" .. textString, "Text", elementFrame)
+	local text: Types.ImGuiText? = ImGui:GetElementById(
+		elementFrame.Id .. ">" .. textString,
+		bulletText == true and "BulletText" or "Text",
+		elementFrame
+	)
 
 	if text == nil then
-		text = Text.new(textString, window, elementFrame)
+		text = Text.new(textString, bulletText, window, elementFrame)
 		text:DrawText(elementFrame.DrawCursor.Position)
 		table.insert(elementFrame.Elements, text)
 	else
@@ -939,16 +947,20 @@ function ImGui:Text(textString: string, ...)
 	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
-function ImGui:TextDisabled(textString: string, ...)
+function ImGui:TextDisabled(textString: string, ...: any)
 	ImGui:PushColour("Text", Style.Colours.TextDisabled)
-	ImGui:Text(textString, ...)
+	ImGui:TextV(textString, false, ...)
 	ImGui:PopColour("Text")
 end
 
-function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...)
+function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
 	ImGui:PushColour("Text", colour)
-	ImGui:Text(textString, ...)
+	ImGui:TextV(textString, false, ...)
 	ImGui:PopColour("Text")
+end
+
+function ImGui:BulletText(textString: string, ...: any)
+	ImGui:TextV(textString, true, ...)
 end
 
 function ImGui:Checkbox(text: string, value: { boolean })

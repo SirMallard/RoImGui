@@ -131,6 +131,7 @@ export type Class =
 	| "Menu"
 	| "ElementFrame"
 	| "Text"
+	| "BulletText"
 	| "Checkbox"
 	| "Button"
 	| ""
@@ -311,6 +312,7 @@ export type ImGuiText = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 		LastFrameActive: number,
+		BulletText: boolean,
 
 		Active: boolean,
 
@@ -405,9 +407,11 @@ export type ImGui = {
 	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> (boolean),
 	End: (self: ImGui) -> (),
 
+	TextV: (self: ImGui, text: string, bulletText: boolean, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
+	BulletText: (self: ImGui, text: string, ...any) -> (),
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
 	Button: (self: ImGui, text: string) -> (boolean),
