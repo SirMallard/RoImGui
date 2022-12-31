@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local runService: RunService = game:GetService("RunService")
 
 local components = script.Components
@@ -11,10 +12,12 @@ local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
 local Flags = require(script.Flags)
 
-local frameId: number = -1
+local startFrameId: number = -1
+local endFrameId: number = -1
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
+ImGui.FrameId = startFrameId
 ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
@@ -24,30 +27,30 @@ function ImGui:DebugWindow()
 	flags.NoClose = true
 	-- flags.NoCollapse = true
 
-	if ImGui:Begin("Debug", { true }, flags) then
-		ImGui:Text("Elements:")
-		ImGui:Indent()
-		ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
-		ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
-		ImGui:Unindent()
+	-- if ImGui:Begin("Debug", { true }, flags) then
+	-- ImGui:Text("Elements:")
+	-- ImGui:Indent()
+	-- ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
+	-- ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
+	-- ImGui:Unindent()
 
-		ImGui:Text("Windows:")
-		ImGui:Indent()
-		ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
-		ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
-		ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
-		ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
-		ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
-		ImGui:Unindent()
-		ImGui:Text("Resizing:")
-		ImGui:Indent()
-		ImGui:Text("Mouse Position: (%s)", ImGuiInternal.MouseCursor.Position)
-		ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
-		ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
-		ImGui:Unindent()
-		ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
-		ImGui:End()
-	end
+	-- ImGui:Text("Windows:")
+	-- ImGui:Indent()
+	-- ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
+	-- ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
+	-- ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
+	-- ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
+	-- ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
+	-- ImGui:Unindent()
+	-- ImGui:Text("Resizing:")
+	-- ImGui:Indent()
+	-- ImGui:Text("Mouse Position: (%s)", ImGuiInternal.MouseCursor.Position)
+	-- ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
+	-- ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
+	-- ImGui:Unindent()
+	-- ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
+	-- 	ImGui:End()
+	-- end
 
 	if ImGuiInternal.Debug.HoverDebug[1] == true and ImGuiInternal.HoverId ~= "" then
 		ImGuiInternal.Debug.HoverElement.stroke.Enabled = true
@@ -55,8 +58,8 @@ function ImGui:DebugWindow()
 		ImGuiInternal.Debug.HoverElement.stroke.Enabled = false
 	end
 
-	local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
-	window.Active = true
+	-- local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
+	-- window.Active = true
 end
 
 --[[
@@ -79,16 +82,13 @@ function ImGui:Start()
 	-- Therefore to ensure this callback happens first and before any other bindings, it must be connected first
 	-- and stay bound.
 	runService:BindToRenderStep("ImGuiRender", Enum.RenderPriority.First.Value, function(deltaTime: number)
-		if ImGuiInternal.Status == "Paused" then
+		if ImGuiInternal.Status ~= "Started" then
 			return
 		end
 
-		frameId += 1
+		startFrameId += 1
+		ImGui.FrameId = startFrameId
 		ImGuiInternal:UpdateTime(deltaTime)
-
-		if ImGuiInternal.Status == "Stopped" then
-			return
-		end
 
 		ImGui:SetHover("", "")
 
@@ -104,7 +104,12 @@ function ImGui:Start()
 		if ImGuiInternal.Status ~= "Started" then
 			return
 		end
-		ImGui:DebugWindow()
+
+		endFrameId += 1
+		if endFrameId ~= startFrameId then
+			print("⏰ Out of sync? 😤")
+		end
+		-- ImGui:DebugWindow()
 
 		ImGui:EndFrameMouseUpdate()
 		ImGui:CleanWindowElements()
@@ -177,7 +182,7 @@ function ImGui:CleanWindowElements()
 		local frame: Types.ElementFrame = window.Window.Frame
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
-			if element.LastFrameActive < frameId then
+			if element.LastFrameActive < endFrameId then
 				element:Destroy()
 				table.remove(frame.Elements, elementIndex)
 			else
@@ -485,11 +490,20 @@ function ImGui:GetActiveElementFrame(): ()
 end
 
 -- Loops through all children in the element frame and checks the id and class for the desired element.
-function ImGui:GetElementById(id: Types.ImGuiId, class: string, elementFrame: Types.ElementFrame): (Types.Element?)
+function ImGui:GetElementById(
+	id: Types.ImGuiId,
+	class: string,
+	elementFrame: Types.ElementFrame,
+	active: boolean?
+): (Types.Element?)
 	local element: Types.Element
 
 	for _, childElement: Types.ImGuiText in elementFrame.Elements do
-		if (childElement.Id == id) and (childElement.Class == class) then
+		if
+			(childElement.Id == id)
+			and (childElement.Class == class)
+			and ((childElement.Active == false) or (active == nil))
+		then
 			element = childElement
 			break
 		end
@@ -803,8 +817,8 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
-	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
-	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1)) or (flags.Popup == true)
+	local firstFrameCall: boolean = (window.LastFrameActive ~= startFrameId) -- If this is the first time in the renderstep for creating the window
+	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1)) or (flags.Popup == true)
 
 	local parentWindowFromStack: Types.ImGuiWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
@@ -813,7 +827,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	ImGuiInternal.CurrentWindow = window
 	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
 	window.Appearing = windowApearing
-	window.LastFrameActive = frameId
+	window.LastFrameActive = startFrameId
 	ImGuiInternal.ActiveWindow = window
 
 	if flags.ChildWindow == true then
@@ -917,6 +931,13 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		return
 	end
 
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return
+	end
+
 	-- format with the args
 	local args: { any } = { ... }
 	if #args > 0 then
@@ -941,7 +962,7 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	end
 
 	text.Active = true
-	text.LastFrameActive = frameId
+	text.LastFrameActive = startFrameId
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
 	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
@@ -976,6 +997,13 @@ function ImGui:Checkbox(text: string, value: { boolean })
 		return
 	end
 
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return
+	end
+
 	local checkbox: Types.ImGuiCheckbox? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Checkbox", elementFrame)
 
@@ -988,7 +1016,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	end
 
 	checkbox.Active = true
-	checkbox.LastFrameActive = frameId
+	checkbox.LastFrameActive = startFrameId
 
 	local instance: Frame = checkbox.Instance
 
@@ -1016,6 +1044,13 @@ function ImGui:Button(text: string): (boolean)
 		return false
 	end
 
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return false
+	end
+
 	local button: Types.ImGuiButton? = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Button", elementFrame)
 
 	if button == nil then
@@ -1027,7 +1062,7 @@ function ImGui:Button(text: string): (boolean)
 	end
 
 	button.Active = true
-	button.LastFrameActive = frameId
+	button.LastFrameActive = startFrameId
 
 	local instance: TextLabel = button.Instance
 
@@ -1047,35 +1082,39 @@ function ImGui:Button(text: string): (boolean)
 end
 
 function ImGui:Indent()
-	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
-	if
-		(ImGuiInternal.CurrentWindow == nil)
-		or (elementFrameStackLength == 0)
-		or (ImGuiInternal.CurrentWindow.SkipElements == true)
-	then
-		return
-	end
-
-	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
 	frame.DrawCursor.Position += Vector2.new(Style.Sizes.IndentSpacing)
 end
 
 function ImGui:Unindent()
-	local elementFrameStackLength: number = #ImGuiInternal.ElementFrameStack
-	if
-		(ImGuiInternal.CurrentWindow == nil)
-		or (elementFrameStackLength == 0)
-		or (ImGuiInternal.CurrentWindow.SkipElements == true)
-	then
-		return
-	end
-
-	local frame: Types.ElementFrame = ImGuiInternal.ElementFrameStack[elementFrameStackLength]
+	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
 	frame.DrawCursor.Position -= Vector2.new(Style.Sizes.IndentSpacing)
+end
+
+function ImGui:TreeNode(text: string): (boolean)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
+	if elementFrame == nil then
+		return false
+	end
+
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return false
+	end
+
+	local treeNode = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
 end
 
 return ImGui

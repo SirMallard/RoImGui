@@ -1,7 +1,6 @@
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
 local Utility = require(script.Parent.Parent.Utility.Utility)
-local Hash = require(script.Parent.Parent.Utility.Hash)
 local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Window = {}
@@ -31,7 +30,6 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 	self.Name = windowName
 	self.Class = "Window"
 	self.Id = windowName
-	self.Hash = Hash(self.Id)
 
 	self.ParentWindow = parentWindow or nil
 	self.RootWindow = parentWindow and parentWindow.RootWindow or nil
@@ -61,18 +59,15 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 		Title = {
 			Class = "Title",
 			Id = self.Id .. ">Title",
-			Hash = Hash(self.Id .. ">Title"),
 			Text = "",
 			Collapse = {
 				Class = "Button",
 				Id = self.Id .. ">Title>Collapse",
-				Hash = Hash(self.Id .. ">Title>Collapse"),
 				State = 0,
 			},
 			Close = {
 				Class = "Button",
 				Id = self.Id .. ">Title>Close",
-				Hash = Hash(self.Id .. ">Title>Close"),
 				State = 0,
 			},
 			MinimumSize = Vector2.new(0, 0),
@@ -80,14 +75,12 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 		Menubar = {
 			Class = "Menubar",
 			Id = self.Id .. ">Menubar",
-			Hash = Hash(self.Id .. ">Menubar"),
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Frame = {
 			Class = "ElementFrame",
 			Id = self.Id .. ">Frame",
-			Hash = Hash(self.Id .. ">Frame"),
 			MinimumSize = Vector2.new(0, Style.Sizes.TextSize),
 			DrawCursor = {
 				Position = Vector2.zero, -- Kept locally to the frame
@@ -101,41 +94,34 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 		Resize = {
 			Class = "Resize",
 			Id = self.Id .. ">Resize",
-			Hash = Hash(self.Id .. ">Resize"),
 			Top = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>Top",
-				Hash = Hash(self.Id .. ">Resize>Top"),
 				State = 0,
 			},
 			Bottom = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>Bottom",
-				Hash = Hash(self.Id .. ">Resize>Bottom"),
 				State = 0,
 			},
 			Left = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>Left",
-				Hash = Hash(self.Id .. ">Resize>Left"),
 				State = 0,
 			},
 			Right = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>Right",
-				Hash = Hash(self.Id .. ">Resize>Right"),
 				State = 0,
 			},
 			BottomLeft = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>BottomLeft",
-				Hash = Hash(self.Id .. ">Resize>BottomLeft"),
 				State = 0,
 			},
 			BottomRight = {
 				Class = "Side",
 				Id = self.Id .. ">Resize>BottomRight",
-				Hash = Hash(self.Id .. ">Resize>BottomRight"),
 				State = 0,
 			},
 		},

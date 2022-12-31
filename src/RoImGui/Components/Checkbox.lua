@@ -1,7 +1,6 @@
 local Types = require(script.Parent.Parent.Types)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
-local Hash = require(script.Parent.Parent.Utility.Hash)
 
 local Checkbox = {}
 Checkbox.__index = Checkbox
@@ -16,7 +15,6 @@ function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindo
 	self.Text = text
 	self.Class = "Checkbox"
 	self.Id = elementFrame.Id .. ">" .. self.Text
-	self.Hash = Hash(self.Id)
 	self.Value = value
 	self.InternalValue = value[1]
 

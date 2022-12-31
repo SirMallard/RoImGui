@@ -16,6 +16,10 @@ firstFlags.NoCollapse = true
 local colour: Types.Colour4 = Colour4.fromColour3(BrickColor.random().Color)
 
 runService.RenderStepped:Connect(function(_: number)
+	if RoImGui:Begin("Demo", { true }) then
+		RoImGui:Text("Single line.")
+	end
+
 	if RoImGui:Begin("One window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
 		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
@@ -41,6 +45,7 @@ runService.RenderStepped:Connect(function(_: number)
 		RoImGui:Text("Inbetween text!")
 		RoImGui:TextColoured(colour, "Rainbow Text!")
 		RoImGui:BulletText("A line with a bullet point!")
+		RoImGui:Text("Time: %s", tostring(time()))
 		RoImGui:End()
 	end
 end)

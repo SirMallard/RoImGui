@@ -1,7 +1,6 @@
 local Types = require(script.Parent.Parent.Types)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
-local Hash = require(script.Parent.Parent.Utility.Hash)
 
 local Text = {}
 Text.__index = Text
@@ -16,7 +15,6 @@ function Text.new(text: string, bulletText: boolean, window: Types.ImGuiWindow, 
 	self.Text = text
 	self.Class = bulletText == true and "BulletText" or "Text"
 	self.Id = elementFrame.Id .. ">" .. self.Text
-	self.Hash = Hash(self.Id)
 
 	self.ElementFrame = elementFrame
 	self.Window = window

@@ -22,6 +22,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 	LastStack = {},
 
 	Frame = -1,
+	Time = 0,
 	ElapsedTime = 0,
 	GuiInset = Vector2.zero,
 
@@ -210,6 +211,7 @@ end
 
 function ImGuiInternal:UpdateTime(deltaTime: number)
 	self.Frame += 1
+	self.Time = os.time()
 	self.ElapsedTime += deltaTime
 	self.DeltaTime = deltaTime
 end

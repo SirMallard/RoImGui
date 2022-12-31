@@ -113,7 +113,6 @@ export type ImGuiButtonStyles = {
 		=<>= VALUES =<>=
 ]]
 export type ImGuiId = string
-export type ImGuiHash = string
 
 --[[
 	The Internal ButtonState used by all buttons:
@@ -138,6 +137,7 @@ export type Class =
 	| "Corner"
 	| "Side"
 	| "Resize"
+	| "TreeNode"
 
 --[[
 		=<>= FLAGS =<>=
@@ -178,7 +178,6 @@ export type DrawCursor = {
 export type WindowTitleButton = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	Instance: GuiBase2d?,
 	State: ButtonState,
 	Instance: ImageLabel?,
@@ -187,14 +186,12 @@ export type WindowTitleButton = {
 export type WindowMenu = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	Instance: Frame?,
 }
 
 export type WindowTitle = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	Instance: Frame?,
 	Text: string?,
 	Collapse: WindowTitleButton,
@@ -205,7 +202,6 @@ export type WindowTitle = {
 export type WindowMenubar = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	Instance: Frame?,
 	Menus: {
 		[string]: WindowMenu,
@@ -216,7 +212,6 @@ export type WindowMenubar = {
 export type ElementFrame = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	Instance: Frame?,
 	MinimumSize: Vector2,
 	Elements: { ImGuiText },
@@ -226,7 +221,6 @@ export type ElementFrame = {
 export type ResizeElement = {
 	Class: Class,
 	Id: ImGuiId,
-	Hash: ImGuiHash,
 	State: ButtonState,
 	Instance: Frame | ImageLabel?,
 }
@@ -235,7 +229,6 @@ export type ImGuiWindow = typeof(setmetatable(
 	{} :: {
 		Class: Class,
 		Id: ImGuiId,
-		Hash: ImGuiHash,
 		Name: string,
 		Flags: WindowFlags,
 
@@ -274,7 +267,6 @@ export type ImGuiWindow = typeof(setmetatable(
 			Resize: {
 				Class: Class,
 				Id: ImGuiId,
-				Hash: ImGuiHash,
 				Instance: Frame?,
 				Top: ResizeElement,
 				Bottom: ResizeElement,
@@ -308,7 +300,6 @@ export type ImGuiText = typeof(setmetatable(
 		Class: Class,
 		Text: string,
 		Id: ImGuiId,
-		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 		LastFrameActive: number,
@@ -337,7 +328,6 @@ export type ImGuiCheckbox = typeof(setmetatable(
 		Class: Class,
 		Text: string,
 		Id: ImGuiId,
-		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 		LastFrameActive: number,
@@ -370,7 +360,6 @@ export type ImGuiButton = typeof(setmetatable(
 		Class: Class,
 		Text: string,
 		Id: ImGuiId,
-		Hash: ImGuiHash,
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 		LastFrameActive: number,
@@ -404,6 +393,8 @@ export type ImGui = {
 	Stop: (self: ImGui) -> (),
 	Pause: (self: ImGui) -> (),
 
+	FrameId: number,
+
 	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> (boolean),
 	End: (self: ImGui) -> (),
 
@@ -415,6 +406,9 @@ export type ImGui = {
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
 	Button: (self: ImGui, text: string) -> (boolean),
+
+	TreeNode: (self: ImGui, text: string) -> (boolean),
+	CollapsingHeader: (self: ImGui, text: string) -> (boolean),
 
 	Indent: (self: ImGui) -> (),
 	Unindent: (self: ImGui) -> (),
@@ -434,7 +428,13 @@ export type ImGui = {
 	EndFrameMouseUpdate: (ImGui) -> (),
 
 	GetActiveElementFrame: (self: ImGui) -> (),
-	GetElementById: (self: ImGui, id: ImGuiId, class: string, elementFrame: ElementFrame) -> (Element?),
+	GetElementById: (
+		self: ImGui,
+		id: ImGuiId,
+		class: string,
+		elementFrame: ElementFrame,
+		active: boolean?
+	) -> (Element?),
 	GetWindowById: (self: ImGui, id: ImGuiId) -> (ImGuiWindow?),
 	CreateWindow: (self: ImGui, id: ImGuiId, flags: WindowFlags) -> (ImGuiWindow),
 	HandleWindowTitleBar: (self: ImGui, window: ImGuiWindow) -> (),
@@ -471,6 +471,7 @@ export type MouseButtonData = {
 export type ImGuiInternal = {
 	Frame: number,
 	ElapsedTime: number,
+	Time: number,
 	DeltaTime: number,
 	GuiInset: Vector2,
 

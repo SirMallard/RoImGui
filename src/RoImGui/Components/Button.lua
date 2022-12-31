@@ -1,7 +1,6 @@
 local Types = require(script.Parent.Parent.Types)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
-local Hash = require(script.Parent.Parent.Utility.Hash)
 
 local Button = {}
 Button.__index = Button
@@ -16,7 +15,6 @@ function Button.new(text: string, window: Types.ImGuiWindow, elementFrame: Types
 	self.Text = text
 	self.Class = "Button"
 	self.Id = elementFrame.Id .. ">" .. self.Text
-	self.Hash = Hash(self.Id)
 
 	self.State = 0
 
