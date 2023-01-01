@@ -910,11 +910,26 @@ function ImGui:End()
 	table.remove(ImGuiInternal.ElementFrameStack)
 end
 
+function ImGui:BeginMenuBar()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	if window.Collapsed == true then
+		return
+	end
+
+	window:DrawMenuBar()
+end
+
+function ImGui:EndMenuBar() end
+
 function ImGui:Text(textString: string, ...: any)
 	ImGui:TextV(textString, false, ...)
 end
 
 function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- We don't draw if it is going to be redrawn next frame.
@@ -926,11 +941,7 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		return
 	end
 
-	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
-	if elementFrame == nil then
-		return
-	end
-
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
@@ -985,6 +996,8 @@ function ImGui:BulletText(textString: string, ...: any)
 end
 
 function ImGui:Checkbox(text: string, value: { boolean })
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:Text()
@@ -992,11 +1005,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 		return
 	end
 
-	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
-	if elementFrame == nil then
-		return
-	end
-
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
@@ -1032,6 +1041,8 @@ function ImGui:Checkbox(text: string, value: { boolean })
 end
 
 function ImGui:Button(text: string): (boolean)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:Text()
@@ -1039,11 +1050,7 @@ function ImGui:Button(text: string): (boolean)
 		return false
 	end
 
-	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
-	if elementFrame == nil then
-		return false
-	end
-
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
@@ -1082,6 +1089,8 @@ function ImGui:Button(text: string): (boolean)
 end
 
 function ImGui:Indent()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
@@ -1089,6 +1098,8 @@ function ImGui:Indent()
 end
 
 function ImGui:Unindent()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
@@ -1096,6 +1107,8 @@ function ImGui:Unindent()
 end
 
 function ImGui:TreeNode(text: string): (boolean)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then

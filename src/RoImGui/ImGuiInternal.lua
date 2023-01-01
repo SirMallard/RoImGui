@@ -216,4 +216,8 @@ function ImGuiInternal:UpdateTime(deltaTime: number)
 	self.DeltaTime = deltaTime
 end
 
+ImGuiInternal.ErrorMessages = {
+	CurrentWindow = "RoImGui Error: 🪟 No current window open.\nDid you forget to call :Begin()?",
+}
+
 return ImGuiInternal

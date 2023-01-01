@@ -36,6 +36,7 @@ runService.RenderStepped:Connect(function(_: number)
 	end
 
 	if RoImGui:Begin("A super-duper really long window name!", { true }) then
+		RoImGui:BeginMenuBar()
 		RoImGui:Text("One line")
 		RoImGui:Text("One line\nwith another line")
 		RoImGui:Checkbox("A textbox", childOpen)

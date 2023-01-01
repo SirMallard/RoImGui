@@ -200,8 +200,6 @@ export type WindowTitle = {
 }
 
 export type WindowMenubar = {
-	Class: Class,
-	Id: ImGuiId,
 	Instance: Frame?,
 	Menus: {
 		[string]: WindowMenu,
@@ -289,6 +287,7 @@ export type ImGuiWindow = typeof(setmetatable(
 		SetAllStates: (self: ImGuiWindow, state: ButtonState) -> (),
 		DrawWindow: (self: ImGuiWindow, stack: number?) -> (),
 		DrawTitle: (self: ImGuiWindow) -> (),
+		DrawMenuBar: (self: ImGuiWindow) -> (),
 		DrawFrame: (self: ImGuiWindow) -> (),
 
 		Destroy: (self: ImGuiWindow) -> (),
@@ -397,6 +396,12 @@ export type ImGui = {
 
 	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> (boolean),
 	End: (self: ImGui) -> (),
+
+	BeginMenuBar: (self: ImGui) -> (),
+	EndMenuBar: (self: ImGui) -> (),
+
+	BeginMenu: (self: ImGui) -> (),
+	EndMenu: (self: ImGui) -> (),
 
 	TextV: (self: ImGui, text: string, bulletText: boolean, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
@@ -525,6 +530,8 @@ export type ImGuiInternal = {
 		HoverDebug: { boolean },
 		HoverElement: Frame,
 	},
+
+	ErrorMessages: { [string]: string },
 
 	Initialise: (self: ImGuiInternal) -> (),
 	UpdateMouseInputs: (self: ImGuiInternal) -> (),

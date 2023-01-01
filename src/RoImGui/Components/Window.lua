@@ -73,8 +73,6 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 			MinimumSize = Vector2.new(0, 0),
 		},
 		Menubar = {
-			Class = "Menubar",
-			Id = self.Id .. ">Menubar",
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
 		},
@@ -489,6 +487,30 @@ function Window:DrawTitle()
 
 		title.Parent = self.Window.Instance
 		windowTitle.Instance = title
+	end
+end
+
+function Window:DrawMenuBar()
+	if (self.Window.Menubar.Instance == nil) or (self.RedrawThisFrame == true) then
+		if self.Window.Menubar.Instance ~= nil then
+			self.Window.Menubar.Instance:Destroy()
+		end
+
+		local height: number = Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y
+
+		local menubar: Frame = Instance.new("Frame")
+		menubar.Name = "menubar"
+		menubar.Position = UDim2.fromOffset(0, self.Window.Title.MinimumSize.Y)
+		menubar.Size = UDim2.new(1, 0, 0, height)
+
+		menubar.BackgroundColor3 = Style.Colours.MenuBarBg.Colour
+		menubar.BackgroundTransparency = Style.Colours.MenuBarBg.Transparency
+		menubar.BorderColor3 = COLOUR3_BLACK
+		menubar.BorderSizePixel = 0
+
+		menubar.Parent = self.Window.Instance
+		self.Window.Menubar.Instance = menubar
+		self.Window.Menubar.MinimumSize = Vector2.new(0, height)
 	end
 end
 
