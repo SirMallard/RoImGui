@@ -163,6 +163,10 @@ export type WindowFlags = {
 	ChildMenu: boolean,
 }
 
+export type PopupFlags = {
+	type: "PopupFlags",
+}
+
 export type DrawCursor = {
 	Position: Vector2,
 	PreviousPosition: Vector2,
