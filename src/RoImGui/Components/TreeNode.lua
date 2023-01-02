@@ -7,7 +7,7 @@ TreeNode.__index = TreeNode
 TreeNode.ClassName = "TreeNode"
 
 -- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
-local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
+-- local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function TreeNode.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self = setmetatable({}, TreeNode)

@@ -12,9 +12,9 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiCheckbox = setmetatable({}, Checkbox) :: Types.ImGuiCheckbox
 
-	self.Text = text
 	self.Class = "Checkbox"
-	self.Id = elementFrame.Id .. ">" .. self.Text
+	self.Id = elementFrame.Id .. ">" .. text
+	self.Text = text
 	self.Value = value
 	self.InternalValue = value[1]
 
@@ -68,6 +68,7 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	text.Text = self.Text
 	text.FontFace = Style.Font
 	text.TextColor3 = Style.Colours.Text.Colour
+	text.TextTransparency = Style.Colours.Text.Transparency
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left

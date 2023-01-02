@@ -218,6 +218,8 @@ end
 
 ImGuiInternal.ErrorMessages = {
 	CurrentWindow = "RoImGui Error: 🪟 No current window open.\nDid you forget to call :Begin()?",
+	MenuBarOpen = "RoImGui Error: 🔽 Menubar already open.\nDid you already call :BeginMenuBar() or forget to call :EndMenuBar()?",
+	MenuBarClosed = "RoImGui Error: 🔽 Menubar is closed.\nDid you already call :EndMenuBar() or forget to call :BeginMenuBar()?",
 }
 
 return ImGuiInternal

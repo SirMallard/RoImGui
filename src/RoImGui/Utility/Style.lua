@@ -107,6 +107,11 @@ local ButtonStyles: Types.ImGuiButtonStyles = {
 		[1] = Colours.ResizeGripHovered,
 		[2] = Colours.ResizeGripActive,
 	},
+	Menu = {
+		[0] = Colours.Transparent,
+		[1] = Colours.HeaderHovered,
+		[2] = Colours.Header,
+	},
 }
 
 local backup = {

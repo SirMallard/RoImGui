@@ -37,6 +37,15 @@ runService.RenderStepped:Connect(function(_: number)
 
 	if RoImGui:Begin("A super-duper really long window name!", { true }) then
 		if RoImGui:BeginMenuBar() then
+			if RoImGui:BeginMenu("File") then
+				RoImGui:EndMenu()
+			end
+			if RoImGui:BeginMenu("Edit") then
+				RoImGui:EndMenu()
+			end
+			if RoImGui:BeginMenu("Options") then
+				RoImGui:EndMenu()
+			end
 			RoImGui:EndMenuBar()
 		end
 		RoImGui:Text("One line")

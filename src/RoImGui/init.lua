@@ -4,13 +4,21 @@ local runService: RunService = game:GetService("RunService")
 local components = script.Components
 local Types = require(script.Types)
 local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
-local Window = require(components.Window)
-local Text = require(components.Text)
-local Checkbox = require(components.Checkbox)
-local Button = require(components.Button)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
 local Flags = require(script.Flags)
+
+--[[
+	Requiring all of the elements	
+]]
+--
+local Window = require(components.Window)
+
+local Menu = require(components.Menu)
+
+local Text = require(components.Text)
+local Checkbox = require(components.Checkbox)
+local Button = require(components.Button)
 
 local startFrameId: number = -1
 local endFrameId: number = -1
@@ -165,18 +173,18 @@ function ImGui:CleanWindowElements()
 		end
 
 		-- loop through all menubars
-		for name: string, menubar: Types.WindowMenu in window.Window.Menubar.Menus do
-			menubar.Id = name
-			-- menubar.WasActive = menubar.Active
-			-- menubar.Active = false
+		local menubar: Types.WindowMenubar = window.Window.Menubar
+		for name: string, menu: Types.ImGuiMenu in menubar.Menus do
+			menu.Active = false
 
-			-- if menubar.WasActive == false then
-			-- 	if menubar.Instance ~= nil then
-			-- 		menubar.Instance:Destroy()
-			-- 	end
-			-- 	window.Window.Menubar.Menus[name] = nil
-			-- end
+			if menu.LastFrameActive < endFrameId then
+				menu:Destroy()
+				window.Window.Menubar.Menus[name] = nil
+			end
 		end
+
+		menubar.DrawCursor.Position = menubar.DrawCursor.StartPosition
+		menubar.DrawCursor.PreviousPosition = menubar.DrawCursor.PreviousPosition
 
 		-- loop through all window elements
 		local frame: Types.ElementFrame = window.Window.Frame
@@ -317,7 +325,7 @@ function ItemHoverable(
 	position: Vector2,
 	size: Vector2,
 	id: Types.ImGuiId,
-	class: Types.Class,
+	class: Types.ImGuiClass,
 	window: Types.ImGuiWindow
 )
 	if (ImGuiInternal.HoverId ~= "") and ((ImGuiInternal.HoverId ~= id) and (ImGuiInternal.HoverClass ~= class)) then
@@ -354,7 +362,7 @@ function ButtonBehaviour(
 	position: Vector2,
 	size: Vector2,
 	id: Types.ImGuiId,
-	class: Types.Class,
+	class: Types.ImGuiClass,
 	window: Types.ImGuiWindow
 ): (boolean, boolean, boolean)
 	-- Todo: create the UI ids so I can reference the current id.
@@ -467,13 +475,13 @@ function ImGui:SetNavWindow(window: Types.ImGuiWindow | nil)
 	end
 end
 
-function ImGui:SetActive(id: Types.ImGuiId, class: Types.Class, window: Types.ImGuiWindow | nil)
+function ImGui:SetActive(id: Types.ImGuiId, class: Types.ImGuiClass, window: Types.ImGuiWindow | nil)
 	ImGuiInternal.ActiveId = id
 	ImGuiInternal.ActiveClass = class
 	ImGuiInternal.ActiveWindow = window
 end
 
-function ImGui:SetHover(id: Types.ImGuiId, class: Types.Class)
+function ImGui:SetHover(id: Types.ImGuiId, class: Types.ImGuiClass)
 	ImGuiInternal.HoverId = id
 	ImGuiInternal.HoverClass = class
 end
@@ -913,15 +921,96 @@ end
 function ImGui:BeginMenuBar()
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	assert(window.Window.Menubar.Appending == false, ImGuiInternal.ErrorMessages.MenuBarOpen)
 
-	if window.Collapsed == true then
+	-- see ImGui:Text()
+	if
+		(window.Collapsed == true)
+		or (window.Open[1] == false)
+		or (window.RedrawNextFrame == true)
+		or (window.Flags.MenuBar == false)
+	then
+		return false
+	end
+
+	window.Window.Menubar.Appending = true
+	window:DrawMenuBar()
+
+	return true
+end
+
+function ImGui:EndMenuBar()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	assert(window.Window.Menubar.Appending == true, ImGuiInternal.ErrorMessages.MenuBarClosed)
+
+	-- see ImGui:Text()
+	if
+		(window.Collapsed == true)
+		or (window.Open[1] == false)
+		or (window.RedrawNextFrame == true)
+		or (window.Flags.MenuBar == false)
+	then
 		return
 	end
 
-	window:DrawMenuBar()
+	window.Window.Menubar.Appending = false
 end
 
-function ImGui:EndMenuBar() end
+function ImGui:BeginMenu(name: string)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	assert(window.Window.Menubar.Appending == true, ImGuiInternal.ErrorMessages.MenuBarOpen)
+	assert(window.ActiveMenu == nil, ImGuiInternal.ErrorMessages.ActiveMenuOpen)
+
+	-- see ImGui:Text()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local menubar: Types.WindowMenubar = window.Window.Menubar
+
+	local menu: Types.ImGuiMenu? = menubar.Menus[name]
+	if menu == nil then
+		menu = Menu.new(name, window, menubar)
+		menu:DrawMenu(menubar.DrawCursor.Position)
+		menubar.Menus[name] = menu
+		menubar.DrawCursor.PreviousPosition = menubar.DrawCursor.Position
+		menubar.DrawCursor.Position += Vector2.xAxis * menu.Size.X
+	else
+		menu:UpdatePosition(menubar.DrawCursor.Position)
+		menubar.DrawCursor.PreviousPosition = menubar.DrawCursor.Position
+		menubar.DrawCursor.Position += Vector2.xAxis * menu.Size.X
+	end
+
+	menu.Active = true
+	menu.LastFrameActive = startFrameId
+
+	local instance: TextLabel = menu.Instance
+	local pressed: boolean, hovered: boolean, held: boolean =
+		ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, menu.Id, menu.Class, window)
+
+	ButtonLogic(instance, hovered, held, menu :: Types.Button, 0, Style.ButtonStyles.Menu)
+
+	if pressed == true then
+		window.ActiveMenu = menu
+		return true
+	end
+	return false
+end
+
+function ImGui:EndMenu()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	assert(window.Window.Menubar.Appending == true, ImGuiInternal.ErrorMessages.MenuBarOpen)
+	assert(window.ActiveMenu, ImGuiInternal.ErrorMessages.ActiveMenuClosed)
+
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	window.ActiveMenu = nil
+end
 
 function ImGui:Text(textString: string, ...: any)
 	ImGui:TextV(textString, false, ...)
@@ -976,7 +1065,7 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	text.LastFrameActive = startFrameId
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-	elementFrame.DrawCursor.Position += Vector2.new(0, text.Size.Y + Style.Sizes.ItemSpacing.Y)
+	elementFrame.DrawCursor.Position += Vector2.yAxis * (text.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
 function ImGui:TextDisabled(textString: string, ...: any)
@@ -1036,8 +1125,8 @@ function ImGui:Checkbox(text: string, value: { boolean })
 
 	checkbox:UpdateCheckmark(pressed)
 
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
-	elementFrame.DrawCursor.Position += Vector2.new(0, checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+	elementFrame.DrawCursor.Position += Vector2.yAxis * (checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
 function ImGui:Button(text: string): (boolean)
@@ -1078,10 +1167,9 @@ function ImGui:Button(text: string): (boolean)
 
 	ButtonLogic(instance, hovered, held, button :: Types.Button, 0, Style.ButtonStyles.Button)
 
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
-	elementFrame.DrawCursor.Position += Vector2.new(0, button.Size.Y + Style.Sizes.ItemSpacing.Y)
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+	elementFrame.DrawCursor.Position += Vector2.yAxis * (button.Size.Y + Style.Sizes.ItemSpacing.Y)
 
-	-- some weird RobloxLSP bug
 	if pressed == true then
 		return true
 	end
