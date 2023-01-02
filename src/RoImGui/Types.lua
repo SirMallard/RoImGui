@@ -184,9 +184,11 @@ export type WindowTitleButton = {
 }
 
 export type WindowMenu = {
-	Class: Class,
+	Instance: TextLabel?,
+	Name: string,
 	Id: ImGuiId,
-	Instance: Frame?,
+	Elements: { any },
+	DrawCursor: DrawCursor,
 }
 
 export type WindowTitle = {
@@ -205,6 +207,7 @@ export type WindowMenubar = {
 		[string]: WindowMenu,
 	},
 	MinimumSize: Vector2,
+	DrawCursor: DrawCursor,
 }
 
 export type ElementFrame = {

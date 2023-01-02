@@ -75,6 +75,14 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 		Menubar = {
 			Menus = {},
 			MinimumSize = Vector2.new(0, 0),
+
+			DrawCursor = {
+				Position = Vector2.zero,
+				PreviousPosition = Vector2.zero,
+
+				StartPosition = Vector2.zero,
+				MaximumPosition = Vector2.zero,
+			},
 		},
 		Frame = {
 			Class = "ElementFrame",
