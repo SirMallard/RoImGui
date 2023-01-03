@@ -48,16 +48,27 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 			RoImGui:EndMenuBar()
 		end
-		RoImGui:Text("One line")
-		RoImGui:Text("One line\nwith another line")
-		RoImGui:Checkbox("A textbox", childOpen)
-		RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+		if RoImGui:TreeNode("Demo") then
+			RoImGui:Text("One line")
+			RoImGui:Text("One line\nwith another line")
+			RoImGui:Checkbox("A textbox", childOpen)
+			RoImGui:Checkbox("Multi-window checkbox", booleanValue)
 
-		RoImGui:TextDisabled("This text is disabled!")
-		RoImGui:Text("Inbetween text!")
-		RoImGui:TextColoured(colour, "Rainbow Text!")
-		RoImGui:BulletText("A line with a bullet point!")
-		RoImGui:Text("Time: %s", tostring(time()))
-		RoImGui:End()
+			if RoImGui:TreeNode("Tree node") then
+				RoImGui:Text("A line within a tree node")
+				if RoImGui:Button("Click to show a button") then
+					RoImGui:Text("Secret... shhhh...")
+				end
+				RoImGui:TreePop()
+			end
+
+			RoImGui:TextDisabled("This text is disabled!")
+			RoImGui:Text("Inbetween text!")
+			RoImGui:TextColoured(colour, "Rainbow Text!")
+			RoImGui:BulletText("A line with a bullet point!")
+			RoImGui:Text("Time: %s", tostring(time()))
+			RoImGui:End()
+			RoImGui:TreePop()
+		end
 	end
 end)

@@ -10,7 +10,7 @@ local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function TreeNode.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
-	local self = setmetatable({}, TreeNode)
+	local self: Types.ImGuiTreeNode = setmetatable({}, TreeNode) :: Types.ImGuiTreeNode
 
 	self.Text = text
 	self.Class = "TreeNode"
@@ -55,7 +55,7 @@ function TreeNode:DrawTreeNode(position: Vector2)
 
 	local text: TextLabel = Instance.new("TextLabel")
 	text.Name = "text"
-	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding, 0)
+	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.X, 0)
 	text.Size = UDim2.fromOffset(textSize.X, Style.Sizes.TextSize)
 
 	text.BackgroundColor3 = COLOUR3_WHITE

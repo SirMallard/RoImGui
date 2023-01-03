@@ -480,6 +480,7 @@ export type ImGui = {
 	Button: (self: ImGui, text: string) -> (boolean),
 
 	TreeNode: (self: ImGui, text: string) -> (boolean),
+	TreePop: (self: ImGui) -> (),
 	CollapsingHeader: (self: ImGui, text: string) -> (boolean),
 
 	Indent: (self: ImGui) -> (),

@@ -19,6 +19,7 @@ local Menu = require(components.Menu)
 local Text = require(components.Text)
 local Checkbox = require(components.Checkbox)
 local Button = require(components.Button)
+local TreeNode = require(components.TreeNode)
 
 local startFrameId: number = -1
 local endFrameId: number = -1
@@ -1195,7 +1196,7 @@ function ImGui:Indent()
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
-	frame.DrawCursor.Position += Vector2.new(Style.Sizes.IndentSpacing)
+	frame.DrawCursor.Position += Vector2.xAxis * Style.Sizes.IndentSpacing
 end
 
 function ImGui:Unindent()
@@ -1204,10 +1205,10 @@ function ImGui:Unindent()
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
-	frame.DrawCursor.Position -= Vector2.new(Style.Sizes.IndentSpacing)
+	frame.DrawCursor.Position -= Vector2.xAxis * Style.Sizes.IndentSpacing
 end
 
-function ImGui:TreeNode(text: string)
+function ImGui:TreeNode(text: string): (boolean)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1225,35 +1226,62 @@ function ImGui:TreeNode(text: string)
 		return false
 	end
 
-	local treenode = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
+	local treenode: Types.ImGuiTreeNode? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
 
 	if treenode == nil then
-		treenode = 
+		treenode = TreeNode.new(text, { false }, window, elementFrame)
+		treenode:DrawTreeNode(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, treenode)
+	else
+		treenode:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	treenode.Active = true
+	treenode.LastFrameActive = startFrameId
+
+	local pressed: boolean, hovered: boolean, held: boolean =
+		ButtonBehaviour(treenode.Instance.AbsolutePosition, treenode.Size, treenode.Id, treenode.Class, window)
+
+	ButtonLogic(treenode.Instance, hovered, held, treenode, 0, Style.ButtonStyles.TreeNode)
+	treenode:UpdateTreeNode(pressed)
+
+	if treenode.Value[1] == true then
+		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		elementFrame.DrawCursor.Position += Vector2.new(
+			Style.Sizes.IndentSpacing,
+			treenode.Size.Y + Style.Sizes.ItemSpacing.Y
+		)
+		return true
+	else
+		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		elementFrame.DrawCursor.Position += Vector2.yAxis * (treenode.Size.Y + Style.Sizes.ItemSpacing.Y)
+		return false
 	end
 end
 
-function ImGui:TreeNode(text: string): (boolean)
+function ImGui:TreePop()
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return false
+		return
 	end
 
 	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
 	if elementFrame == nil then
-		return false
+		return
 	end
 
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
 	then
-		return false
+		return
 	end
 
-	local treeNode = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
+	ImGui:Unindent()
 end
 
 return ImGui
