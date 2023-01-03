@@ -43,11 +43,13 @@ function Header:DrawHeader(position: Vector2)
 
 	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
 	local offset: number = math.floor(0.5 * Style.Sizes.WindowPadding.X)
+	local padding: number = 2 * Style.Sizes.FramePadding.X
+	local height: number = 2 * Style.Sizes.FramePadding.Y
 
 	local header: Frame = Instance.new("Frame")
 	header.Name = self.Text
 	header.Position = UDim2.fromOffset(position.X - offset, position.Y)
-	header.Size = UDim2.new(1, offset - position.X, 0, Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y)
+	header.Size = UDim2.new(1, offset - position.X, 0, Style.Sizes.TextSize + height)
 
 	header.BackgroundColor3 = Style.Colours.Header.Colour
 	header.BackgroundTransparency = Style.Colours.Header.Transparency
@@ -56,7 +58,7 @@ function Header:DrawHeader(position: Vector2)
 
 	local text: TextLabel = Instance.new("TextLabel")
 	text.Name = "text"
-	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.X, Style.Sizes.FramePadding.Y)
+	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + offset + padding, Style.Sizes.FramePadding.Y)
 	text.Size = UDim2.fromOffset(textSize.X, Style.Sizes.TextSize)
 
 	text.BackgroundColor3 = COLOUR3_WHITE
@@ -75,8 +77,11 @@ function Header:DrawHeader(position: Vector2)
 
 	local dropdown: ImageLabel = Instance.new("ImageLabel")
 	dropdown.Name = "dropdown"
-	dropdown.Position = UDim2.fromOffset(Style.Sizes.FramePadding.X + 0.5 * offset, 0)
-	dropdown.Size = UDim2.fromOffset(Style.Sizes.TextSize, Style.Sizes.TextSize)
+	dropdown.Position = UDim2.fromOffset(1.5 * Style.Sizes.FramePadding.X, 0.5 * Style.Sizes.FramePadding.Y)
+	dropdown.Size = UDim2.fromOffset(
+		Style.Sizes.TextSize + Style.Sizes.FramePadding.Y,
+		Style.Sizes.TextSize + Style.Sizes.FramePadding.Y
+	)
 	dropdown.Rotation = (self.Value[1] == true) and 0 or -90
 
 	dropdown.BackgroundColor3 = COLOUR3_WHITE
@@ -92,10 +97,7 @@ function Header:DrawHeader(position: Vector2)
 
 	header.Parent = self.ElementFrame.Instance
 	self.Instance = header
-	self.Size = Vector2.new(
-		textSize.X + 2 * Style.Sizes.FramePadding.X + Style.Sizes.TextSize + offset,
-		Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y
-	)
+	self.Size = Vector2.new(textSize.X + padding + Style.Sizes.TextSize + offset, Style.Sizes.TextSize + height)
 end
 
 function Header:UpdatePosition(position: Vector2)

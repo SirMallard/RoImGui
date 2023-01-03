@@ -15,6 +15,8 @@ firstFlags.NoCollapse = true
 
 local colour: Types.Colour4 = Colour4.fromColour3(BrickColor.random().Color)
 
+local counter: number = 0
+
 runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("Demo", { true }) then
 		RoImGui:Text("Single line.")
@@ -48,27 +50,65 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 			RoImGui:EndMenuBar()
 		end
-		if RoImGui:CollapsingHeader("Demo") then
-			RoImGui:Text("One line")
-			RoImGui:Text("One line\nwith another line")
-			RoImGui:Checkbox("A textbox", childOpen)
-			RoImGui:Checkbox("Multi-window checkbox", booleanValue)
 
-			if RoImGui:TreeNode("Tree node") then
-				RoImGui:Text("A line within a tree node")
-				if RoImGui:Button("Click to show a button") then
-					RoImGui:Text("Secret... shhhh...")
+		if RoImGui:CollapsingHeader("Widgets") then
+			if RoImGui:TreeNode("Text") then
+				RoImGui:Text("One line")
+				RoImGui:Text("One line\nwith another line")
+				RoImGui:TextDisabled("This text is disabled!")
+				RoImGui:Indent()
+				RoImGui:Text("Indented text!")
+				RoImGui:Unindent()
+				RoImGui:TextColoured(colour, "Rainbow Text!")
+				RoImGui:BulletText("A line with a bullet point!")
+				RoImGui:Text("Time: %s", tostring(time()))
+
+				RoImGui:TreePop()
+			end
+			if RoImGui:TreeNode("Checkbox") then
+				RoImGui:Checkbox("A textbox", childOpen)
+				RoImGui:Checkbox("Multi-window checkbox", booleanValue)
+
+				RoImGui:TreePop()
+			end
+			if RoImGui:TreeNode("Button") then
+				RoImGui:Button("Clicky button!")
+
+				RoImGui:Text("Counter: %d", counter)
+				if RoImGui:Button("+") then
+					counter += 1
 				end
+				if RoImGui:Button("-") then
+					counter -= 1
+				end
+
+				RoImGui:Text("Simply writing to the output log.")
+				if RoImGui:Button("Log") then
+					print("Counter:", counter, "| This was logged in RoImGui.")
+				end
+
+				RoImGui:TreePop()
+			end
+			if RoImGui:TreeNode("Tree Nodes") then
+				for i = 1, 5 do
+					local s: string = tostring(i)
+					if RoImGui:TreeNode("Node " .. s) then
+						RoImGui:Text("A child of tree node " .. s)
+						RoImGui:TreePop()
+					end
+				end
+
 				RoImGui:TreePop()
 			end
 
-			RoImGui:TextDisabled("This text is disabled!")
-			RoImGui:Text("Inbetween text!")
-			RoImGui:TextColoured(colour, "Rainbow Text!")
-			RoImGui:BulletText("A line with a bullet point!")
-			RoImGui:Text("Time: %s", tostring(time()))
 			RoImGui:End()
-			-- RoImGui:TreePop()
+		end
+
+		if RoImGui:CollapsingHeader("CollapsingHeader") then
+			RoImGui:BulletText("Collapsing headers don't require an end statement.")
+			RoImGui:BulletText("This is because any elements nested under it are drawn in\nthe if statement.")
+			RoImGui:BulletText("Which makes it ideal for top level folders and organising\nelements.")
+			RoImGui:BulletText("Unfourtunately, though, you can't write to it again once\nit has been closed.")
 		end
 	end
 end)
