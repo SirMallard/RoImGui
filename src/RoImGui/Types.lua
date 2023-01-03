@@ -317,7 +317,7 @@ export type ImGuiMenu = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, window: ImGuiWindow, menubar: WindowMenubar) -> (),
+		new: (text: string, window: ImGuiWindow, menubar: WindowMenubar) -> (ImGuiMenu),
 
 		DrawMenu: (self: ImGuiMenu, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiMenu, position: Vector2) -> (),
@@ -346,7 +346,7 @@ export type ImGuiText = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiText),
 
 		DrawText: (self: ImGuiText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
@@ -378,7 +378,7 @@ export type ImGuiCheckbox = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (),
+		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiCheckbox),
 
 		DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
@@ -408,7 +408,7 @@ export type ImGuiButton = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (boolean),
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiButton),
 
 		DrawButton: (self: ImGuiButton, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiButton, position: Vector2) -> (),
@@ -417,9 +417,42 @@ export type ImGuiButton = typeof(setmetatable(
 	}
 ))
 
-export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton
+export type ImGuiTreeNode = typeof(setmetatable(
+	{} :: {
+		Class: ImGuiClass,
+		Id: ImGuiId,
+		Text: string,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
 
-export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox | ResizeElement
+		Value: { boolean },
+		InternalValue: boolean,
+
+		State: ButtonState,
+
+		Active: boolean,
+		LastFrameActive: number,
+
+		Size: Vector2,
+		Instance: Frame,
+	},
+	{} :: {
+		Class: string,
+		__index: any,
+
+		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiTreeNode),
+
+		DrawTreeNode: (self: ImGuiTreeNode, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiTreeNode, position: Vector2) -> (),
+		UpdateTreeNode: (self: ImGuiTreeNode, pressed: boolean) -> (),
+
+		Destroy: (self: ImGuiTreeNode) -> (),
+	}
+))
+
+export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiTreeNode
+
+export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox | ImGuiMenu | ResizeElement | ImGuiTreeNode
 
 export type ImGui = {
 	Start: (self: ImGui) -> (),

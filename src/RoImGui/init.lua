@@ -1030,11 +1030,24 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		return
 	end
 
+	-- There's no point drawing the element if it's too far down a window to be visible.
+	-- The windows are unlikely to be resized up and down repeatedly so it saves memory and time
+	-- by exiting at the start.
+	-- There's no point checking horizontally because it's unlikely that anything will be too far
+	-- and it's not worth it for now.
+	-- This will need to be changed when window scrolling is added.
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
 	then
+		-- Since we still want to have scrolling the draw cursor will be incremented. Any element
+		-- local height: number = Style.Sizes.TextSize + Style.Sizes.ItemSpacing.Y
+		-- if textString:find("\n") then
+		-- 	height = Utility.CalculateTextSize(textString).Y + Style.Sizes.ItemSpacing.Y
+		-- end
+		-- elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		-- elementFrame.DrawCursor.Position += Vector2.yAxis * height
 		return
 	end
 
@@ -1047,12 +1060,16 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		textString = textString:format(table.unpack(args))
 	end
 
+	-- If a previous version already exists from the last frame then we use it.
+	-- It will have any data already in it.
 	local text: Types.ImGuiText? = ImGui:GetElementById(
 		elementFrame.Id .. ">" .. textString,
 		bulletText == true and "BulletText" or "Text",
 		elementFrame
 	)
 
+	-- If it does not already exist then we create a new one, draw it and then add it to the elements
+	-- in the element frame. If it does exist, we just change position.
 	if text == nil then
 		text = Text.new(textString, bulletText, window, elementFrame)
 		text:DrawText(elementFrame.DrawCursor.Position)
@@ -1089,7 +1106,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:Text()
+	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
 		return
 	end
@@ -1116,12 +1133,10 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	checkbox.Active = true
 	checkbox.LastFrameActive = startFrameId
 
-	local instance: Frame = checkbox.Instance
-
 	local pressed: boolean, hovered: boolean, held: boolean =
-		ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, checkbox.Id, checkbox.Class, window)
+		ButtonBehaviour(checkbox.Instance.AbsolutePosition, checkbox.Size, checkbox.Id, checkbox.Class, window)
 
-	ButtonLogic(instance.checkbox, hovered, held, checkbox :: Types.Button, 0, Style.ButtonStyles.Checkbox)
+	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Checkbox)
 
 	checkbox:UpdateCheckmark(pressed)
 
@@ -1134,7 +1149,7 @@ function ImGui:Button(text: string): (boolean)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:Text()
+	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
 		return false
 	end
@@ -1160,12 +1175,10 @@ function ImGui:Button(text: string): (boolean)
 	button.Active = true
 	button.LastFrameActive = startFrameId
 
-	local instance: TextLabel = button.Instance
-
 	local pressed: boolean, hovered: boolean, held: boolean =
-		ButtonBehaviour(instance.AbsolutePosition, instance.AbsoluteSize, button.Id, button.Class, window)
+		ButtonBehaviour(button.Instance.AbsolutePosition, button.Size, button.Id, button.Class, window)
 
-	ButtonLogic(instance, hovered, held, button :: Types.Button, 0, Style.ButtonStyles.Button)
+	ButtonLogic(button.Instance, hovered, held, button, 0, Style.ButtonStyles.Button)
 
 	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
 	elementFrame.DrawCursor.Position += Vector2.yAxis * (button.Size.Y + Style.Sizes.ItemSpacing.Y)
@@ -1192,6 +1205,31 @@ function ImGui:Unindent()
 
 	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
 	frame.DrawCursor.Position -= Vector2.new(Style.Sizes.IndentSpacing)
+end
+
+function ImGui:TreeNode(text: string)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:TextV()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return false
+	end
+
+	local treenode = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
+
+	if treenode == nil then
+		treenode = 
+	end
 end
 
 function ImGui:TreeNode(text: string): (boolean)

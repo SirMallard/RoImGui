@@ -23,8 +23,8 @@ function TreeNode.new(text: string, value: { boolean }, window: Types.ImGuiWindo
 	self.ElementFrame = elementFrame
 	self.Window = window
 
-	self.LastFrameActive = 0
 	self.Active = false
+	self.LastFrameActive = 0
 
 	self.Size = Vector2.zero
 
@@ -89,6 +89,8 @@ function TreeNode:DrawTreeNode(position: Vector2)
 
 	dropdown.Parent = treenode
 
+	treenode.Parent = self.ElementFrame.Instance
+	self.Instance = treenode
 	self.Size = Vector2.new(textSize.X + 2 * Style.Sizes.FramePadding.X + Style.Sizes.TextSize, Style.Sizes.TextSize)
 end
 
