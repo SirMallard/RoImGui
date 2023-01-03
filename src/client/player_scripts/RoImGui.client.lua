@@ -104,6 +104,7 @@ runService.RenderStepped:Connect(function(_: number)
 			RoImGui:End()
 		end
 
+		print("Drawing another header")
 		if RoImGui:CollapsingHeader("CollapsingHeader") then
 			RoImGui:BulletText("Collapsing headers don't require an end statement.")
 			RoImGui:BulletText("This is because any elements nested under it are drawn in\nthe if statement.")

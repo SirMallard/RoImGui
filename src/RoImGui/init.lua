@@ -192,12 +192,12 @@ function ImGui:CleanWindowElements()
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
 			if element.LastFrameActive < endFrameId then
+				if element.Class == "CollapsingHeader" then
+					print("Destroy", element.Text)
+				end
 				element:Destroy()
 				table.remove(frame.Elements, elementIndex)
 			else
-				-- if element.Class == "Text" and element.Text:sub(1, 14) == "Mouse Position" then
-				-- 	print(frameId, element.Text:sub(17))
-				-- end
 				element.Active = false
 			end
 		end
@@ -509,9 +509,8 @@ function ImGui:GetElementById(
 
 	for _, childElement: Types.ImGuiText in elementFrame.Elements do
 		if
-			(childElement.Id == id)
-			and (childElement.Class == class)
-			and ((childElement.Active == false) or (active == nil))
+			(childElement.Id == id) and (childElement.Class == class)
+			-- and ((active == nil) or (childElement.Active == false))
 		then
 			element = childElement
 			break
@@ -1211,7 +1210,7 @@ end
 function ImGui:TreeNode(text: string): (boolean)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
-	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
@@ -1288,7 +1287,7 @@ end
 function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
-	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
@@ -1316,6 +1315,7 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 
 	header.Active = true
 	header.LastFrameActive = startFrameId
+	print("Active:", startFrameId)
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(header.Instance.AbsolutePosition, header.Instance.AbsoluteSize, header.Id, header.Class, window)
