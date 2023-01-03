@@ -1323,16 +1323,12 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 	ButtonLogic(header.Instance, hovered, held, header, 0, Style.ButtonStyles.CollapsingHeader)
 	header:UpdateHeader(pressed)
 
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+	elementFrame.DrawCursor.Position += Vector2.yAxis * (header.Size.Y + Style.Sizes.ItemSpacing.Y)
+
 	if header.Value[1] == true then
-		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-		elementFrame.DrawCursor.Position += Vector2.new(
-			Style.Sizes.IndentSpacing,
-			header.Size.Y + Style.Sizes.ItemSpacing.Y
-		)
 		return true
 	else
-		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-		elementFrame.DrawCursor.Position += Vector2.yAxis * (header.Size.Y + Style.Sizes.ItemSpacing.Y)
 		return false
 	end
 end

@@ -523,7 +523,6 @@ export type ImGui = {
 	TreeNode: (self: ImGui, text: string) -> (boolean),
 	TreePop: (self: ImGui) -> (),
 	CollapsingHeader: (self: ImGui, text: string, value: { boolean }) -> (boolean),
-	HeaderPop: (self: ImGui) -> (),
 
 	Indent: (self: ImGui) -> (),
 	Unindent: (self: ImGui) -> (),

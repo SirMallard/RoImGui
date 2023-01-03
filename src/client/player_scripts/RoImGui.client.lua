@@ -48,7 +48,7 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 			RoImGui:EndMenuBar()
 		end
-		if RoImGui:TreeNode("Demo") then
+		if RoImGui:CollapsingHeader("Demo") then
 			RoImGui:Text("One line")
 			RoImGui:Text("One line\nwith another line")
 			RoImGui:Checkbox("A textbox", childOpen)
@@ -68,7 +68,7 @@ runService.RenderStepped:Connect(function(_: number)
 			RoImGui:BulletText("A line with a bullet point!")
 			RoImGui:Text("Time: %s", tostring(time()))
 			RoImGui:End()
-			RoImGui:TreePop()
+			-- RoImGui:TreePop()
 		end
 	end
 end)
