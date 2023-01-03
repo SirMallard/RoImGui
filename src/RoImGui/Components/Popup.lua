@@ -1,13 +1,13 @@
 local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
-local Utility = require(script.Parent.Parent.Utility.Utility)
+-- local Utility = require(script.Parent.Parent.Utility.Utility)
 local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Popup = {}
 Popup.__index = Popup
 Popup.ClassName = "ImGuiPopup"
 
-local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+-- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 --[[

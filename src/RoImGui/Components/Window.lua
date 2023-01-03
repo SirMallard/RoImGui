@@ -433,7 +433,7 @@ function Window:DrawTitle()
 			dropdown.BorderColor3 = COLOUR3_BLACK
 			dropdown.BorderSizePixel = 0
 
-			dropdown.Image = "rbxassetid://4673889148"
+			dropdown.Image = Style.Images.Circle
 			dropdown.ImageColor3 = Style.Colours.Button.Colour
 			dropdown.ImageTransparency = 1
 
@@ -449,7 +449,7 @@ function Window:DrawTitle()
 			icon.BorderColor3 = COLOUR3_BLACK
 			icon.BorderSizePixel = 0
 
-			icon.Image = "rbxassetid://11523280019"
+			icon.Image = Style.Images.Dropdown
 			icon.ImageColor3 = Style.Colours.Text.Colour
 			icon.ImageTransparency = Style.Colours.Text.Transparency
 			icon.Parent = dropdown
@@ -470,7 +470,7 @@ function Window:DrawTitle()
 			close.BorderColor3 = COLOUR3_BLACK
 			close.BorderSizePixel = 0
 
-			close.Image = "rbxassetid://4673889148"
+			close.Image = Style.Images.Circle
 			close.ImageColor3 = Style.Colours.Button.Colour
 			close.ImageTransparency = 1
 
@@ -485,7 +485,7 @@ function Window:DrawTitle()
 			icon.BorderColor3 = COLOUR3_BLACK
 			icon.BorderSizePixel = 0
 
-			icon.Image = "rbxassetid://11506648985"
+			icon.Image = Style.Images.Cross
 			icon.ImageRectOffset = Vector2.new(284, 4)
 			icon.ImageRectSize = Vector2.new(24, 24)
 			icon.ImageColor3 = Style.Colours.Text.Colour
