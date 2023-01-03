@@ -125,6 +125,7 @@ export type ButtonState = number
 
 export type ImGuiClass =
 	"Window"
+	| ""
 	| "Title"
 	| "Menubar"
 	| "Menu"
@@ -133,11 +134,11 @@ export type ImGuiClass =
 	| "BulletText"
 	| "Checkbox"
 	| "Button"
-	| ""
 	| "Corner"
 	| "Side"
 	| "Resize"
 	| "TreeNode"
+	| "CollapsingHeader"
 
 --[[
 		=<>= FLAGS =<>=
@@ -450,9 +451,49 @@ export type ImGuiTreeNode = typeof(setmetatable(
 	}
 ))
 
-export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiTreeNode
+export type ImGuiHeader = typeof(setmetatable(
+	{} :: {
+		Class: ImGuiClass,
+		Id: ImGuiId,
+		Text: string,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
 
-export type Button = WindowTitleButton | ImGuiButton | ImGuiCheckbox | ImGuiMenu | ResizeElement | ImGuiTreeNode
+		Value: { boolean },
+		InternalValue: boolean,
+
+		State: ButtonState,
+
+		Active: boolean,
+		LastFrameActive: number,
+
+		Size: Vector2,
+		Instance: Frame,
+	},
+	{} :: {
+		Class: string,
+		__index: any,
+
+		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiHeader),
+
+		DrawHeader: (self: ImGuiHeader, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiHeader, position: Vector2) -> (),
+		UpdateHeader: (self: ImGuiHeader, pressed: boolean) -> (),
+
+		Destroy: (self: ImGuiHeader) -> (),
+	}
+))
+
+export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiTreeNode | ImGuiHeader
+
+export type Button =
+	WindowTitleButton
+	| ImGuiButton
+	| ImGuiCheckbox
+	| ImGuiMenu
+	| ResizeElement
+	| ImGuiTreeNode
+	| ImGuiHeader
 
 export type ImGui = {
 	Start: (self: ImGui) -> (),
@@ -481,7 +522,8 @@ export type ImGui = {
 
 	TreeNode: (self: ImGui, text: string) -> (boolean),
 	TreePop: (self: ImGui) -> (),
-	CollapsingHeader: (self: ImGui, text: string) -> (boolean),
+	CollapsingHeader: (self: ImGui, text: string, value: { boolean }) -> (boolean),
+	HeaderPop: (self: ImGui) -> (),
 
 	Indent: (self: ImGui) -> (),
 	Unindent: (self: ImGui) -> (),

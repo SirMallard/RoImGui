@@ -19,6 +19,7 @@ local Text = require(components.Text)
 local Checkbox = require(components.Checkbox)
 local Button = require(components.Button)
 local TreeNode = require(components.TreeNode)
+local Header = require(components.Header)
 
 local startFrameId: number = -1
 local endFrameId: number = -1
@@ -1280,7 +1281,60 @@ function ImGui:TreePop()
 		return
 	end
 
-	ImGui:Unindent()
+	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
+	elementFrame.DrawCursor.Position -= Vector2.xAxis * Style.Sizes.IndentSpacing
+end
+
+function ImGui:CollapsingHeader(text: string, value: { boolean }?)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:TextV()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return false
+	end
+
+	local header: Types.ImGuiHeader? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "CollapsingHeader", elementFrame, true)
+
+	if header == nil then
+		header = Header.new(text, value or { false }, window, elementFrame)
+		header:DrawHeader(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, header)
+	else
+		header:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	header.Active = true
+	header.LastFrameActive = startFrameId
+
+	local pressed: boolean, hovered: boolean, held: boolean =
+		ButtonBehaviour(header.Instance.AbsolutePosition, header.Instance.AbsoluteSize, header.Id, header.Class, window)
+
+	ButtonLogic(header.Instance, hovered, held, header, 0, Style.ButtonStyles.CollapsingHeader)
+	header:UpdateHeader(pressed)
+
+	if header.Value[1] == true then
+		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		elementFrame.DrawCursor.Position += Vector2.new(
+			Style.Sizes.IndentSpacing,
+			header.Size.Y + Style.Sizes.ItemSpacing.Y
+		)
+		return true
+	else
+		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		elementFrame.DrawCursor.Position += Vector2.yAxis * (header.Size.Y + Style.Sizes.ItemSpacing.Y)
+		return false
+	end
 end
 
 return ImGui
