@@ -1,4 +1,3 @@
-local HttpService = game:GetService("HttpService")
 local runService: RunService = game:GetService("RunService")
 
 local components = script.Components

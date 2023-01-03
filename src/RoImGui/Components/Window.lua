@@ -522,6 +522,12 @@ function Window:DrawMenuBar()
 		menubar.Parent = self.Window.Instance
 		self.Window.Menubar.Instance = menubar
 		self.Window.Menubar.MinimumSize = Vector2.new(0, height)
+
+		if self.Window.Frame.Instance ~= nil then
+			local titleAndMenuBarSize: number = self.Window.Title.MinimumSize.Y + self.Window.Menubar.MinimumSize.Y
+			self.Window.Frame.Instance.Position = UDim2.fromOffset(0, titleAndMenuBarSize)
+			self.Window.Frame.Instance.Size = UDim2.new(1, 0, 1, -titleAndMenuBarSize)
+		end
 	end
 end
 
