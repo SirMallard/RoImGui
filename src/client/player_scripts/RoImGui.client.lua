@@ -100,16 +100,15 @@ runService.RenderStepped:Connect(function(_: number)
 
 				RoImGui:TreePop()
 			end
-
-			RoImGui:End()
 		end
 
-		print("Drawing another header")
 		if RoImGui:CollapsingHeader("CollapsingHeader") then
 			RoImGui:BulletText("Collapsing headers don't require an end statement.")
 			RoImGui:BulletText("This is because any elements nested under it are drawn in\nthe if statement.")
 			RoImGui:BulletText("Which makes it ideal for top level folders and organising\nelements.")
 			RoImGui:BulletText("Unfourtunately, though, you can't write to it again once\nit has been closed.")
 		end
+
+		RoImGui:End()
 	end
 end)

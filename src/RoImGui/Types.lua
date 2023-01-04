@@ -174,6 +174,12 @@ export type DrawCursor = {
 
 	StartPosition: Vector2,
 	MaximumPosition: Vector2,
+
+	LineHeight: number,
+	PreviousLineHeight: number,
+
+	Indent: number,
+	SameLine: boolean,
 }
 
 --[[
@@ -560,6 +566,8 @@ export type ImGui = {
 	SetActive: (self: ImGui, id: ImGuiId, Class: ImGuiClass, window: ImGuiWindow?) -> (),
 	SetHover: (self: ImGui, id: ImGuiId, Class: ImGuiClass) -> (),
 	SetNavWindow: (self: ImGui, window: ImGuiWindow?) -> (),
+
+	ItemSize: (self: ImGui, size: Vector2) -> (),
 
 	PushColour: (self: ImGui, index: string, colours: Colour4) -> (),
 	PopColour: (self: ImGui, index: string) -> (),

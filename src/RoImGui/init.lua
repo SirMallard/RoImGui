@@ -192,9 +192,6 @@ function ImGui:CleanWindowElements()
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
 			if element.LastFrameActive < endFrameId then
-				if element.Class == "CollapsingHeader" then
-					print("Destroy", element.Text)
-				end
 				element:Destroy()
 				table.remove(frame.Elements, elementIndex)
 			else
@@ -527,6 +524,22 @@ end
 function ImGui:PopColour(index: string)
 	Style.Colours[index] = table.clone(Style.Backup.Colours[index])
 end
+
+function ImGui:ItemSize(size: Vector2)
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	local drawCursor: Types.DrawCursor = elementFrame.DrawCursor
+
+	local offset: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y or drawCursor.Position.Y
+	local lineHeight: number = math.max(drawCursor.LineHeight, drawCursor.Position.Y - offset + size.Y)
+
+	drawCursor.PreviousPosition = Vector2.new(drawCursor.Position.X + size.X, offset)
+	drawCursor.Position = Vector2.new(drawCursor.Indent, offset + lineHeight + Style.Sizes.ItemSpacing.Y)
+	drawCursor.PreviousLineHeight = lineHeight
+	drawCursor.LineHeight = 0
+	drawCursor.SameLine = false
+end
+
+function ImGui:SameLine() end
 
 --[[
 	Manages the activity on the title bar excluding moving:
@@ -1315,7 +1328,6 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 
 	header.Active = true
 	header.LastFrameActive = startFrameId
-	print("Active:", startFrameId)
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(header.Instance.AbsolutePosition, header.Instance.AbsoluteSize, header.Id, header.Class, window)
