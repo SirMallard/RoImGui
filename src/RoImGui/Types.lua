@@ -178,6 +178,9 @@ export type DrawCursor = {
 	LineHeight: number,
 	PreviousLineHeight: number,
 
+	TextLineOffset: number,
+	PreviousTextLineOffset: number,
+
 	Indent: number,
 	SameLine: boolean,
 }
@@ -530,8 +533,10 @@ export type ImGui = {
 	TreePop: (self: ImGui) -> (),
 	CollapsingHeader: (self: ImGui, text: string, value: { boolean }) -> (boolean),
 
-	Indent: (self: ImGui) -> (),
-	Unindent: (self: ImGui) -> (),
+	Indent: (self: ImGui, width: number?) -> (),
+	Unindent: (self: ImGui, width: number?) -> (),
+	SameLine: (self: ImGui, spacing: number?) -> (),
+	AlignTextToFramePadding: (self: ImGui) -> (),
 
 	DebugWindow: (self: ImGui) -> (),
 
@@ -540,6 +545,7 @@ export type ImGui = {
 	},
 	Types: ModuleScript,
 	Colour4: ModuleScript,
+	Style: ModuleScript,
 
 	CleanWindowElements: (self: ImGui) -> (),
 	UpdateWindowFocusOrder: (self: ImGui, window: ImGuiWindow?) -> (),
@@ -566,8 +572,6 @@ export type ImGui = {
 	SetActive: (self: ImGui, id: ImGuiId, Class: ImGuiClass, window: ImGuiWindow?) -> (),
 	SetHover: (self: ImGui, id: ImGuiId, Class: ImGuiClass) -> (),
 	SetNavWindow: (self: ImGui, window: ImGuiWindow?) -> (),
-
-	ItemSize: (self: ImGui, size: Vector2) -> (),
 
 	PushColour: (self: ImGui, index: string, colours: Colour4) -> (),
 	PopColour: (self: ImGui, index: string) -> (),

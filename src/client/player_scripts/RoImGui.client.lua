@@ -3,6 +3,7 @@ local runService: RunService = game:GetService("RunService")
 local RoImGui = require(replicatedStorage:WaitForChild("Modules"):WaitForChild("RoImGui"))
 local Types = require(RoImGui.Types)
 local Colour4 = require(RoImGui.Colour4)
+local Style = require(RoImGui.Style)
 
 RoImGui:Start()
 
@@ -74,18 +75,24 @@ runService.RenderStepped:Connect(function(_: number)
 			if RoImGui:TreeNode("Button") then
 				RoImGui:Button("Clicky button!")
 
-				RoImGui:Text("Counter: %d", counter)
-				if RoImGui:Button("+") then
-					counter += 1
-				end
+				RoImGui:AlignTextToFramePadding()
+				RoImGui:Text("Counter:")
+				RoImGui:SameLine()
 				if RoImGui:Button("-") then
 					counter -= 1
 				end
+				RoImGui:SameLine(Style.Sizes.ItemInnerSpacing.X)
+				if RoImGui:Button("+") then
+					counter += 1
+				end
+				RoImGui:SameLine()
+				RoImGui:Text(tostring(counter))
 
-				RoImGui:Text("Simply writing to the output log.")
 				if RoImGui:Button("Log") then
 					print("Counter:", counter, "| This was logged in RoImGui.")
 				end
+				RoImGui:SameLine()
+				RoImGui:Text("Simply writing to the output log.")
 
 				RoImGui:TreePop()
 			end
@@ -102,7 +109,7 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 		end
 
-		if RoImGui:CollapsingHeader("CollapsingHeader") then
+		if RoImGui:CollapsingHeader("Collapsing Header") then
 			RoImGui:BulletText("Collapsing headers don't require an end statement.")
 			RoImGui:BulletText("This is because any elements nested under it are drawn in\nthe if statement.")
 			RoImGui:BulletText("Which makes it ideal for top level folders and organising\nelements.")

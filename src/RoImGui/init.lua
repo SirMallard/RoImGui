@@ -30,6 +30,7 @@ ImGui.FrameId = startFrameId
 ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
+ImGui.Style = script.Utility.Style
 
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
@@ -201,6 +202,15 @@ function ImGui:CleanWindowElements()
 
 		frame.DrawCursor.Position = frame.DrawCursor.StartPosition
 		frame.DrawCursor.PreviousPosition = frame.DrawCursor.StartPosition
+
+		frame.DrawCursor.LineHeight = 0
+		frame.DrawCursor.PreviousLineHeight = 0
+
+		frame.DrawCursor.TextLineOffset = 0
+		frame.DrawCursor.PreviousTextLineOffset = 0
+
+		frame.DrawCursor.Indent = 0
+		frame.DrawCursor.SameLine = false
 
 		window.RedrawThisFrame = window.RedrawNextFrame
 		window.RedrawNextFrame = false
@@ -436,6 +446,29 @@ function ButtonLogic(
 end
 
 --[[
+	Used to increment the draw cursor for the next item. Called after the item has been placed to setup
+	the position for the next one.
+]]
+function ItemSize(drawCursor: Types.DrawCursor, size: Vector2, textPadding: number?)
+	local lineOffset: number = (textPadding ~= nil)
+			and (textPadding > 0)
+			and math.max(0, drawCursor.TextLineOffset - textPadding)
+		or 0
+	local linePosition: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y
+		or drawCursor.Position.Y
+	local lineHeight: number =
+		math.max(drawCursor.LineHeight, drawCursor.Position.Y - linePosition + size.Y + lineOffset)
+
+	drawCursor.PreviousPosition = Vector2.new(drawCursor.Position.X + size.X, linePosition)
+	drawCursor.Position = Vector2.new(drawCursor.Indent, linePosition + lineHeight + Style.Sizes.ItemSpacing.Y)
+	drawCursor.PreviousLineHeight = lineHeight
+	drawCursor.LineHeight = 0
+	drawCursor.PreviousTextLineOffset = math.max(drawCursor.TextLineOffset, textPadding or 0)
+
+	drawCursor.SameLine = false
+end
+
+--[[
 	Additional functions
 
 ]]
@@ -525,21 +558,24 @@ function ImGui:PopColour(index: string)
 	Style.Colours[index] = table.clone(Style.Backup.Colours[index])
 end
 
-function ImGui:ItemSize(size: Vector2)
+function ImGui:SameLine(spacing: number?)
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	local drawCursor: Types.DrawCursor = elementFrame.DrawCursor
 
-	local offset: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y or drawCursor.Position.Y
-	local lineHeight: number = math.max(drawCursor.LineHeight, drawCursor.Position.Y - offset + size.Y)
-
-	drawCursor.PreviousPosition = Vector2.new(drawCursor.Position.X + size.X, offset)
-	drawCursor.Position = Vector2.new(drawCursor.Indent, offset + lineHeight + Style.Sizes.ItemSpacing.Y)
-	drawCursor.PreviousLineHeight = lineHeight
-	drawCursor.LineHeight = 0
-	drawCursor.SameLine = false
+	drawCursor.Position = drawCursor.PreviousPosition
+		+ Vector2.xAxis * ((spacing ~= nil) and (spacing > 0) and spacing or Style.Sizes.ItemSpacing.X)
+	drawCursor.LineHeight = drawCursor.PreviousLineHeight
+	drawCursor.TextLineOffset = drawCursor.PreviousTextLineOffset
+	drawCursor.SameLine = true
 end
 
-function ImGui:SameLine() end
+function ImGui:AlignTextToFramePadding()
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	local drawCursor: Types.DrawCursor = elementFrame.DrawCursor
+
+	drawCursor.LineHeight = math.max(drawCursor.LineHeight, Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y)
+	drawCursor.TextLineOffset = math.max(drawCursor.TextLineOffset, Style.Sizes.FramePadding.Y)
+end
 
 --[[
 	Manages the activity on the title bar excluding moving:
@@ -1085,17 +1121,16 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	-- in the element frame. If it does exist, we just change position.
 	if text == nil then
 		text = Text.new(textString, bulletText, window, elementFrame)
-		text:DrawText(elementFrame.DrawCursor.Position)
+		text:DrawText(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 		table.insert(elementFrame.Elements, text)
 	else
-		text:UpdatePosition(elementFrame.DrawCursor.Position)
+		text:UpdatePosition(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 	end
+
+	ItemSize(elementFrame.DrawCursor, text.Size)
 
 	text.Active = true
 	text.LastFrameActive = startFrameId
-
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-	elementFrame.DrawCursor.Position += Vector2.yAxis * (text.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
 function ImGui:TextDisabled(textString: string, ...: any)
@@ -1143,6 +1178,8 @@ function ImGui:Checkbox(text: string, value: { boolean })
 		checkbox:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
+	ItemSize(elementFrame.DrawCursor, checkbox.Size)
+
 	checkbox.Active = true
 	checkbox.LastFrameActive = startFrameId
 
@@ -1152,9 +1189,6 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Checkbox)
 
 	checkbox:UpdateCheckmark(pressed)
-
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-	elementFrame.DrawCursor.Position += Vector2.yAxis * (checkbox.Size.Y + Style.Sizes.ItemSpacing.Y)
 end
 
 function ImGui:Button(text: string): (boolean)
@@ -1185,6 +1219,8 @@ function ImGui:Button(text: string): (boolean)
 		button:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
+	ItemSize(elementFrame.DrawCursor, button.Size, Style.Sizes.FramePadding.Y)
+
 	button.Active = true
 	button.LastFrameActive = startFrameId
 
@@ -1193,31 +1229,28 @@ function ImGui:Button(text: string): (boolean)
 
 	ButtonLogic(button.Instance, hovered, held, button, 0, Style.ButtonStyles.Button)
 
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-	elementFrame.DrawCursor.Position += Vector2.yAxis * (button.Size.Y + Style.Sizes.ItemSpacing.Y)
-
 	if pressed == true then
 		return true
 	end
 	return false
 end
 
-function ImGui:Indent()
+function ImGui:Indent(width: number?)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
-	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
-	frame.DrawCursor.Position += Vector2.xAxis * Style.Sizes.IndentSpacing
+	frame.DrawCursor.Indent += width or Style.Sizes.IndentSpacing
+	frame.DrawCursor.Position += Vector2.xAxis * (width or Style.Sizes.IndentSpacing)
 end
 
-function ImGui:Unindent()
+function ImGui:Unindent(width: number?)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local frame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
-	frame.DrawCursor.PreviousPosition = frame.DrawCursor.PreviousPosition
-	frame.DrawCursor.Position -= Vector2.xAxis * Style.Sizes.IndentSpacing
+	frame.DrawCursor.Indent -= width or Style.Sizes.IndentSpacing
+	frame.DrawCursor.Position -= Vector2.xAxis * (width or Style.Sizes.IndentSpacing)
 end
 
 function ImGui:TreeNode(text: string): (boolean)
@@ -1249,6 +1282,8 @@ function ImGui:TreeNode(text: string): (boolean)
 		treenode:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
+	ItemSize(elementFrame.DrawCursor, treenode.Size)
+
 	treenode.Active = true
 	treenode.LastFrameActive = startFrameId
 
@@ -1259,15 +1294,9 @@ function ImGui:TreeNode(text: string): (boolean)
 	treenode:UpdateTreeNode(pressed)
 
 	if treenode.Value[1] == true then
-		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-		elementFrame.DrawCursor.Position += Vector2.new(
-			Style.Sizes.IndentSpacing,
-			treenode.Size.Y + Style.Sizes.ItemSpacing.Y
-		)
+		ImGui:Indent(Style.Sizes.IndentSpacing)
 		return true
 	else
-		elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-		elementFrame.DrawCursor.Position += Vector2.yAxis * (treenode.Size.Y + Style.Sizes.ItemSpacing.Y)
 		return false
 	end
 end
@@ -1293,8 +1322,7 @@ function ImGui:TreePop()
 		return
 	end
 
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.PreviousPosition
-	elementFrame.DrawCursor.Position -= Vector2.xAxis * Style.Sizes.IndentSpacing
+	ImGui:Unindent(Style.Sizes.IndentSpacing)
 end
 
 function ImGui:CollapsingHeader(text: string, value: { boolean }?)
@@ -1326,6 +1354,8 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 		header:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
+	ItemSize(elementFrame.DrawCursor, header.Instance.AbsoluteSize)
+
 	header.Active = true
 	header.LastFrameActive = startFrameId
 
@@ -1334,9 +1364,6 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?)
 
 	ButtonLogic(header.Instance, hovered, held, header, 0, Style.ButtonStyles.CollapsingHeader)
 	header:UpdateHeader(pressed)
-
-	elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
-	elementFrame.DrawCursor.Position += Vector2.yAxis * (header.Size.Y + Style.Sizes.ItemSpacing.Y)
 
 	if header.Value[1] == true then
 		return true

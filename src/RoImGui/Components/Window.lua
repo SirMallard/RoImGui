@@ -97,6 +97,15 @@ function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags:
 
 				StartPosition = Vector2.zero,
 				MaximumPosition = Vector2.new(60, 60),
+
+				TextLineOffset = 0,
+				PreviousTextLineOffset = 0,
+
+				LineHeight = 0,
+				PreviousLineHeight = 0,
+
+				Indent = 0,
+				SameLine = false,
 			},
 			Elements = {},
 		},
