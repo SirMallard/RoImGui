@@ -79,8 +79,8 @@ function RadioButton:DrawRadioButton(position: Vector2)
 
 	local button: ImageLabel = Instance.new("ImageLabel")
 	button.Name = "button"
-	button.Position = UDim2.fromOffset(padding / 2, padding / 2)
-	button.Size = UDim2.fromOffset(boxSize - padding, boxSize - padding)
+	button.Position = UDim2.fromOffset(padding, padding)
+	button.Size = UDim2.fromOffset(boxSize - 2 * padding, boxSize - 2 * padding)
 
 	button.BackgroundColor3 = COLOUR3_WHITE
 	button.BackgroundTransparency = 1
@@ -125,16 +125,12 @@ function RadioButton:UpdatePosition(position: Vector2)
 	end
 end
 
-function RadioButton:UpdateRadioButton(pressed: boolean)
+function RadioButton:UpdateRadioButton()
 	if self.Instance == nil then
 		return
 	end
 
-	if pressed == true then
-		self.Value[1] = self.ButtonValue
-		self.InternalValue = self.ButtonValue
-		self.Instance.radio.button.ImageTransparency = Style.Colours.CheckMark.Transparency or 1
-	elseif self.InternalValue ~= self.Value[1] then
+	if self.InternalValue ~= self.Value[1] then
 		self.InternalValue = self.Value[1]
 		self.Instance.radio.button.ImageTransparency = self.Value[1] == self.ButtonValue
 				and Style.Colours.CheckMark.Transparency

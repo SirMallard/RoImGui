@@ -15,9 +15,12 @@ firstFlags.NoClose = true
 firstFlags.NoCollapse = true
 
 local colour: Types.Colour4 = Colour4.fromColour3(BrickColor.random().Color)
+local red: Types.Colour4 = Colour4.fromColour3(BrickColor.Red().Color)
+local green: Types.Colour4 = Colour4.fromColour3(BrickColor.Green().Color)
+local blue: Types.Colour4 = Colour4.fromColour3(BrickColor.Blue().Color)
 
 local counter: number = 0
-local radioValue: number = 0
+local radioValue: { number } = { 0 }
 
 runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("Demo", { true }) then
@@ -95,11 +98,21 @@ runService.RenderStepped:Connect(function(_: number)
 				RoImGui:SameLine()
 				RoImGui:Text("Simply writing to the output log.")
 
-				RoImGui:RadioButton("Button 1", { radioValue }, 0)
+				RoImGui:RadioButton("Button 1", radioValue, 0)
 				RoImGui:SameLine()
-				RoImGui:RadioButton("Button 2", { radioValue }, 1)
+				RoImGui:RadioButton("Button 2", radioValue, 1)
 				RoImGui:SameLine()
-				RoImGui:RadioButton("Button 3", { radioValue }, 2)
+				RoImGui:RadioButton("Button 3", radioValue, 2)
+
+				RoImGui:PushColour("CheckMark", red)
+				RoImGui:RadioButton("Red", radioValue, 0)
+				RoImGui:SameLine()
+				RoImGui:PushColour("CheckMark", green)
+				RoImGui:RadioButton("Green", radioValue, 1)
+				RoImGui:SameLine()
+				RoImGui:PushColour("CheckMark", blue)
+				RoImGui:RadioButton("Blue", radioValue, 2)
+				RoImGui:PopColour("CheckMark")
 
 				RoImGui:TreePop()
 			end

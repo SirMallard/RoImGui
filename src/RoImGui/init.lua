@@ -1150,7 +1150,7 @@ function ImGui:BulletText(textString: string, ...: any)
 	ImGui:TextV(textString, true, ...)
 end
 
-function ImGui:Checkbox(text: string, value: { boolean })
+function ImGui:Checkbox(text: string, value: { boolean }): (boolean)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1189,7 +1189,13 @@ function ImGui:Checkbox(text: string, value: { boolean })
 
 	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Frame)
 
-	checkbox:UpdateCheckmark(pressed)
+	if pressed == true then
+		value[1] = not value[1]
+	end
+
+	checkbox:UpdateCheckmark()
+
+	return pressed
 end
 
 function ImGui:Button(text: string): (boolean)
@@ -1236,7 +1242,7 @@ function ImGui:Button(text: string): (boolean)
 	return false
 end
 
-function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
+function ImGui:RadioButton(text: string, value: { number }, buttonValue: number): (boolean)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1280,7 +1286,13 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 
 	ButtonLogic(radioButton.Instance.radio, hovered, held, radioButton, 1, Style.ButtonStyles.Frame)
 
-	radioButton:UpdateRadioButton(pressed)
+	if pressed == true then
+		value[1] = buttonValue
+	end
+
+	radioButton:UpdateRadioButton()
+
+	return pressed
 end
 
 function ImGui:Indent(width: number?)
@@ -1373,7 +1385,7 @@ function ImGui:TreePop()
 	ImGui:Unindent(Style.Sizes.IndentSpacing)
 end
 
-function ImGui:CollapsingHeader(text: string, value: { boolean }?)
+function ImGui:CollapsingHeader(text: string, value: { boolean }?): (boolean)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow

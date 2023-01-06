@@ -389,7 +389,7 @@ export type ImGuiCheckbox = typeof(setmetatable(
 
 		DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
-		UpdateCheckmark: (self: ImGuiCheckbox, pressed: boolean) -> (),
+		UpdateCheckmark: (self: ImGuiCheckbox) -> (),
 
 		Destroy: (self: ImGuiCheckbox) -> (),
 	}
@@ -458,7 +458,7 @@ export type ImGuiRadioButton = typeof(setmetatable(
 
 		DrawRadioButton: (self: ImGuiCheckbox, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
-		UpdateRadioButton: (self: ImGuiCheckbox, pressed: boolean) -> (),
+		UpdateRadioButton: (self: ImGuiCheckbox) -> (),
 
 		Destroy: (self: ImGuiCheckbox) -> (),
 	}
@@ -564,9 +564,9 @@ export type ImGui = {
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
 	BulletText: (self: ImGui, text: string, ...any) -> (),
 
-	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
+	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (boolean),
 	Button: (self: ImGui, text: string) -> (boolean),
-	RadioButton: (self: ImGui, text: string, value: { number }, buttonValue: number) -> (),
+	RadioButton: (self: ImGui, text: string, value: { number }, buttonValue: number) -> (boolean),
 
 	TreeNode: (self: ImGui, text: string) -> (boolean),
 	TreePop: (self: ImGui) -> (),
