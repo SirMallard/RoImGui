@@ -82,7 +82,7 @@ local ButtonStyles: Types.ImGuiButtonStyles = {
 		[1] = Colours.ButtonHovered,
 		[2] = Colours.ButtonActive,
 	},
-	Checkbox = {
+	Frame = {
 		[0] = Colours.FrameBg,
 		[1] = Colours.FrameBgHovered,
 		[2] = Colours.FrameBgActive,

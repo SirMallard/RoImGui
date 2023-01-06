@@ -17,6 +17,7 @@ firstFlags.NoCollapse = true
 local colour: Types.Colour4 = Colour4.fromColour3(BrickColor.random().Color)
 
 local counter: number = 0
+local radioValue: number = 0
 
 runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("Demo", { true }) then
@@ -93,6 +94,12 @@ runService.RenderStepped:Connect(function(_: number)
 				end
 				RoImGui:SameLine()
 				RoImGui:Text("Simply writing to the output log.")
+
+				RoImGui:RadioButton("Button 1", { radioValue }, 0)
+				RoImGui:SameLine()
+				RoImGui:RadioButton("Button 2", { radioValue }, 1)
+				RoImGui:SameLine()
+				RoImGui:RadioButton("Button 3", { radioValue }, 2)
 
 				RoImGui:TreePop()
 			end

@@ -18,6 +18,7 @@ local Menu = require(components.Menu)
 local Text = require(components.Text)
 local Checkbox = require(components.Checkbox)
 local Button = require(components.Button)
+local RadioButton = require(components.RadioButton)
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
 
@@ -1186,7 +1187,7 @@ function ImGui:Checkbox(text: string, value: { boolean })
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(checkbox.Instance.AbsolutePosition, checkbox.Size, checkbox.Id, checkbox.Class, window)
 
-	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Checkbox)
+	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Frame)
 
 	checkbox:UpdateCheckmark(pressed)
 end
@@ -1233,6 +1234,53 @@ function ImGui:Button(text: string): (boolean)
 		return true
 	end
 	return false
+end
+
+function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:TextV()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return
+	end
+
+	local radioButton: Types.ImGuiRadioButton? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "RadioButton", elementFrame)
+
+	if radioButton == nil then
+		radioButton = RadioButton.new(text, buttonValue, value, window, elementFrame)
+		radioButton:DrawRadioButton(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, radioButton)
+	else
+		radioButton:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	ItemSize(elementFrame.DrawCursor, radioButton.Size)
+
+	radioButton.Active = true
+	radioButton.LastFrameActive = startFrameId
+
+	local pressed: boolean, hovered: boolean, held: boolean = ButtonBehaviour(
+		radioButton.Instance.AbsolutePosition,
+		radioButton.Size,
+		radioButton.Id,
+		radioButton.Class,
+		window
+	)
+
+	ButtonLogic(radioButton.Instance.radio, hovered, held, radioButton, 1, Style.ButtonStyles.Frame)
+
+	radioButton:UpdateRadioButton(pressed)
 end
 
 function ImGui:Indent(width: number?)

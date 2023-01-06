@@ -102,10 +102,6 @@ export type ImGuiStyleColour = {
 }
 
 export type ImGuiButtonStyles = {
-	TitleButton: ButtonStyle,
-	Checkbox: ButtonStyle,
-	Button: ButtonStyle,
-
 	[string]: ButtonStyle,
 }
 
@@ -134,6 +130,7 @@ export type ImGuiClass =
 	| "BulletText"
 	| "Checkbox"
 	| "Button"
+	| "RadioButton"
 	| "Corner"
 	| "Side"
 	| "Resize"
@@ -427,6 +424,46 @@ export type ImGuiButton = typeof(setmetatable(
 	}
 ))
 
+export type ImGuiRadioButton = typeof(setmetatable(
+	{} :: {
+		Class: ImGuiClass,
+		Id: ImGuiId,
+		Text: string,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
+
+		ButtonValue: number,
+		Value: { number },
+		InternalValue: number,
+
+		State: ButtonState,
+
+		Active: boolean,
+		LastFrameActive: number,
+
+		Size: Vector2,
+		Instance: Frame,
+	},
+	{} :: {
+		Class: string,
+		__index: any,
+
+		new: (
+			text: string,
+			id: number,
+			buttonValue: { boolean },
+			window: ImGuiWindow,
+			parentInstance: ElementFrame
+		) -> (ImGuiCheckbox),
+
+		DrawRadioButton: (self: ImGuiCheckbox, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
+		UpdateRadioButton: (self: ImGuiCheckbox, pressed: boolean) -> (),
+
+		Destroy: (self: ImGuiCheckbox) -> (),
+	}
+))
+
 export type ImGuiTreeNode = typeof(setmetatable(
 	{} :: {
 		Class: ImGuiClass,
@@ -493,12 +530,13 @@ export type ImGuiHeader = typeof(setmetatable(
 	}
 ))
 
-export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiTreeNode | ImGuiHeader
+export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiRadioButton | ImGuiTreeNode | ImGuiHeader
 
 export type Button =
 	WindowTitleButton
 	| ImGuiButton
 	| ImGuiCheckbox
+	| ImGuiRadioButton
 	| ImGuiMenu
 	| ResizeElement
 	| ImGuiTreeNode
@@ -528,6 +566,7 @@ export type ImGui = {
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (),
 	Button: (self: ImGui, text: string) -> (boolean),
+	RadioButton: (self: ImGui, text: string, value: { number }, buttonValue: number) -> (),
 
 	TreeNode: (self: ImGui, text: string) -> (boolean),
 	TreePop: (self: ImGui) -> (),
