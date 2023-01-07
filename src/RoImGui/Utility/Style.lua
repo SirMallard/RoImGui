@@ -14,6 +14,7 @@ local Sizes: Types.ImGuiStyleSize = {
 
 	TextMinHeight = 13,
 	TextSize = 13, -- best size we can use.
+	ItemWidthScale = 0.65,
 
 	ResizeOuterPadding = 4,
 	ResizeInnerPadding = 10,

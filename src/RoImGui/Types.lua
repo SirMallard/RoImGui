@@ -40,6 +40,7 @@ export type ImGuiStyleSize = {
 
 	TextMinHeight: number,
 	TextSize: number,
+	ItemWidthScale: number,
 
 	ResizeOuterPadding: number,
 	ResizeInnerPadding: number,
@@ -462,6 +463,34 @@ export type ImGuiRadioButton = typeof(setmetatable(
 		UpdateRadioButton: (self: ImGuiCheckbox) -> (),
 
 		Destroy: (self: ImGuiCheckbox) -> (),
+	}
+))
+
+export type ImGuiLabelText = typeof(setmetatable(
+	{} :: {
+		Class: ImGuiClass,
+		Id: ImGuiId,
+		Label: string,
+		Text: string,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
+
+		Active: boolean,
+		LastFrameActive: number,
+
+		Size: Vector2,
+		Instance: TextLabel,
+	},
+	{} :: {
+		Class: string,
+		__index: any,
+
+		new: (text: string, label: string, window: ImGuiWindow, parentInstance: ElementFrame) -> (ImGuiText),
+
+		DrawLabelText: (self: ImGuiText, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
+
+		Destroy: (self: ImGuiText) -> (),
 	}
 ))
 
