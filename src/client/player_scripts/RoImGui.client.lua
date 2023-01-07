@@ -98,11 +98,15 @@ runService.RenderStepped:Connect(function(_: number)
 				RoImGui:SameLine()
 				RoImGui:Text("Simply writing to the output log.")
 
+				RoImGui:Separator()
+
 				RoImGui:RadioButton("Button 1", radioValue, 0)
 				RoImGui:SameLine()
 				RoImGui:RadioButton("Button 2", radioValue, 1)
 				RoImGui:SameLine()
 				RoImGui:RadioButton("Button 3", radioValue, 2)
+
+				RoImGui:Separator()
 
 				RoImGui:PushColour("CheckMark", red)
 				RoImGui:RadioButton("Red", radioValue, 0)

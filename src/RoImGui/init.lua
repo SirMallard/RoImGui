@@ -24,6 +24,8 @@ local Header = require(components.Header)
 
 local startFrameId: number = -1
 local endFrameId: number = -1
+-- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
@@ -531,24 +533,26 @@ end
 
 -- Loops through all children in the element frame and checks the id and class for the desired element.
 function ImGui:GetElementById(
-	id: Types.ImGuiId,
+	id: Types.ImGuiId?,
 	class: string,
 	elementFrame: Types.ElementFrame,
 	active: boolean?
 ): (Types.Element?)
-	local element: Types.Element
+	-- local element: Types.Element
 
 	for _, childElement: Types.ImGuiText in elementFrame.Elements do
 		if
-			(childElement.Id == id) and (childElement.Class == class)
-			-- and ((active == nil) or (childElement.Active == false))
+			(childElement.Id == id)
+			and (childElement.Class == class)
+			and ((active == nil) or (childElement.Active == false))
 		then
-			element = childElement
-			break
+			return childElement
+			-- element = childElement
+			-- break
 		end
 	end
 
-	return element
+	-- return element
 end
 
 function ImGui:PushColour(index: string, colour: Types.Colour4)
@@ -1249,7 +1253,7 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 
 	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return
+		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
@@ -1257,7 +1261,7 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
 	then
-		return
+		return false
 	end
 
 	local radioButton: Types.ImGuiRadioButton? =
@@ -1292,7 +1296,56 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 
 	radioButton:UpdateRadioButton()
 
-	return pressed
+	if pressed == true then
+		return true
+	end
+	return false
+end
+
+function ImGui:Separator()
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:TextV()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return
+	end
+
+	local separator: Types.ImGuiSeparator? = ImGui:GetElementById(nil, "Separator", elementFrame, true)
+
+	if separator == nil then
+		separator = {
+			Class = "Separator",
+		} :: Types.ImGuiSeparator
+		local instance: Frame = Instance.new("Frame")
+		instance.Name = "separator"
+		instance.Size = UDim2.new(1, 0, 0, 1)
+
+		instance.BackgroundColor3 = Style.Colours.Separator.Colour
+		instance.BackgroundTransparency = Style.Colours.Separator.Transparency
+		instance.BorderColor3 = COLOUR3_BLACK
+		instance.BorderSizePixel = 0
+
+		instance.Parent = elementFrame.Instance
+		separator.Instance = instance
+
+		table.insert(elementFrame.Elements, separator)
+	end
+
+	separator.Instance.Position = UDim2.fromOffset(0, elementFrame.DrawCursor.Position.Y)
+	ItemSize(elementFrame.DrawCursor, separator.Instance.AbsoluteSize)
+
+	separator.Active = true
+	separator.LastFrameActive = startFrameId
 end
 
 function ImGui:Indent(width: number?)

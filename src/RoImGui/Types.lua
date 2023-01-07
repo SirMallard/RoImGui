@@ -136,6 +136,7 @@ export type ImGuiClass =
 	| "Resize"
 	| "TreeNode"
 	| "CollapsingHeader"
+	| "Separator"
 
 --[[
 		=<>= FLAGS =<>=
@@ -530,7 +531,22 @@ export type ImGuiHeader = typeof(setmetatable(
 	}
 ))
 
-export type Element = ImGuiText | ImGuiCheckbox | ImGuiButton | ImGuiRadioButton | ImGuiTreeNode | ImGuiHeader
+export type ImGuiSeparator = {
+	Class: ImGuiClass,
+	Active: boolean,
+	LastFrameActive: number,
+
+	Instance: Frame,
+}
+
+export type Element =
+	ImGuiText
+	| ImGuiCheckbox
+	| ImGuiButton
+	| ImGuiRadioButton
+	| ImGuiTreeNode
+	| ImGuiHeader
+	| ImGuiSeparator
 
 export type Button =
 	WindowTitleButton
@@ -572,6 +588,8 @@ export type ImGui = {
 	TreePop: (self: ImGui) -> (),
 	CollapsingHeader: (self: ImGui, text: string, value: { boolean }) -> (boolean),
 
+	Separator: (self: ImGui) -> (),
+
 	Indent: (self: ImGui, width: number?) -> (),
 	Unindent: (self: ImGui, width: number?) -> (),
 	SameLine: (self: ImGui, spacing: number?) -> (),
@@ -594,7 +612,7 @@ export type ImGui = {
 
 	GetActiveElementFrame: (self: ImGui) -> (),
 	GetElementById: (
-		self: ImGui,
+		self: ImGui?,
 		id: ImGuiId,
 		Class: string,
 		elementFrame: ElementFrame,
