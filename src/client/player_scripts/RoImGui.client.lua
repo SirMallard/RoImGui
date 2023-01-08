@@ -68,6 +68,11 @@ runService.RenderStepped:Connect(function(_: number)
 				RoImGui:BulletText("A line with a bullet point!")
 				RoImGui:Text("Time: %s", tostring(time()))
 
+				RoImGui:Separator()
+
+				RoImGui:LabelText("A string text value", "Demonstration")
+				RoImGui:LabelText("Large part of window", "Small part")
+
 				RoImGui:TreePop()
 			end
 			if RoImGui:TreeNode("Checkbox") then

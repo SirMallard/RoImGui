@@ -69,6 +69,7 @@ function TreeNode:DrawTreeNode(position: Vector2)
 	text.TextTransparency = Style.Colours.Text.Transparency
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
+	text.TextXAlignment = Enum.TextXAlignment.Left
 
 	text.Parent = treenode
 

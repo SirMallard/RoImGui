@@ -72,6 +72,7 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
+
 	text.Parent = checkbox
 
 	local icon: ImageLabel = Instance.new("ImageLabel")
@@ -86,6 +87,7 @@ function Checkbox:DrawCheckbox(position: Vector2)
 	icon.Image = "rbxassetid://11505661049"
 	icon.ImageColor3 = Style.Colours.CheckMark.Colour
 	icon.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+
 	icon.Parent = checkbox
 
 	checkbox.Parent = self.ElementFrame.Instance

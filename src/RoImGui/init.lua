@@ -19,6 +19,9 @@ local Text = require(components.Text)
 local Checkbox = require(components.Checkbox)
 local Button = require(components.Button)
 local RadioButton = require(components.RadioButton)
+
+local LabelText = require(components.LabelText)
+
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
 
@@ -196,7 +199,11 @@ function ImGui:CleanWindowElements()
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
 			if element.LastFrameActive < endFrameId then
-				element:Destroy()
+				if element["Destroy"] == nil then
+					element.Instance:Destroy()
+				else
+					element:Destroy()
+				end
 				table.remove(frame.Elements, elementIndex)
 			else
 				element.Active = false
@@ -1300,6 +1307,41 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 		return true
 	end
 	return false
+end
+
+function ImGui:LabelText(text: string, label: string)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:TextV()
+	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+		return false
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	if
+		elementFrame.DrawCursor.Position.Y
+		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
+	then
+		return false
+	end
+
+	local labelText: Types.ImGuiLabelText? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. text .. "|" .. label, "LabelText", elementFrame)
+
+	if labelText == nil then
+		labelText = LabelText.new(text, label, window, elementFrame)
+		labelText:DrawLabelText(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, labelText)
+	else
+		labelText:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	ItemSize(elementFrame.DrawCursor, labelText.Instance.AbsoluteSize)
+
+	labelText.Active = true
+	labelText.LastFrameActive = startFrameId
 end
 
 function ImGui:Separator()

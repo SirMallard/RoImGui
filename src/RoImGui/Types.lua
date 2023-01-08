@@ -132,6 +132,7 @@ export type ImGuiClass =
 	| "Checkbox"
 	| "Button"
 	| "RadioButton"
+	| "LabelText"
 	| "Corner"
 	| "Side"
 	| "Resize"
@@ -475,6 +476,8 @@ export type ImGuiLabelText = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
+		HasLabel: boolean,
+
 		Active: boolean,
 		LastFrameActive: number,
 
@@ -573,6 +576,7 @@ export type Element =
 	| ImGuiCheckbox
 	| ImGuiButton
 	| ImGuiRadioButton
+	| ImGuiLabelText
 	| ImGuiTreeNode
 	| ImGuiHeader
 	| ImGuiSeparator
@@ -608,6 +612,8 @@ export type ImGui = {
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
 	BulletText: (self: ImGui, text: string, ...any) -> (),
+
+	LabelText: (self: ImGui, text: string, lable: string) -> (),
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> (boolean),
 	Button: (self: ImGui, text: string) -> (boolean),
