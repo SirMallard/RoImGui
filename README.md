@@ -30,7 +30,7 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
     - [x] Collapsing
     - [x] Close
     - [x] Double-click Close
-  - [ ] Menubar
+  - [x] Menubar
     - [ ] Dropdown
   - [x] Frame
   - [x] Moving
@@ -41,16 +41,16 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
   - [x] Disabled
   - [x] Bullet
   - [x] Coloured
-  - [ ] Tree Node
+  - [x] Tree Node
   - [ ] Selectable
 - [ ] Button
   - [x] Button
-  - [ ] Coloured Button
+  - [x] Coloured Button
   - [ ] Arrow Button
   - [ ] Repeat Button
   - [ ] Disabled
   - [x] Checkbox
-  - [ ] Radio
+  - [x] Radio
 - [ ] Input
   - [ ] Combobox
   - [ ] Listbox
@@ -74,9 +74,9 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
   - [ ] Line
   - [ ] Histogram
   - [ ] Progress
-- [ ] Collapsing Header
-  - [ ] Collapsing
-  - [ ] Closing
+- [x] Collapsing Header
+  - [x] Collapsing
+  - [x] Closing
 
 
 
@@ -120,6 +120,9 @@ If you want to add code to the project then ensure that you are using StyLua to 
 
 🔧 Tweaks, changes and bug-fixes:
 	[NOT-NEW ADDITIONS]
+
+😡 Known bugs and issues to fix:
+	[NEW BUG AND ISSUE ADDITIONS]
 ```
 For example, the folling merge uses:
 - a relatively short description of each change or addition.

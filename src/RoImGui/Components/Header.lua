@@ -2,18 +2,18 @@ local Types = require(script.Parent.Parent.Types)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 
-local TreeNode = {}
-TreeNode.__index = TreeNode
-TreeNode.ClassName = "TreeNode"
+local Header = {}
+Header.__index = Header
+Header.ClassName = "CollapsingHeader"
 
 local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function TreeNode.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
-	local self: Types.ImGuiTreeNode = setmetatable({}, TreeNode) :: Types.ImGuiTreeNode
+function Header.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
+	local self: Types.ImGuiHeader = setmetatable({}, Header) :: Types.ImGuiHeader
 
 	self.Text = text
-	self.Class = "TreeNode"
+	self.Class = "CollapsingHeader"
 	self.Id = elementFrame.Id .. ">" .. self.Text
 	self.Value = value
 	self.InternalValue = value[1]
@@ -31,7 +31,7 @@ function TreeNode.new(text: string, value: { boolean }, window: Types.ImGuiWindo
 	return self
 end
 
-function TreeNode:DrawTreeNode(position: Vector2)
+function Header:DrawHeader(position: Vector2)
 	if self.Instance ~= nil then
 		self.Instance:Destroy()
 		self.Instance = nil
@@ -42,20 +42,23 @@ function TreeNode:DrawTreeNode(position: Vector2)
 	end
 
 	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
+	local offset: number = math.floor(0.5 * Style.Sizes.WindowPadding.X)
+	local padding: number = 2 * Style.Sizes.FramePadding.X
+	local height: number = 2 * Style.Sizes.FramePadding.Y
 
-	local treenode: Frame = Instance.new("Frame")
-	treenode.Name = self.Text
-	treenode.Position = UDim2.fromOffset(position.X, position.Y)
-	treenode.Size = UDim2.new(1, -position.X, 0, Style.Sizes.TextSize)
+	local header: Frame = Instance.new("Frame")
+	header.Name = self.Text
+	header.Position = UDim2.fromOffset(position.X - offset, position.Y)
+	header.Size = UDim2.new(1, offset - position.X, 0, Style.Sizes.TextSize + height)
 
-	treenode.BackgroundColor3 = Style.Colours.Transparent.Colour
-	treenode.BackgroundTransparency = Style.Colours.Transparent.Transparency
-	treenode.BorderColor3 = COLOUR3_BLACK
-	treenode.BorderSizePixel = 0
+	header.BackgroundColor3 = Style.Colours.Header.Colour
+	header.BackgroundTransparency = Style.Colours.Header.Transparency
+	header.BorderColor3 = COLOUR3_BLACK
+	header.BorderSizePixel = 0
 
 	local text: TextLabel = Instance.new("TextLabel")
 	text.Name = "text"
-	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.X, 0)
+	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + offset + padding, Style.Sizes.FramePadding.Y)
 	text.Size = UDim2.fromOffset(textSize.X, Style.Sizes.TextSize)
 
 	text.BackgroundColor3 = COLOUR3_WHITE
@@ -71,12 +74,15 @@ function TreeNode:DrawTreeNode(position: Vector2)
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
 
-	text.Parent = treenode
+	text.Parent = header
 
 	local dropdown: ImageLabel = Instance.new("ImageLabel")
 	dropdown.Name = "dropdown"
-	dropdown.Position = UDim2.fromOffset(Style.Sizes.FramePadding.X, 0)
-	dropdown.Size = UDim2.fromOffset(Style.Sizes.TextSize, Style.Sizes.TextSize)
+	dropdown.Position = UDim2.fromOffset(1.5 * Style.Sizes.FramePadding.X, 0.5 * Style.Sizes.FramePadding.Y)
+	dropdown.Size = UDim2.fromOffset(
+		Style.Sizes.TextSize + Style.Sizes.FramePadding.Y,
+		Style.Sizes.TextSize + Style.Sizes.FramePadding.Y
+	)
 	dropdown.Rotation = (self.Value[1] == true) and 0 or -90
 
 	dropdown.BackgroundColor3 = COLOUR3_WHITE
@@ -88,22 +94,24 @@ function TreeNode:DrawTreeNode(position: Vector2)
 	dropdown.ImageColor3 = Style.Colours.Text.Colour
 	dropdown.ImageTransparency = Style.Colours.Text.Transparency
 
-	dropdown.Parent = treenode
+	dropdown.Parent = header
 
-	treenode.Parent = self.ElementFrame.Instance
-	self.Instance = treenode
-	self.Size = Vector2.new(textSize.X + 2 * Style.Sizes.FramePadding.X + Style.Sizes.TextSize, Style.Sizes.TextSize)
+	header.Parent = self.ElementFrame.Instance
+	self.Instance = header
+	self.Size = Vector2.new(textSize.X + padding + Style.Sizes.TextSize + offset, Style.Sizes.TextSize + height)
 end
 
-function TreeNode:UpdatePosition(position: Vector2)
+function Header:UpdatePosition(position: Vector2)
 	if self.Instance == nil then
-		self:DrawTreeNode(position)
+		self:DrawHeader(position)
 	else
-		self.Instance.Position = UDim2.fromOffset(position.X, position.Y)
+		local offset: number = math.floor(0.5 * Style.Sizes.WindowPadding.X)
+		self.Instance.Position = UDim2.fromOffset(position.X - offset, position.Y)
+		self.Instance.Size = UDim2.new(1, offset - position.X, 0, Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y)
 	end
 end
 
-function TreeNode:UpdateTreeNode(pressed: boolean)
+function Header:UpdateHeader(pressed: boolean)
 	if self.Instance == nil then
 		return
 	end
@@ -118,7 +126,7 @@ function TreeNode:UpdateTreeNode(pressed: boolean)
 	end
 end
 
-function TreeNode:Destroy()
+function Header:Destroy()
 	if self.Instance ~= nil then
 		self.Instance.Parent = nil
 		self.Instance:Destroy()
@@ -128,4 +136,4 @@ function TreeNode:Destroy()
 	setmetatable(self, nil)
 end
 
-return TreeNode
+return Header

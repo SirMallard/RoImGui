@@ -14,6 +14,7 @@ local Sizes: Types.ImGuiStyleSize = {
 
 	TextMinHeight = 13,
 	TextSize = 13, -- best size we can use.
+	ItemWidthScale = 0.65,
 
 	ResizeOuterPadding = 4,
 	ResizeInnerPadding = 10,
@@ -82,7 +83,7 @@ local ButtonStyles: Types.ImGuiButtonStyles = {
 		[1] = Colours.ButtonHovered,
 		[2] = Colours.ButtonActive,
 	},
-	Checkbox = {
+	Frame = {
 		[0] = Colours.FrameBg,
 		[1] = Colours.FrameBgHovered,
 		[2] = Colours.FrameBgActive,
@@ -107,6 +108,21 @@ local ButtonStyles: Types.ImGuiButtonStyles = {
 		[1] = Colours.ResizeGripHovered,
 		[2] = Colours.ResizeGripActive,
 	},
+	Menu = {
+		[0] = Colours.Transparent,
+		[1] = Colours.HeaderHovered,
+		[2] = Colours.Header,
+	},
+	TreeNode = {
+		[0] = Colours.Transparent,
+		[1] = Colours.HeaderHovered,
+		[2] = Colours.HeaderActive,
+	},
+	CollapsingHeader = {
+		[0] = Colours.Header,
+		[1] = Colours.HeaderHovered,
+		[2] = Colours.HeaderActive,
+	},
 }
 
 local backup = {
@@ -122,6 +138,12 @@ return {
 	Colours = Colours,
 	ButtonStyles = ButtonStyles,
 	Font = Font.new("rbxasset://fonts/families/Arial.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+
+	Images = {
+		Circle = "rbxassetid://4673889148",
+		Dropdown = "rbxassetid://11523280019",
+		Cross = "rbxassetid://11506648985",
+	},
 
 	Backup = backup,
 }

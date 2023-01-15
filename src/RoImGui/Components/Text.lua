@@ -12,9 +12,9 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 function Text.new(text: string, bulletText: boolean, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
-	self.Text = text
 	self.Class = bulletText == true and "BulletText" or "Text"
-	self.Id = elementFrame.Id .. ">" .. self.Text
+	self.Id = elementFrame.Id .. ">" .. text
+	self.Text = text
 
 	self.ElementFrame = elementFrame
 	self.Window = window

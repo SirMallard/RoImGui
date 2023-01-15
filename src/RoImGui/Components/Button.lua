@@ -12,9 +12,9 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 function Button.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
 	local self: Types.ImGuiButton = setmetatable({}, Button) :: Types.ImGuiButton
 
-	self.Text = text
 	self.Class = "Button"
-	self.Id = elementFrame.Id .. ">" .. self.Text
+	self.Id = elementFrame.Id .. ">" .. text
+	self.Text = text
 
 	self.State = 0
 
@@ -55,6 +55,7 @@ function Button:DrawButton(position: Vector2)
 	button.Text = self.Text
 	button.FontFace = Style.Font
 	button.TextColor3 = Style.Colours.Text.Colour
+	button.TextTransparency = Style.Colours.Text.Transparency
 	button.TextSize = Style.Sizes.TextSize
 	button.TextWrapped = false
 	button.TextXAlignment = Enum.TextXAlignment.Left
