@@ -483,11 +483,11 @@ end
 
 ]]
 
-function ImGui:GetWindowById(windowName: string): (Types.ImGuiWindow?)
+function ImGui:GetWindowById(windowName: string): Types.ImGuiWindow?
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
-function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): (Types.ImGuiWindow)
+function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): Types.ImGuiWindow
 	local parentWindow: Types.ImGuiWindow? = nil
 
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
@@ -540,11 +540,11 @@ end
 
 -- Loops through all children in the element frame and checks the id and class for the desired element.
 function ImGui:GetElementById(
-	id: Types.ImGuiId?,
+	id: Types.ImGuiId,
 	class: string,
 	elementFrame: Types.ElementFrame,
 	active: boolean?
-): (Types.Element?)
+): Types.Element?
 	-- local element: Types.Element
 
 	for _, childElement: Types.ImGuiText in elementFrame.Elements do
@@ -869,7 +869,7 @@ end
 	:Indent()
 	:UnIndent()
 ]]
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): (boolean)
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): boolean
 	-- just create a set of default flags
 	flags = flags or Flags.WindowFlags()
 
@@ -1161,14 +1161,14 @@ function ImGui:BulletText(textString: string, ...: any)
 	ImGui:TextV(textString, true, ...)
 end
 
-function ImGui:Checkbox(text: string, value: { boolean }): (boolean)
+function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
 	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return
+		return value[1]
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
@@ -1176,7 +1176,7 @@ function ImGui:Checkbox(text: string, value: { boolean }): (boolean)
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
 	then
-		return
+		return value[1]
 	end
 
 	local checkbox: Types.ImGuiCheckbox? =
@@ -1206,10 +1206,13 @@ function ImGui:Checkbox(text: string, value: { boolean }): (boolean)
 
 	checkbox:UpdateCheckmark()
 
-	return pressed
+	if pressed == true then
+		return true
+	end
+	return false
 end
 
-function ImGui:Button(text: string): (boolean)
+function ImGui:Button(text: string): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1253,7 +1256,7 @@ function ImGui:Button(text: string): (boolean)
 	return false
 end
 
-function ImGui:RadioButton(text: string, value: { number }, buttonValue: number): (boolean)
+function ImGui:RadioButton(text: string, value: { number }, buttonValue: number): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1362,7 +1365,7 @@ function ImGui:Separator()
 		return
 	end
 
-	local separator: Types.ImGuiSeparator? = ImGui:GetElementById(nil, "Separator", elementFrame, true)
+	local separator: Types.ImGuiSeparator? = ImGui:GetElementById("", "Separator", elementFrame, true)
 
 	if separator == nil then
 		separator = {
@@ -1408,7 +1411,7 @@ function ImGui:Unindent(width: number?)
 	frame.DrawCursor.Position -= Vector2.xAxis * (width or Style.Sizes.IndentSpacing)
 end
 
-function ImGui:TreeNode(text: string): (boolean)
+function ImGui:TreeNode(text: string): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
@@ -1480,7 +1483,7 @@ function ImGui:TreePop()
 	ImGui:Unindent(Style.Sizes.IndentSpacing)
 end
 
-function ImGui:CollapsingHeader(text: string, value: { boolean }?): (boolean)
+function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
