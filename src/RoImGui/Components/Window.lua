@@ -24,7 +24,7 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 				- Button hover or highlights.
 ]]
 
-function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): (Types.ImGuiWindow)
+function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): Types.ImGuiWindow
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName

@@ -593,6 +593,9 @@ end
 	Manages the activity on the title bar excluding moving:
 		- Checks for close and collapse buttons and updates accordingly.
 		- Detects a double click on the title bar and collapses the window.
+	
+	The draw next frame argument is only used when the window collapses,
+	since everything inside is culled.
 ]]
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	local focusOnButton: boolean = false
@@ -655,6 +658,12 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 end
 
+--[[
+	Manages the border of the window. Each side and the bottom two corners
+	are frames which just get handled as any normal button would. None of the
+	window moving actually happens here.
+	I don't know how efficent this is, because there are lots of vector2 creations.
+]]
 function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	if ImGuiInternal.ResizingWindow ~= nil then
 		return
@@ -668,6 +677,12 @@ function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	local innerPadding: number = Style.Sizes.ResizeInnerPadding
 	local padding: number = outerPadding + innerPadding
 
+	--[[
+		Every resize is passed through here.
+		Because the detection radius is greater than the visible edges of the window
+		which highlight when you click, we can't use the absolute position in any
+		helpful way.
+	]]
 	local function ResizeBehaviour(
 		element: Types.ResizeElement,
 		positionPadding: Vector2,
@@ -869,29 +884,50 @@ end
 	:Indent()
 	:UnIndent()
 ]]
+
+--[[
+	The main window creation. This will create the draggable, resizable windows for most operations
+	but the creation of any popups, menus and other window objects will go through here.
+
+	The flags property changes the behaviour of the window. However, most flags don't update exisiting
+	behaviour. For example, if the flags change to have no title bar, the title bar won't be deleted
+	but it won't be interactable. If you want to change flags for a window, skipping a frame to delete
+	the window will draw a new window with the new flags. It's just simpler that way.
+]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): boolean
 	-- just create a set of default flags
 	flags = flags or Flags.WindowFlags()
 
-	-- if the window is not open at all because the open value is false then we return instantly
-	-- this ensures that the window is not created at all since it will not be visible
-	-- additionally, we do not need to check the window open value, since it is updated every frame
-	-- and is equal to the open variable which is checked here
+	--[[
+		If the window is not open at all because the open value is false then we return instantly
+		this ensures that the window is not created at all since it will not be visible.
+		Additionally, we do not need to check the window open value, since it is updated every frame
+		and is equal to the open variable which is checked here.
+	]]
 	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
 		return false
 	end
 
-	-- grab the previous window if we have already created one, else we create a new one
-	-- therefore, we are not preserving state between frames
+	--[[
+		If the window already exists we use it again. It keeps all elements from the previous frame.
+		Otherwise we create a new empty window.
+	]]
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= startFrameId) -- If this is the first time in the renderstep for creating the window
 	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1)) or (flags.Popup == true)
 
+	--[[
+		The parent window if this begin is called within another window. It can be nil
+	]]
 	local parentWindowFromStack: Types.ImGuiWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
 
+	--[[
+		No we are ready to add the window to the stack and set as the current window.
+		Any additional window data is also updated.
+	]]
 	table.insert(ImGuiInternal.WindowStack, window)
 	ImGuiInternal.CurrentWindow = window
 	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
@@ -903,15 +939,10 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		ImGuiInternal.ChildWindowCount += 1
 	end
 
-	if flags.Popup == true then
-		print("Popup window created!")
-	end
-
-	-- don't know why exactly, but it doesn't seem to be an issue.
-	-- if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
-	-- 	window.Collapsed = true
-	-- end
-
+	--[[
+		If it's the first call this frame, then we draw the window and set any data. Any changes
+		won't propogate until the next frame.
+	]]
 	if firstFrameCall == true then
 		window.Flags = flags
 		-- local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
@@ -919,21 +950,13 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		ImGui:UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
-		window.Open = open or { true } -- we default to
-
-		-- if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
-		-- end
-
-		-- if windowApearing == true then
-		-- 	if (flags.Popup == true) and (flags.Modal == false) then
-		-- 	end
-		-- end
+		window.Open = open or { true } -- We default to open. Closed would be unhelpful.
 
 		if flags.ChildWindow == true then
 			table.insert(parentWindow.ChildWindows, window)
 		end
 
-		window:DrawWindow()
+		window:DrawWindow() -- Just a window shell.
 
 		if flags.NoTitleBar == false then
 			window:DrawTitle()
@@ -944,18 +967,28 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 			ImGui:HandleWindowBorder(window)
 		end
 
+		--[[
+			This draws the actual ElementFrame for the elements to sit in.
+		]]
 		window:DrawFrame()
 	end
 
 	-- A lot of internal code in here!
 
-	-- if the window is not active, not sure if it can be false or the window is collapsed
-	-- collapsing will still render the title bar which is why we go through all of this process.
-	local skipElements: boolean = (window.Collapsed == true) or (window.Active == false)
+	--[[
+		If the window is collapsed or not visible or will be redrawn next frame, there is no point
+		adding elements to the window. Anything colled within can be skipped
+	]]
+	local skipElements: boolean = (window.Collapsed == true)
+		or (window.Active == false)
+		or (window.Open[1] == false)
+		or (window.RedrawNextFrame == true)
 	window.SkipElements = skipElements
 
-	-- based on the issue about when to end elements, because this window can have no child
-	-- elements we end it entirely.
+	--[[
+		Based on the issue about when to end elements, because this window can have no child
+		elements we end it entirely.
+	]]
 	if skipElements == true then
 		ImGui:End()
 	end
@@ -963,6 +996,9 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	return not skipElements
 end
 
+--[[
+	Finishes with the current window. Must be called only if the :Begin() returns true.
+]]
 function ImGui:End()
 	assert((#ImGuiInternal.WindowStack > 0), "Called :End() to many times!")
 	assert(ImGuiInternal.CurrentWindow ~= nil, "Never called :Begin() to set a current window!")
@@ -974,6 +1010,9 @@ function ImGui:End()
 		ImGuiInternal.ChildWindowCount -= 1
 	end
 
+	--[[
+		Every stack gets popped and changes the current window.
+	]]
 	table.remove(ImGuiInternal.WindowStack)
 	ImGuiInternal.CurrentWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
 	table.remove(ImGuiInternal.ElementFrameStack)
@@ -1082,15 +1121,22 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- We don't draw if it is going to be redrawn next frame.
-	-- Don't remove because the text is parented to an instance and when it redraws next frame
-	-- the instance is destroyed so the text only appears for a frame and is then destroyed
-	-- so we don't draw at all.
-	-- Settings the text to redraw next frame would already happen, so why render at all.
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	--[[
+		We don't draw if it is going to be redrawn next frame.
+		Don't remove because the text is parented to an instance and when it redraws next frame
+		the instance is destroyed so the text only appears for a frame and is then destroyed
+		so we don't draw at all.
+	]]
+	if window.SkipElements == true then
 		return
 	end
 
+	--[[
+		IMPORTANT:
+			This whole passage regards whether elements should be drawn even if they are not visible
+			because the scrolling is incorrect. When this was implemented, windows could not be scrolled
+			and therefore it was easy enough
+		
 	-- There's no point drawing the element if it's too far down a window to be visible.
 	-- The windows are unlikely to be resized up and down repeatedly so it saves memory and time
 	-- by exiting at the start.
@@ -1111,6 +1157,7 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		-- elementFrame.DrawCursor.Position += Vector2.yAxis * height
 		return
 	end
+	]]
 
 	-- format with the args
 	local args: { any } = { ... }

@@ -648,7 +648,7 @@ export type ImGui = {
 	GetActiveElementFrame: (self: ImGui) -> (),
 	GetElementById: (
 		self: ImGui,
-		id: ImGuiId?,
+		id: ImGuiId,
 		Class: string,
 		elementFrame: ElementFrame,
 		active: boolean?
