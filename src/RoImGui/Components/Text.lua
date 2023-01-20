@@ -9,17 +9,18 @@ Text.ClassName = "ImGuiText"
 local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function Text.new(text: string, bulletText: boolean, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
+function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame, flags: Types.TextFlags)
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
-	self.Class = bulletText == true and "BulletText" or "Text"
+	self.Class = flags.BulletText == true and "BulletText" or "Text"
 	self.Id = elementFrame.Id .. ">" .. text
 	self.Text = text
 
 	self.ElementFrame = elementFrame
 	self.Window = window
 	self.LastFrameActive = 0
-	self.BulletText = bulletText
+
+	self.Flags = flags
 
 	self.Active = true
 
@@ -40,7 +41,7 @@ function Text:DrawText(position: Vector2)
 
 	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
 	local fontSize: number = Style.Sizes.TextSize
-	if self.BulletText == true then
+	if self.Flags.BulletText == true then
 		textSize += Vector2.new(2 * Style.Sizes.FramePadding.X + fontSize, 0)
 	end
 
@@ -62,7 +63,7 @@ function Text:DrawText(position: Vector2)
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
 
-	if self.BulletText == true then
+	if self.Flags.BulletText == true then
 		local padding: UIPadding = Instance.new("UIPadding")
 		padding.Name = "padding"
 		padding.PaddingLeft = UDim.new(0, 2 * Style.Sizes.FramePadding.X + fontSize)

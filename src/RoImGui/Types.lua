@@ -168,6 +168,12 @@ export type PopupFlags = {
 	type: "PopupFlags",
 }
 
+export type TextFlags = {
+	type: "TextFlags",
+
+	BulletText: boolean,
+}
+
 export type DrawCursor = {
 	Position: Vector2,
 	PreviousPosition: Vector2,
@@ -344,7 +350,7 @@ export type ImGuiText = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		BulletText: boolean,
+		Flags: TextFlags,
 
 		Active: boolean,
 		LastFrameActive: number,
@@ -356,7 +362,7 @@ export type ImGuiText = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiText,
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame, flags: TextFlags) -> ImGuiText,
 
 		DrawText: (self: ImGuiText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
@@ -607,7 +613,7 @@ export type ImGui = {
 	BeginMenu: (self: ImGui, name: string) -> boolean,
 	EndMenu: (self: ImGui) -> (),
 
-	TextV: (self: ImGui, text: string, bulletText: boolean, ...any) -> (),
+	TextV: (self: ImGui, flags: TextFlags, text: string, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
@@ -634,6 +640,7 @@ export type ImGui = {
 
 	Flags: {
 		WindowFlags: () -> WindowFlags,
+		TextFlags: () -> TextFlags,
 	},
 	Types: ModuleScript,
 	Colour4: ModuleScript,

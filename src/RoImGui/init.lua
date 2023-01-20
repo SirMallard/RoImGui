@@ -30,6 +30,12 @@ local endFrameId: number = -1
 -- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
+local DefaultWindowFlags = Flags.WindowFlags()
+local DefaultTextFlags = Flags.TextFlags()
+
+local BulletTextFlags = Flags.TextFlags()
+BulletTextFlags.BulletText = true
+
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
 ImGui.FrameId = startFrameId
@@ -896,7 +902,7 @@ end
 ]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): boolean
 	-- just create a set of default flags
-	flags = flags or Flags.WindowFlags()
+	flags = flags or DefaultWindowFlags
 
 	--[[
 		If the window is not open at all because the open value is false then we return instantly
@@ -1112,11 +1118,37 @@ function ImGui:EndMenu()
 	window.ActiveMenu = nil
 end
 
+--[[
+	Text Functions:
+
+		There are multiple text functions which all ultimately call the same :TextV() function.
+		The :TextV() function draws all the elements and has to change properties depending on
+		the type of text element to draw.
+		
+		The :TextDisabled() is the :TextColoured function and they both just use the :Push and
+		:PopColour() functions to change the style. :BulletText() is a bit different since it
+		enables the .BulletText flag to change the behaviour.
+]]
+
 function ImGui:Text(textString: string, ...: any)
-	ImGui:TextV(textString, false, ...)
+	ImGui:TextV(DefaultTextFlags, textString, false, ...)
 end
 
-function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
+function ImGui:TextDisabled(textString: string, ...: any)
+	ImGui:TextColoured(Style.Colours.TextDisabled, textString, ...)
+end
+
+function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
+	ImGui:PushColour("Text", colour)
+	ImGui:TextV(DefaultTextFlags, textString, false, ...)
+	ImGui:PopColour("Text")
+end
+
+function ImGui:BulletText(textString: string, ...: any)
+	ImGui:TextV(BulletTextFlags, textString, true, ...)
+end
+
+function ImGui:TextV(flags: Types.TextFlags, textString: string, ...: any)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1135,7 +1167,8 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		IMPORTANT:
 			This whole passage regards whether elements should be drawn even if they are not visible
 			because the scrolling is incorrect. When this was implemented, windows could not be scrolled
-			and therefore it was easy enough
+			and therefore it was easy enough to just cull any item below the current window height. However,
+			this will not work with scrolling so it's no longer part of the window.
 		
 	-- There's no point drawing the element if it's too far down a window to be visible.
 	-- The windows are unlikely to be resized up and down repeatedly so it saves memory and time
@@ -1143,7 +1176,6 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	-- There's no point checking horizontally because it's unlikely that anything will be too far
 	-- and it's not worth it for now.
 	-- This will need to be changed when window scrolling is added.
-	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
@@ -1159,53 +1191,51 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 	end
 	]]
 
-	-- format with the args
-	local args: { any } = { ... }
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+
+	--[[
+		If any additional paramaters are passed then they are joined together with spaces.
+	]]
+	local args: { any } = { textString, ... }
 	if #args > 0 then
-		for index: number, arg: any in args do
-			args[index] = tostring(arg)
-		end
-		textString = textString:format(table.unpack(args))
+		textString = table.concat(args, " ")
 	end
 
-	-- If a previous version already exists from the last frame then we use it.
-	-- It will have any data already in it.
+	--[[
+		If a previous version already exists from the last frame then we use it since it already
+		has all the data we need.
+	]]
 	local text: Types.ImGuiText? = ImGui:GetElementById(
 		elementFrame.Id .. ">" .. textString,
-		bulletText == true and "BulletText" or "Text",
+		flags.BulletText == true and "BulletText" or "Text",
 		elementFrame
 	)
 
-	-- If it does not already exist then we create a new one, draw it and then add it to the elements
-	-- in the element frame. If it does exist, we just change position.
+	--[[
+		If it does not already exist then we create a new one, draw it and then add it to the elements
+		in the ElementFrame. If it does exist, we just change position.
+
+		The :DrawText() and :UpdatePosition() methods pass through the position to draw to. Normally, it
+		would just be the DrawCursor position, but since it is a text element, we have an additional
+		property to adjust the vertical offset when elements are aligned on the same line. This prevents
+		the text being too high relative to other elements with frame padding, such as buttons and checkboxes.
+	]]
 	if text == nil then
-		text = Text.new(textString, bulletText, window, elementFrame)
+		text = Text.new(textString, window, elementFrame, flags)
 		text:DrawText(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 		table.insert(elementFrame.Elements, text)
 	else
 		text:UpdatePosition(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 	end
 
+	--[[
+		We pass the size of the text into the ItemSize() function which moves the draw cursor for the next
+		element. We can just use the Size property of the text element since it doesn't change once drawn.
+	]]
 	ItemSize(elementFrame.DrawCursor, text.Size)
 
 	text.Active = true
 	text.LastFrameActive = startFrameId
-end
-
-function ImGui:TextDisabled(textString: string, ...: any)
-	ImGui:PushColour("Text", Style.Colours.TextDisabled)
-	ImGui:TextV(textString, false, ...)
-	ImGui:PopColour("Text")
-end
-
-function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
-	ImGui:PushColour("Text", colour)
-	ImGui:TextV(textString, false, ...)
-	ImGui:PopColour("Text")
-end
-
-function ImGui:BulletText(textString: string, ...: any)
-	ImGui:TextV(textString, true, ...)
 end
 
 function ImGui:Checkbox(text: string, value: { boolean }): boolean
@@ -1214,17 +1244,11 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return value[1]
+	if window.SkipElements == true then
+		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return value[1]
-	end
 
 	local checkbox: Types.ImGuiCheckbox? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Checkbox", elementFrame)
@@ -1265,17 +1289,11 @@ function ImGui:Button(text: string): boolean
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local button: Types.ImGuiButton? = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Button", elementFrame)
 
@@ -1309,17 +1327,11 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return false
+	if window.SkipElements == true then
+		return value[1] == buttonValue
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local radioButton: Types.ImGuiRadioButton? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "RadioButton", elementFrame)
@@ -1365,17 +1377,11 @@ function ImGui:LabelText(text: string, label: string)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return false
+	if window.SkipElements == true then
+		return
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local labelText: Types.ImGuiLabelText? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text .. "|" .. label, "LabelText", elementFrame)
@@ -1400,17 +1406,11 @@ function ImGui:Separator()
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return
-	end
 
 	local separator: Types.ImGuiSeparator? = ImGui:GetElementById("", "Separator", elementFrame, true)
 
@@ -1464,17 +1464,11 @@ function ImGui:TreeNode(text: string): boolean
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local treenode: Types.ImGuiTreeNode? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
@@ -1511,19 +1505,7 @@ function ImGui:TreePop()
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return
-	end
-
-	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
-	if elementFrame == nil then
-		return
-	end
-
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
+	if window.SkipElements == true then
 		return
 	end
 
@@ -1536,17 +1518,11 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local header: Types.ImGuiHeader? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "CollapsingHeader", elementFrame, true)

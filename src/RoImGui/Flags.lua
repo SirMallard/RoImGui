@@ -1,20 +1,15 @@
+local TextService = game:GetService("TextService")
 local Types = require(script.Parent.Types)
 
 local Flags = {}
 
 local function BitFlags(flags: { [string]: boolean })
 	return function()
-		local self = {}
-
-		for flag: string, value: boolean in flags do
-			self[flag] = value
-		end
-
-		return self
+		return table.clone(flags)
 	end
 end
 
-local WindowFlags: () -> (Types.WindowFlags) = BitFlags({
+local WindowFlags: () -> Types.WindowFlags = BitFlags({
 	NoTitleBar = false,
 	NoResize = false,
 	NoMove = false,
@@ -31,8 +26,13 @@ local WindowFlags: () -> (Types.WindowFlags) = BitFlags({
 	Popup = false,
 	Modal = false,
 	ChildMenu = false,
-}) :: () -> (Types.WindowFlags)
+}) :: () -> Types.WindowFlags
+
+local TextFlags: () -> Types.TextFlags = BitFlags({
+	BulletText = false,
+}) :: () -> Types.TextFlags
 
 Flags.WindowFlags = WindowFlags
+Flags.TextFlags = TextFlags
 
 return Flags
