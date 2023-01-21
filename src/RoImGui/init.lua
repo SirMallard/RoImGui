@@ -356,7 +356,7 @@ function ItemHoverable(
 		return false
 	end
 
-	if ImGuiInternal.HoveredWindow ~= window then
+	if ImGuiInternal.HoveredWindow.Id ~= window.Id then
 		return false
 	end
 
@@ -593,6 +593,20 @@ function ImGui:AlignTextToFramePadding()
 
 	drawCursor.LineHeight = math.max(drawCursor.LineHeight, Style.Sizes.TextSize + 2 * Style.Sizes.FramePadding.Y)
 	drawCursor.TextLineOffset = math.max(drawCursor.TextLineOffset, Style.Sizes.FramePadding.Y)
+end
+
+function ImGui:IsItemHovered()
+	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
+
+	if window == nil then
+		return false
+	end
+
+	if ImGuiInternal.HoveredWindow.Id ~= window.Id then
+		return false
+	end
+
+	return false
 end
 
 --[[
@@ -1131,7 +1145,7 @@ end
 ]]
 
 function ImGui:Text(textString: string, ...: any)
-	ImGui:TextV(DefaultTextFlags, textString, false, ...)
+	ImGui:TextV(DefaultTextFlags, textString, ...)
 end
 
 function ImGui:TextDisabled(textString: string, ...: any)
@@ -1140,12 +1154,12 @@ end
 
 function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
 	ImGui:PushColour("Text", colour)
-	ImGui:TextV(DefaultTextFlags, textString, false, ...)
+	ImGui:TextV(DefaultTextFlags, textString, ...)
 	ImGui:PopColour("Text")
 end
 
 function ImGui:BulletText(textString: string, ...: any)
-	ImGui:TextV(BulletTextFlags, textString, true, ...)
+	ImGui:TextV(BulletTextFlags, textString, ...)
 end
 
 function ImGui:TextV(flags: Types.TextFlags, textString: string, ...: any)
@@ -1194,11 +1208,10 @@ function ImGui:TextV(flags: Types.TextFlags, textString: string, ...: any)
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 
 	--[[
-		If any additional paramaters are passed then they are joined together with spaces.
+		If any additional paramaters are passed then they are formatted.
 	]]
-	local args: { any } = { textString, ... }
-	if #args > 0 then
-		textString = table.concat(args, " ")
+	if #{ ... } > 0 then
+		textString = textString:format(...)
 	end
 
 	--[[
@@ -1238,6 +1251,12 @@ function ImGui:TextV(flags: Types.TextFlags, textString: string, ...: any)
 	text.LastFrameActive = startFrameId
 end
 
+--[[
+	Interactive Buttons:
+
+		Most elements can be interacted with and will return a boolean value or number to
+		show whether they have been interacted with.
+]]
 function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)

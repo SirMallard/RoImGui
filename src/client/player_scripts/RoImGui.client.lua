@@ -66,7 +66,7 @@ runService.RenderStepped:Connect(function(_: number)
 				RoImGui:Unindent()
 				RoImGui:TextColoured(colour, "Rainbow Text!")
 				RoImGui:BulletText("A line with a bullet point!")
-				RoImGui:Text("Time: %s", tostring(time()))
+				RoImGui:Text("Time: %f", time())
 
 				RoImGui:Separator()
 
@@ -127,9 +127,8 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 			if RoImGui:TreeNode("Tree Nodes") then
 				for i = 1, 5 do
-					local s: string = tostring(i)
-					if RoImGui:TreeNode("Node " .. s) then
-						RoImGui:Text("A child of tree node " .. s)
+					if RoImGui:TreeNode("Node " .. tostring(i)) then
+						RoImGui:Text("A child of tree node %d", i)
 						RoImGui:TreePop()
 					end
 				end

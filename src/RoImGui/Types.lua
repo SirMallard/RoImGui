@@ -636,6 +636,8 @@ export type ImGui = {
 	SameLine: (self: ImGui, spacing: number?) -> (),
 	AlignTextToFramePadding: (self: ImGui) -> (),
 
+	IsItemHovered: (self: ImGui) -> boolean,
+
 	DebugWindow: (self: ImGui) -> (),
 
 	Flags: {
