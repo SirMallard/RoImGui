@@ -21,6 +21,7 @@ local Button = require(components.Button)
 local RadioButton = require(components.RadioButton)
 
 local LabelText = require(components.LabelText)
+local InputText = require(components.InputText)
 
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
@@ -1145,7 +1146,7 @@ end
 ]]
 
 function ImGui:Text(textString: string, ...: any)
-	ImGui:TextV(DefaultTextFlags, textString, ...)
+	ImGui:_Text(DefaultTextFlags, textString, ...)
 end
 
 function ImGui:TextDisabled(textString: string, ...: any)
@@ -1154,15 +1155,15 @@ end
 
 function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
 	ImGui:PushColour("Text", colour)
-	ImGui:TextV(DefaultTextFlags, textString, ...)
+	ImGui:_Text(DefaultTextFlags, textString, ...)
 	ImGui:PopColour("Text")
 end
 
 function ImGui:BulletText(textString: string, ...: any)
-	ImGui:TextV(BulletTextFlags, textString, ...)
+	ImGui:_Text(BulletTextFlags, textString, ...)
 end
 
-function ImGui:TextV(flags: Types.TextFlags, textString: string, ...: any)
+function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1262,7 +1263,7 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return false
 	end
@@ -1307,7 +1308,7 @@ function ImGui:Button(text: string): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return false
 	end
@@ -1345,7 +1346,7 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return value[1] == buttonValue
 	end
@@ -1395,7 +1396,7 @@ function ImGui:LabelText(text: string, label: string)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return
 	end
@@ -1419,12 +1420,40 @@ function ImGui:LabelText(text: string, label: string)
 	labelText.LastFrameActive = startFrameId
 end
 
+function ImGui:InputText(label: string, value: { string })
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
+		return
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	local inputText: Types.ImGuiInputText? =
+		ImGui:GetElementById(elementFrame.Id .. ">" .. label, "InputText", elementFrame)
+
+	if inputText == nil then
+		inputText = InputText.new(label, value, window, elementFrame)
+		inputText:DrawInputText(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, inputText)
+	else
+		inputText:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	ItemSize(elementFrame.DrawCursor, inputText.Instance.AbsoluteSize)
+
+	inputText.Active = true
+	inputText.LastFrameActive = startFrameId
+end
+
 function ImGui:Separator()
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return
 	end
@@ -1482,7 +1511,7 @@ function ImGui:TreeNode(text: string): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return false
 	end
@@ -1536,7 +1565,7 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
+	-- see ImGui:_Text()
 	if window.SkipElements == true then
 		return false
 	end

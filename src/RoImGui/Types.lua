@@ -133,6 +133,7 @@ export type ImGuiClass =
 	| "Button"
 	| "RadioButton"
 	| "LabelText"
+	| "InputText"
 	| "Corner"
 	| "Side"
 	| "Resize"
@@ -463,13 +464,13 @@ export type ImGuiRadioButton = typeof(setmetatable(
 			buttonValue: { boolean },
 			window: ImGuiWindow,
 			parentInstance: ElementFrame
-		) -> ImGuiCheckbox,
+		) -> ImGuiRadioButton,
 
-		DrawRadioButton: (self: ImGuiCheckbox, position: Vector2) -> (),
-		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
-		UpdateRadioButton: (self: ImGuiCheckbox) -> (),
+		DrawRadioButton: (self: ImGuiRadioButton, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiRadioButton, position: Vector2) -> (),
+		UpdateRadioButton: (self: ImGuiRadioButton) -> (),
 
-		Destroy: (self: ImGuiCheckbox) -> (),
+		Destroy: (self: ImGuiRadioButton) -> (),
 	}
 ))
 
@@ -494,12 +495,42 @@ export type ImGuiLabelText = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, label: string, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiText,
+		new: (text: string, label: string, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiLabelText,
 
-		DrawLabelText: (self: ImGuiText, position: Vector2) -> (),
-		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
+		DrawLabelText: (self: ImGuiLabelText, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiLabelText, position: Vector2) -> (),
 
-		Destroy: (self: ImGuiText) -> (),
+		Destroy: (self: ImGuiLabelText) -> (),
+	}
+))
+
+export type ImGuiInputText = typeof(setmetatable(
+	{} :: {
+		Class: ImGuiClass,
+		Id: ImGuiId,
+		Label: string,
+		ElementFrame: ElementFrame,
+		Window: ImGuiWindow,
+
+		Value: { string },
+		InternalValue: string,
+
+		Active: boolean,
+		LastFrameActive: number,
+
+		Size: Vector2,
+		Instance: TextLabel,
+	},
+	{} :: {
+		Class: string,
+		__index: any,
+
+		new: (label: string, value: { string }, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiInputText,
+
+		DrawInputText: (self: ImGuiInputText, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiInputText, position: Vector2) -> (),
+
+		Destroy: (self: ImGuiInputText) -> (),
 	}
 ))
 
@@ -583,6 +614,7 @@ export type Element =
 	| ImGuiButton
 	| ImGuiRadioButton
 	| ImGuiLabelText
+	| ImGuiInputText
 	| ImGuiTreeNode
 	| ImGuiHeader
 	| ImGuiSeparator
@@ -613,13 +645,14 @@ export type ImGui = {
 	BeginMenu: (self: ImGui, name: string) -> boolean,
 	EndMenu: (self: ImGui) -> (),
 
-	TextV: (self: ImGui, flags: TextFlags, text: string, ...any) -> (),
+	_Text: (self: ImGui, flags: TextFlags, text: string, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
 	BulletText: (self: ImGui, text: string, ...any) -> (),
 
 	LabelText: (self: ImGui, text: string, lable: string) -> (),
+	InputText: (self: ImGui, labeL: string, value: { string }) -> (),
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> boolean,
 	Button: (self: ImGui, text: string) -> boolean,
