@@ -66,6 +66,7 @@ runService.RenderStepped:Connect(function(_: number)
 				RoImGui:Unindent()
 				RoImGui:TextColoured(colour, "Rainbow Text!")
 				RoImGui:BulletText("A line with a bullet point!")
+				RoImGui:PushId("Time: ###")
 				RoImGui:Text("Time: %f", time())
 
 				RoImGui:Separator()

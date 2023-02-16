@@ -1,6 +1,7 @@
 local Types = require(script.Parent.Parent.Types)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
+local ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Text = {}
 Text.__index = Text
@@ -13,7 +14,7 @@ function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.E
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
 	self.Class = flags.BulletText == true and "BulletText" or "Text"
-	self.Id = elementFrame.Id .. ">" .. text
+	self.Id = elementFrame.Id .. ">" .. (ImGuiInternal.NextItemData.Id or text)
 	self.Text = text
 
 	self.ElementFrame = elementFrame
@@ -97,6 +98,24 @@ function Text:UpdatePosition(position: Vector2)
 	else
 		self.Instance.Position = UDim2.fromOffset(position.X, position.Y)
 	end
+end
+
+function Text:UpdateText(text: string)
+	self.Text = text
+
+	if self.Instance == nil then
+		return
+	end
+
+	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
+	local fontSize: number = Style.Sizes.TextSize
+	if self.Flags.BulletText == true then
+		textSize += Vector2.new(2 * Style.Sizes.FramePadding.X + fontSize, 0)
+	end
+
+	self.Instance.Size = UDim2.fromOffset(textSize.X, textSize.Y)
+	self.Instance.Text = self.Text
+	self.Size = textSize
 end
 
 function Text:Destroy()

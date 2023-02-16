@@ -367,6 +367,7 @@ export type ImGuiText = typeof(setmetatable(
 
 		DrawText: (self: ImGuiText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
+		UpdateText: (self: ImGuiText, text: string) -> (),
 
 		Destroy: (self: ImGuiText) -> (),
 	}
@@ -647,6 +648,7 @@ export type ImGui = {
 
 	_Text: (self: ImGui, flags: TextFlags, text: string, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
+	ChangingText: (self: ImGui, id: ImGuiId, textString: string, ...any) -> (),
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
 	BulletText: (self: ImGui, text: string, ...any) -> (),
@@ -709,6 +711,8 @@ export type ImGui = {
 
 	PushColour: (self: ImGui, index: string, colours: Colour4) -> (),
 	PopColour: (self: ImGui, index: string) -> (),
+
+	PushId: (self: ImGui, id: ImGuiId) -> (),
 }
 
 export type MouseButtonData = {
@@ -779,6 +783,8 @@ export type ImGuiInternal = {
 			Colours: { [string]: Colour4 },
 			Sizes: { [string]: Vector2 | number },
 		},
+		Reset: boolean,
+		Id: ImGuiId?,
 	},
 
 	Debug: {
@@ -791,6 +797,8 @@ export type ImGuiInternal = {
 	Initialise: (self: ImGuiInternal) -> (),
 	UpdateMouseInputs: (self: ImGuiInternal) -> (),
 	UpdateTime: (self: ImGuiInternal, deltaTime: number) -> (),
+
+	ResetNextItemData: (self: ImGuiInternal) -> (),
 }
 
 return {}

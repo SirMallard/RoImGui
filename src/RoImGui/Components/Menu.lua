@@ -57,7 +57,7 @@ function Menu:DrawMenu(position: Vector2)
 	menu.TextTransparency = Style.Colours.Text.Transparency
 	menu.TextSize = Style.Sizes.TextSize
 	menu.TextWrapped = false
-	menu.TextXAlignment = Enum.TextXAlignment.Left
+	menu.TextXAlignment = Enum.TextXAlignment.Center
 
 	menu.Parent = self.Menubar.Instance
 	self.Instance = menu

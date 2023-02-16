@@ -48,32 +48,63 @@ ImGui.Style = script.Utility.Style
 function ImGui:DebugWindow()
 	local flags: Types.WindowFlags = Flags.WindowFlags()
 	flags.NoClose = true
-	-- flags.NoCollapse = true
 
-	-- if ImGui:Begin("Debug", { true }, flags) then
-	-- ImGui:Text("Elements:")
-	-- ImGui:Indent()
-	-- ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
-	-- ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
-	-- ImGui:Unindent()
+	if ImGui:Begin("Debug", { true }, flags) then
+		ImGui:Text("Debug Window.\nFor showing internal data. The data is accurate for this frame since the\n")
+		if ImGui:TreeNode("ID") then
+			ImGui:ChangingText(
+				"ActiveId: ###",
+				"ActiveId: %s",
+				(#ImGuiInternal.ActiveId ~= 0) and ImGuiInternal.ActiveId or "[NONE]"
+			)
+			ImGui:ChangingText(
+				"HoverId: ###",
+				"HoverId: %s",
+				(#ImGuiInternal.HoverId ~= 0) and ImGuiInternal.HoverId or "[None]"
+			)
 
-	-- ImGui:Text("Windows:")
-	-- ImGui:Indent()
-	-- ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
-	-- ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
-	-- ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
-	-- ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
-	-- ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
-	-- ImGui:Unindent()
-	-- ImGui:Text("Resizing:")
-	-- ImGui:Indent()
-	-- ImGui:Text("Mouse Position: (%s)", ImGuiInternal.MouseCursor.Position)
-	-- ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
-	-- ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
-	-- ImGui:Unindent()
-	-- ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
-	-- 	ImGui:End()
-	-- end
+			ImGui:TreePop()
+		end
+
+		if ImGui:TreeNode("Windows") then
+			ImGui:ChangingText(
+				"Hovered Window: ###",
+				"Hovered Window: %s",
+				ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE"
+			)
+			ImGui:ChangingText(
+				"Moving Window: ###",
+				"Moving Window: %s",
+				ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE"
+			)
+			ImGui:ChangingText(
+				"Nav Window: ###",
+				"Nav Window: %s",
+				ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE"
+			)
+			ImGui:ChangingText(
+				"Resizing Window: ###",
+				"Resizing Window: %s",
+				ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE"
+			)
+
+			ImGui:TreePop()
+		end
+
+		if ImGui:TreeNode("Mouse") then
+			ImGui:ChangingText(
+				"Mouse Position: (###)",
+				"Mouse Position: (%s)",
+				tostring(ImGuiInternal.MouseCursor.Position)
+			)
+			ImGui:ChangingText("Mouse Delta: (###)", "Mouse Delta: (%s)", tostring(ImGuiInternal.MouseCursor.Delta))
+			ImGui:ChangingText("Hold Offset: (###)", "Hold Offset: (%s)", tostring(ImGuiInternal.HoldOffset))
+
+			ImGui:TreePop()
+		end
+		ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
+		ImGui:End()
+	end
 
 	if ImGuiInternal.Debug.HoverDebug[1] == true and ImGuiInternal.HoverId ~= "" then
 		ImGuiInternal.Debug.HoverElement.stroke.Enabled = true
@@ -132,7 +163,7 @@ function ImGui:Start()
 		if endFrameId ~= startFrameId then
 			print("⏰ Out of sync? 😤")
 		end
-		-- ImGui:DebugWindow()
+		ImGui:DebugWindow()
 
 		ImGui:EndFrameMouseUpdate()
 		ImGui:CleanWindowElements()
@@ -357,7 +388,7 @@ function ItemHoverable(
 		return false
 	end
 
-	if ImGuiInternal.HoveredWindow.Id ~= window.Id then
+	if ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id ~= window.Id then
 		return false
 	end
 
@@ -567,6 +598,11 @@ function ImGui:GetElementById(
 	end
 
 	-- return element
+end
+
+function ImGui:PushId(id: Types.ImGuiId)
+	ImGuiInternal.NextItemData.Id = id
+	ImGuiInternal.NextItemData.Reset = true
 end
 
 function ImGui:PushColour(index: string, colour: Types.Colour4)
@@ -1149,6 +1185,11 @@ function ImGui:Text(textString: string, ...: any)
 	ImGui:_Text(DefaultTextFlags, textString, ...)
 end
 
+function ImGui:ChangingText(id: Types.ImGuiId, textString: string, ...: any)
+	ImGui:PushId(id)
+	ImGui:_Text(DefaultTextFlags, textString, ...)
+end
+
 function ImGui:TextDisabled(textString: string, ...: any)
 	ImGui:TextColoured(Style.Colours.TextDisabled, textString, ...)
 end
@@ -1218,9 +1259,13 @@ function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
 	--[[
 		If a previous version already exists from the last frame then we use it since it already
 		has all the data we need.
+
+		If the NextItemData contains an id then it must be used over the generated version. But it
+		is still appended to the element frame to ensure comptability. I don't think there's anytime
+		when you would not want that.
 	]]
 	local text: Types.ImGuiText? = ImGui:GetElementById(
-		elementFrame.Id .. ">" .. textString,
+		elementFrame.Id .. ">" .. (ImGuiInternal.NextItemData.Id or textString),
 		flags.BulletText == true and "BulletText" or "Text",
 		elementFrame
 	)
@@ -1239,6 +1284,10 @@ function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
 		text:DrawText(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 		table.insert(elementFrame.Elements, text)
 	else
+		if text.Text ~= textString then
+			text:UpdateText(textString)
+		end
+
 		text:UpdatePosition(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 	end
 
@@ -1250,6 +1299,7 @@ function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
 
 	text.Active = true
 	text.LastFrameActive = startFrameId
+	ImGuiInternal:ResetNextItemData()
 end
 
 --[[
@@ -1465,6 +1515,7 @@ function ImGui:Separator()
 	if separator == nil then
 		separator = {
 			Class = "Separator",
+			Id = "",
 		} :: Types.ImGuiSeparator
 		local instance: Frame = Instance.new("Frame")
 		instance.Name = "separator"
