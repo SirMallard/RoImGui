@@ -17,6 +17,7 @@ function Menu.new(text: string, window: Types.ImGuiWindow, menubar: Types.Window
 	self.Text = text
 
 	self.State = 0
+	self.Open = false
 
 	self.Menubar = menubar
 	self.Window = window

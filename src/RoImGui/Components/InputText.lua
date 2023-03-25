@@ -17,6 +17,7 @@ function InputText.new(label: string, value: { string }, window: Types.ImGuiWind
 	self.Label = label
 	self.Value = value
 	self.InternalValue = value[1]
+	self.HasLabel = #self.Label > 0
 
 	self.ElementFrame = elementFrame
 	self.Window = window
@@ -39,11 +40,11 @@ function InputText:DrawInputText(position: Vector2)
 		return
 	end
 
-	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
+	local textSize: Vector2 = Utility.CalculateTextSize(self.Value[1])
 	local labelSize: Vector2 = (self.HasLabel == true) and Utility.CalculateTextSize(self.Label) or Vector2.zero
 
 	local labelText: Frame = Instance.new("Frame")
-	labelText.Name = self.Text .. "|" .. self.Label
+	labelText.Name = self.Label
 	labelText.Position = UDim2.fromOffset(position.X, position.Y)
 	labelText.Size = UDim2.new(1, -position.X, 0, math.max(textSize.Y, labelSize.Y) + 2 * Style.Sizes.FramePadding.Y)
 
@@ -54,21 +55,29 @@ function InputText:DrawInputText(position: Vector2)
 
 	local text: TextLabel = Instance.new("TextLabel")
 	text.Name = "text"
-	text.Position = UDim2.fromOffset(Style.Sizes.FramePadding.X, Style.Sizes.FramePadding.Y)
-	text.Size = UDim2.new(Style.Sizes.ItemWidthScale, 0, 0, textSize.Y)
+	text.Position = UDim2.fromOffset(0, 0)
+	text.Size = UDim2.new(Style.Sizes.ItemWidthScale, 0, 0, textSize.Y + 2 * Style.Sizes.FramePadding.Y)
 
-	text.BackgroundColor3 = COLOUR3_WHITE
-	text.BackgroundTransparency = 1
+	text.BackgroundColor3 = Style.Colours.FrameBg.Colour
+	text.BackgroundTransparency = Style.Colours.FrameBg.Transparency
 	text.BorderColor3 = COLOUR3_BLACK
 	text.BorderSizePixel = 0
 
-	text.Text = self.Text
+	text.Text = self.Value[1]
 	text.FontFace = Style.Font
 	text.TextColor3 = Style.Colours.Text.Colour
 	text.TextTransparency = Style.Colours.Text.Transparency
 	text.TextSize = Style.Sizes.TextSize
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
+
+	local padding: UIPadding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, Style.Sizes.FramePadding.Y)
+	padding.PaddingBottom = UDim.new(0, Style.Sizes.FramePadding.Y)
+	padding.PaddingLeft = UDim.new(0, Style.Sizes.FramePadding.X)
+	padding.PaddingRight = UDim.new(0, Style.Sizes.FramePadding.X)
+
+	padding.Parent = text
 
 	text.Parent = labelText
 

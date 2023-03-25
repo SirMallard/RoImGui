@@ -1,5 +1,6 @@
-local Style = require(script.Parent.Parent.Utility.Style)
 local Types = require(script.Parent.Parent.Types)
+local Flags = require(script.Parent.Parent.Flags)
+local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 local ImGuiInternal: Types.ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
@@ -24,7 +25,7 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 				- Button hover or highlights.
 ]]
 
-function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.WindowFlags): Types.ImGuiWindow
+function Window.new(windowName: string, parentWindow: Types.ImGuiWindow?, flags: Types.Flag): Types.ImGuiWindow
 	local self: Types.ImGuiWindow = setmetatable({}, Window) :: Types.ImGuiWindow
 
 	self.Name = windowName
@@ -234,7 +235,7 @@ function Window:DrawWindow(stack: number?)
 		if self.Window.Resize.Instance ~= nil then
 			self.Window.Resize.Instance:Destroy()
 		end
-		if (self.Flags.NoResize == false) and (self.Collapsed == false) then
+		if (Flags.Enabled(self.Flags, Flags.WindowFlags.NoResize) == false) and (self.Collapsed == false) then
 			local resize: Frame = Instance.new("Frame")
 			resize.Name = "resize"
 			resize.ZIndex = 2
@@ -353,8 +354,10 @@ function Window:DrawTitle()
 	local windowTitle: Types.WindowTitle = self.Window.Title
 	local instance: Frame? = windowTitle.Instance
 	local textCorrect: boolean = self.Name == windowTitle.Text
-	local closeButtonCorrect: boolean = (self.Flags.NoClose ~= (windowTitle.Close.Instance ~= nil))
-	local collapseButtonCorrect: boolean = self.Flags.NoCollapse ~= (windowTitle.Collapse.Instance ~= nil)
+	local closeButtonCorrect: boolean = Flags.Enabled(self.Flags, Flags.WindowFlags.NoClose)
+		~= (windowTitle.Close.Instance ~= nil)
+	local collapseButtonCorrect: boolean = Flags.Enabled(self.Flags, Flags.WindowFlags.NoCollapse)
+		~= (windowTitle.Collapse.Instance ~= nil)
 
 	if
 		(instance == nil)
@@ -380,8 +383,12 @@ function Window:DrawTitle()
 
 		-- Calculate any constants which determine size or position.
 		local textSize: Vector2 = Utility.CalculateTextSize(self.Name)
-		local collapseWidth: number = self.Flags.NoCollapse == false and 15 + Style.Sizes.ItemInnerSpacing.X or 0
-		local closeWidth: number = self.Flags.NoClose == false and 15 + Style.Sizes.ItemInnerSpacing.X or 0
+		local collapseWidth: number = Flags.Enabled(self.Flags, Flags.WindowFlags.NoCollapse) == false
+				and 15 + Style.Sizes.ItemInnerSpacing.X
+			or 0
+		local closeWidth: number = Flags.Enabled(self.Flags, Flags.WindowFlags.NoClose) == false
+				and 15 + Style.Sizes.ItemInnerSpacing.X
+			or 0
 		local minTitleWidth = collapseWidth + closeWidth + 2 * Style.Sizes.FramePadding.X + textSize.X
 
 		windowTitle.MinimumSize = Vector2.new(minTitleWidth, Utility.DefaultFramePaddedHeight)
@@ -431,7 +438,7 @@ function Window:DrawTitle()
 		text.Parent = title
 		windowTitle.Text = self.Name
 
-		if self.Flags.NoCollapse == false then
+		if Flags.Enabled(self.Flags, Flags.WindowFlags.NoCollapse) == false then
 			local dropdown: ImageLabel = Instance.new("ImageLabel")
 			dropdown.Name = "dropdown"
 			dropdown.Position = UDim2.fromOffset(-1, -1)
@@ -467,7 +474,7 @@ function Window:DrawTitle()
 			windowTitle.Collapse.Instance = dropdown
 		end
 
-		if self.Flags.NoClose == false then
+		if Flags.Enabled(self.Flags, Flags.WindowFlags.NoClose) == false then
 			local close: ImageLabel = Instance.new("ImageLabel")
 			close.Name = "close"
 			close.AnchorPoint = Vector2.new(1, 0)

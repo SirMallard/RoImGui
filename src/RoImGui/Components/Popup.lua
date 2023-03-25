@@ -24,7 +24,7 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 				- Button hover or highlights.
 ]]
 
-function Popup.new(popupName: string, parentWindow: Types.ImGuiWindow, flags: Types.PopupFlags): ()
+function Popup.new(popupName: string, parentWindow: Types.ImGuiWindow, flags: Types.Flag): ()
 	local self = setmetatable({}, Popup)
 
 	self.Class = "Window"

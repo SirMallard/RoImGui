@@ -144,36 +144,38 @@ export type ImGuiClass =
 --[[
 		=<>= FLAGS =<>=
 ]]
-export type WindowFlags = {
-	type: "WindowFlags",
+export type Flag = number
 
-	NoTitleBar: boolean,
-	NoResize: boolean,
-	NoMove: boolean,
-	NoScrollBar: boolean,
-	NoMouseScroll: boolean,
-	Collapsed: boolean,
-	NoBackground: boolean,
-	MenuBar: boolean,
-	NoClose: boolean,
-	NoCollapse: boolean,
+-- export type WindowFlags = {
+-- 	type: "WindowFlags",
 
-	ChildWindow: boolean,
-	Tooltip: boolean,
-	Popup: boolean,
-	Modal: boolean,
-	ChildMenu: boolean,
-}
+-- 	NoTitleBar: boolean,
+-- 	NoResize: boolean,
+-- 	NoMove: boolean,
+-- 	NoScrollBar: boolean,
+-- 	NoMouseScroll: boolean,
+-- 	Collapsed: boolean,
+-- 	NoBackground: boolean,
+-- 	MenuBar: boolean,
+-- 	NoClose: boolean,
+-- 	NoCollapse: boolean,
 
-export type PopupFlags = {
-	type: "PopupFlags",
-}
+-- 	ChildWindow: boolean,
+-- 	Tooltip: boolean,
+-- 	Popup: boolean,
+-- 	Modal: boolean,
+-- 	ChildMenu: boolean,
+-- }
 
-export type TextFlags = {
-	type: "TextFlags",
+-- export type PopupFlags = {
+-- 	type: "PopupFlags",
+-- }
 
-	BulletText: boolean,
-}
+-- export type TextFlags = {
+-- 	type: "TextFlags",
+
+-- 	BulletText: boolean,
+-- }
 
 export type DrawCursor = {
 	Position: Vector2,
@@ -247,7 +249,7 @@ export type ImGuiWindow = typeof(setmetatable(
 		Class: ImGuiClass,
 		Id: ImGuiId,
 		Name: string,
-		Flags: WindowFlags,
+		Flags: Flag,
 
 		ParentWindow: ImGuiWindow?, -- the parent window
 		RootWindow: ImGuiWindow?, -- the top most window in the window stack
@@ -299,7 +301,7 @@ export type ImGuiWindow = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (windowName: string, parentWindow: ImGuiWindow?, flags: WindowFlags) -> ImGuiWindow,
+		new: (windowName: string, parentWindow: ImGuiWindow?, flags: Flag) -> ImGuiWindow,
 
 		UpdateTitleColour: (self: ImGuiWindow) -> (),
 		UpdatePosition: (self: ImGuiWindow) -> (),
@@ -321,6 +323,8 @@ export type ImGuiMenu = typeof(setmetatable(
 		Text: string,
 		Menubar: WindowMenubar,
 		Window: ImGuiWindow,
+
+		Open: boolean,
 
 		State: ButtonState,
 
@@ -351,7 +355,7 @@ export type ImGuiText = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		Flags: TextFlags,
+		Flags: Flag,
 
 		Active: boolean,
 		LastFrameActive: number,
@@ -363,7 +367,7 @@ export type ImGuiText = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame, flags: TextFlags) -> ImGuiText,
+		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame, flags: Flag) -> ImGuiText,
 
 		DrawText: (self: ImGuiText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiText, position: Vector2) -> (),
@@ -515,6 +519,7 @@ export type ImGuiInputText = typeof(setmetatable(
 
 		Value: { string },
 		InternalValue: string,
+		HasLabel: boolean,
 
 		Active: boolean,
 		LastFrameActive: number,
@@ -637,7 +642,7 @@ export type ImGui = {
 
 	FrameId: number,
 
-	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: WindowFlags?) -> boolean,
+	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: Flag?) -> boolean,
 	End: (self: ImGui) -> (),
 
 	BeginMenuBar: (self: ImGui) -> boolean,
@@ -646,7 +651,7 @@ export type ImGui = {
 	BeginMenu: (self: ImGui, name: string) -> boolean,
 	EndMenu: (self: ImGui) -> (),
 
-	_Text: (self: ImGui, flags: TextFlags, text: string, ...any) -> (),
+	_Text: (self: ImGui, flags: Flag, text: string, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
 	ChangingText: (self: ImGui, id: ImGuiId, textString: string, ...any) -> (),
 	TextDisabled: (self: ImGui, text: string, ...any) -> (),
@@ -676,8 +681,9 @@ export type ImGui = {
 	DebugWindow: (self: ImGui) -> (),
 
 	Flags: {
-		WindowFlags: () -> WindowFlags,
-		TextFlags: () -> TextFlags,
+		WindowFlags: { [string]: Flag },
+		TextFlags: { [string]: Flag },
+		Enabled: (flag: Flag, otherFlag: Flag) -> boolean,
 	},
 	Types: ModuleScript,
 	Colour4: ModuleScript,
@@ -686,7 +692,7 @@ export type ImGui = {
 	CleanWindowElements: (self: ImGui) -> (),
 	UpdateWindowFocusOrder: (self: ImGui, window: ImGuiWindow?) -> (),
 	FindHoveredWindow: (self: ImGui) -> (),
-	UpdateWindowLinks: (self: ImGui, window: ImGuiWindow, flags: WindowFlags, parentWindow: ImGuiWindow?) -> (),
+	UpdateWindowLinks: (self: ImGui, window: ImGuiWindow, flags: Flag, parentWindow: ImGuiWindow?) -> (),
 	EndFrameMouseUpdate: (ImGui) -> (),
 
 	GetActiveElementFrame: (self: ImGui) -> (),
@@ -698,7 +704,7 @@ export type ImGui = {
 		active: boolean?
 	) -> Element?,
 	GetWindowById: (self: ImGui, id: ImGuiId) -> ImGuiWindow?,
-	CreateWindow: (self: ImGui, id: ImGuiId, flags: WindowFlags) -> ImGuiWindow,
+	CreateWindow: (self: ImGui, id: ImGuiId, flags: Flag) -> ImGuiWindow,
 	HandleWindowTitleBar: (self: ImGui, window: ImGuiWindow) -> (),
 	HandleWindowBorder: (self: ImGui, window: ImGuiWindow) -> (),
 

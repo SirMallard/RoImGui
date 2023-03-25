@@ -10,9 +10,7 @@ RoImGui:Start()
 local childOpen: { boolean } = { true }
 local booleanValue: { boolean } = { false }
 
-local firstFlags: Types.WindowFlags = RoImGui.Flags.WindowFlags()
-firstFlags.NoClose = true
-firstFlags.NoCollapse = true
+local firstFlags: Types.Flag = bit32.bor(RoImGui.Flags.WindowFlags.NoClose, RoImGui.Flags.WindowFlags.NoCollapse)
 
 local colour: Types.Colour4 = Colour4.fromColour3(BrickColor.random().Color)
 local red: Types.Colour4 = Colour4.fromColour3(BrickColor.Red().Color)
@@ -21,6 +19,7 @@ local blue: Types.Colour4 = Colour4.fromColour3(BrickColor.Blue().Color)
 
 local counter: number = 0
 local radioValue: { number } = { 0 }
+local textString: { string } = { "random string	" }
 
 runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("Demo", { true }) then
@@ -133,6 +132,11 @@ runService.RenderStepped:Connect(function(_: number)
 						RoImGui:TreePop()
 					end
 				end
+
+				RoImGui:TreePop()
+			end
+			if RoImGui:TreeNode("Input") then
+				RoImGui:InputText("Text", textString)
 
 				RoImGui:TreePop()
 			end

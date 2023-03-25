@@ -31,11 +31,10 @@ local endFrameId: number = -1
 -- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-local DefaultWindowFlags = Flags.WindowFlags()
-local DefaultTextFlags = Flags.TextFlags()
+local DefaultWindowFlags: Types.Flag = 0
+local DefaultTextFlags: Types.Flag = 0
 
-local BulletTextFlags = Flags.TextFlags()
-BulletTextFlags.BulletText = true
+local BulletTextFlags: Types.Flag = Flags.TextFlags.BulletText
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
@@ -46,8 +45,7 @@ ImGui.Colour4 = script.Utility.Colour4
 ImGui.Style = script.Utility.Style
 
 function ImGui:DebugWindow()
-	local flags: Types.WindowFlags = Flags.WindowFlags()
-	flags.NoClose = true
+	local flags: Types.Flag = Flags.WindowFlags.NoClose
 
 	if ImGui:Begin("Debug", { true }, flags) then
 		ImGui:Text("Debug Window.\nFor showing internal data. The data is accurate for this frame since the\n")
@@ -55,12 +53,12 @@ function ImGui:DebugWindow()
 			ImGui:ChangingText(
 				"ActiveId: ###",
 				"ActiveId: %s",
-				(#ImGuiInternal.ActiveId ~= 0) and ImGuiInternal.ActiveId or "[NONE]"
+				(#ImGuiInternal.ActiveId ~= 0) and ImGuiInternal.ActiveId or "-----"
 			)
 			ImGui:ChangingText(
 				"HoverId: ###",
 				"HoverId: %s",
-				(#ImGuiInternal.HoverId ~= 0) and ImGuiInternal.HoverId or "[None]"
+				(#ImGuiInternal.HoverId ~= 0) and ImGuiInternal.HoverId or "-----"
 			)
 
 			ImGui:TreePop()
@@ -70,22 +68,22 @@ function ImGui:DebugWindow()
 			ImGui:ChangingText(
 				"Hovered Window: ###",
 				"Hovered Window: %s",
-				ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE"
+				ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "-----"
 			)
 			ImGui:ChangingText(
 				"Moving Window: ###",
 				"Moving Window: %s",
-				ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE"
+				ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "-----"
 			)
 			ImGui:ChangingText(
 				"Nav Window: ###",
 				"Nav Window: %s",
-				ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE"
+				ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "-----"
 			)
 			ImGui:ChangingText(
 				"Resizing Window: ###",
 				"Resizing Window: %s",
-				ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE"
+				ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "-----"
 			)
 
 			ImGui:TreePop()
@@ -297,7 +295,7 @@ function ImGui:FindHoveredWindow()
 			continue
 		end
 
-		if window.Flags.NoResize == true then
+		if Flags.Enabled(window.Flags, Flags.WindowFlags.NoResize) == true then
 			if Utility.IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) == false then
 				continue
 			end
@@ -330,16 +328,27 @@ function ImGui:FindHoveredWindow()
 end
 
 -- Updates RootWindow properties of the current window based upon flags
-function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags, parentWindow: Types.ImGuiWindow?)
+function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.Flag, parentWindow: Types.ImGuiWindow?)
 	window.ParentWindow = parentWindow
 	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
-	if (parentWindow ~= nil) and (flags.ChildWindow == true) and not (flags.Tooltip == true) then
+	if
+		(parentWindow ~= nil)
+		and (Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true)
+		and (Flags.Enabled(flags, Flags.WindowFlags.Tooltip) == false)
+	then
 		window.RootWindow = parentWindow.RootWindow
 	end
-	if (parentWindow ~= nil) and (flags.Popup == true) then
+	if (parentWindow ~= nil) and (Flags.Enabled(flags, Flags.WindowFlags.Popup) == true) then
 		window.PopupRootWindow = parentWindow.PopupRootWindow
 	end
-	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
+	if
+		(parentWindow ~= nil)
+		and not (Flags.Enabled(flags, Flags.WindowFlags.Modal) == true)
+		and (
+			Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true
+			or Flags.Enabled(flags, Flags.WindowFlags.Popup) == true
+		)
+	then
 		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
 	end
 end
@@ -525,7 +534,7 @@ function ImGui:GetWindowById(windowName: string): Types.ImGuiWindow?
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
-function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): Types.ImGuiWindow
+function ImGui:CreateWindow(windowName: string, flags: Types.Flag): Types.ImGuiWindow
 	local parentWindow: Types.ImGuiWindow? = nil
 
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
@@ -659,7 +668,7 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 	-- Collapse button
 	local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
-	if window.Flags.NoCollapse == false and collapse.Instance ~= nil then
+	if Flags.Enabled(window.Flags, Flags.WindowFlags.NoCollapse) == false and collapse.Instance ~= nil then
 		local instance: ImageLabel = collapse.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
@@ -681,7 +690,7 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 	-- Close button
 	local close: Types.WindowTitleButton = window.Window.Title.Close
-	if window.Flags.NoClose == false and close.Instance ~= nil then
+	if Flags.Enabled(window.Flags, Flags.WindowFlags.NoClose) == false and close.Instance ~= nil then
 		local instance: ImageLabel = close.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
@@ -700,7 +709,11 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 	-- Window background double click which will nto work when the window cannot collapse
 	local title: Types.WindowTitle = window.Window.Title
-	if (focusOnButton == false) and (title.Instance ~= nil) and (window.Flags.NoCollapse == false) then
+	if
+		(focusOnButton == false)
+		and (title.Instance ~= nil)
+		and (Flags.Enabled(window.Flags, Flags.WindowFlags.NoCollapse) == false)
+	then
 		local instance: Frame = title.Instance
 
 		local hovered: boolean =
@@ -951,7 +964,7 @@ end
 	but it won't be interactable. If you want to change flags for a window, skipping a frame to delete
 	the window will draw a new window with the new flags. It's just simpler that way.
 ]]
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): boolean
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Flag | nil): boolean
 	-- just create a set of default flags
 	flags = flags or DefaultWindowFlags
 
@@ -961,7 +974,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		Additionally, we do not need to check the window open value, since it is updated every frame
 		and is equal to the open variable which is checked here.
 	]]
-	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
+	if (open ~= nil) and (open[1] == false) and (Flags.Enabled(flags, Flags.WindowFlags.NoClose) == false) then
 		return false
 	end
 
@@ -973,7 +986,8 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
 	local firstFrameCall: boolean = (window.LastFrameActive ~= startFrameId) -- If this is the first time in the renderstep for creating the window
-	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1)) or (flags.Popup == true)
+	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1))
+		or (Flags.Enabled(flags, Flags.WindowFlags.Popup) == true)
 
 	--[[
 		The parent window if this begin is called within another window. It can be nil
@@ -992,7 +1006,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	window.LastFrameActive = startFrameId
 	ImGuiInternal.ActiveWindow = window
 
-	if flags.ChildWindow == true then
+	if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 		ImGuiInternal.ChildWindowCount += 1
 	end
 
@@ -1009,18 +1023,18 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		window.Active = true
 		window.Open = open or { true } -- We default to open. Closed would be unhelpful.
 
-		if flags.ChildWindow == true then
+		if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 			table.insert(parentWindow.ChildWindows, window)
 		end
 
 		window:DrawWindow() -- Just a window shell.
 
-		if flags.NoTitleBar == false then
+		if Flags.Enabled(flags, Flags.WindowFlags.NoTitleBar) == false then
 			window:DrawTitle()
 			ImGui:HandleWindowTitleBar(window)
 		end
 
-		if (flags.NoResize == false) and (window.Collapsed == false) then
+		if (Flags.Enabled(flags, Flags.WindowFlags.NoResize) == false) and (window.Collapsed == false) then
 			ImGui:HandleWindowBorder(window)
 		end
 
@@ -1061,9 +1075,9 @@ function ImGui:End()
 	assert(ImGuiInternal.CurrentWindow ~= nil, "Never called :Begin() to set a current window!")
 
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
-	local flags: Types.WindowFlags = window.Flags
+	local flags: Types.Flag = window.Flags
 
-	if flags.ChildWindow == true then
+	if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 		ImGuiInternal.ChildWindowCount -= 1
 	end
 
@@ -1085,7 +1099,7 @@ function ImGui:BeginMenuBar()
 		(window.Collapsed == true)
 		or (window.Open[1] == false)
 		or (window.RedrawNextFrame == true)
-		or (window.Flags.MenuBar == false)
+		or (Flags.Enabled(window.Flags, Flags.WindowFlags.MenuBar) == false)
 	then
 		return false
 	end
@@ -1106,7 +1120,7 @@ function ImGui:EndMenuBar()
 		(window.Collapsed == true)
 		or (window.Open[1] == false)
 		or (window.RedrawNextFrame == true)
-		or (window.Flags.MenuBar == false)
+		or (Flags.Enabled(window.Flags, Flags.WindowFlags.MenuBar) == false)
 	then
 		return
 	end
@@ -1121,7 +1135,7 @@ function ImGui:BeginMenu(name: string)
 	assert(window.ActiveMenu == nil, ImGuiInternal.ErrorMessages.ActiveMenuOpen)
 
 	-- see ImGui:Text()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return false
 	end
 
@@ -1142,6 +1156,8 @@ function ImGui:BeginMenu(name: string)
 
 	menu.Active = true
 	menu.LastFrameActive = startFrameId
+
+	-- local menuOpen: boolean = menu.Open
 
 	local instance: TextLabel = menu.Instance
 	local pressed: boolean, hovered: boolean, held: boolean =
@@ -1204,7 +1220,7 @@ function ImGui:BulletText(textString: string, ...: any)
 	ImGui:_Text(BulletTextFlags, textString, ...)
 end
 
-function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
+function ImGui:_Text(flags: Types.Flag, textString: string, ...: any)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1266,7 +1282,7 @@ function ImGui:_Text(flags: Types.TextFlags, textString: string, ...: any)
 	]]
 	local text: Types.ImGuiText? = ImGui:GetElementById(
 		elementFrame.Id .. ">" .. (ImGuiInternal.NextItemData.Id or textString),
-		flags.BulletText == true and "BulletText" or "Text",
+		Flags.Enabled(flags, Flags.TextFlags.BulletText) == true and "BulletText" or "Text",
 		elementFrame
 	)
 
