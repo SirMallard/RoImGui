@@ -43,6 +43,7 @@ ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
 ImGui.Style = script.Utility.Style
+ImGui.Internal = ImGuiInternal
 
 function ImGui:DebugWindow()
 	local flags: Types.Flag = Flags.WindowFlags.NoClose
@@ -1512,6 +1513,8 @@ function ImGui:InputText(label: string, value: { string })
 
 	inputText.Active = true
 	inputText.LastFrameActive = startFrameId
+
+	inputText:UpdateText()
 end
 
 function ImGui:Separator()

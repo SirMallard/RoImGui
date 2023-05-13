@@ -1,13 +1,19 @@
+local Players = game:GetService("Players")
 local replicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
 local runService: RunService = game:GetService("RunService")
 local RoImGui = require(replicatedStorage:WaitForChild("Modules"):WaitForChild("RoImGui"))
+local TableInspector = require(replicatedStorage:WaitForChild("Libraries"):WaitForChild("TableInspector"))
 local Types = require(RoImGui.Types)
 local Colour4 = require(RoImGui.Colour4)
 local Style = require(RoImGui.Style)
 
 RoImGui:Start()
 
-local childOpen: { boolean } = { true }
+local inspector = TableInspector.new()
+inspector:addTable("RoImGui", RoImGui.Internal)
+inspector:addPath("Main Window", { RoImGui, "Internal", "Windows", "A super-duper really long window name!" })
+
+local childOpen: { boolean } = { false }
 local booleanValue: { boolean } = { false }
 
 local firstFlags: Types.Flag = bit32.bor(RoImGui.Flags.WindowFlags.NoClose, RoImGui.Flags.WindowFlags.NoCollapse)
@@ -22,10 +28,6 @@ local radioValue: { number } = { 0 }
 local textString: { string } = { "random string	" }
 
 runService.RenderStepped:Connect(function(_: number)
-	if RoImGui:Begin("Demo", { true }) then
-		RoImGui:Text("Single line.")
-	end
-
 	if RoImGui:Begin("One window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
 		RoImGui:Checkbox("Multi-window checkbox", booleanValue)

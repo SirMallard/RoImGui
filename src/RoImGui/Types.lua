@@ -535,6 +535,7 @@ export type ImGuiInputText = typeof(setmetatable(
 
 		DrawInputText: (self: ImGuiInputText, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiInputText, position: Vector2) -> (),
+		UpdateText: (self: ImGuiInputText) -> (),
 
 		Destroy: (self: ImGuiInputText) -> (),
 	}
@@ -719,6 +720,8 @@ export type ImGui = {
 	PopColour: (self: ImGui, index: string) -> (),
 
 	PushId: (self: ImGui, id: ImGuiId) -> (),
+
+	Internal: ImGuiInternal,
 }
 
 export type MouseButtonData = {

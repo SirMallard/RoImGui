@@ -138,6 +138,7 @@ return {
 	Colours = Colours,
 	ButtonStyles = ButtonStyles,
 	Font = Font.new("rbxasset://fonts/families/Arial.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+	-- Font = Font.new("rbxassetid://12187371840", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
 
 	Images = {
 		Circle = "rbxassetid://4673889148",

@@ -110,11 +110,15 @@ function Checkbox:UpdateCheckmark(pressed: boolean)
 
 	if pressed == true then
 		self.Value[1] = not self.Value[1]
+		self.Value[2] = true
 		self.InternalValue = self.Value[1]
 		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
 	elseif self.InternalValue ~= self.Value[1] then
 		self.InternalValue = self.Value[1]
+		self.Value[2] = true
 		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+	elseif self.Value[2] == true then
+		self.Value[2] = false
 	end
 end
 

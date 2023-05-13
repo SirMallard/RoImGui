@@ -81,21 +81,6 @@ function Button:UpdatePosition(position: Vector2)
 	end
 end
 
-function Button:UpdateCheckmark(pressed: boolean)
-	if self.Instance == nil then
-		return
-	end
-
-	if pressed == true then
-		self.Value[1] = not self.Value[1]
-		self.InternalValue = self.Value[1]
-		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
-	elseif self.InternalValue ~= self.Value[1] then
-		self.InternalValue = self.Value[1]
-		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
-	end
-end
-
 function Button:Destroy()
 	if self.Instance ~= nil then
 		self.Instance.Parent = nil

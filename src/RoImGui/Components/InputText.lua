@@ -53,23 +53,27 @@ function InputText:DrawInputText(position: Vector2)
 	labelText.BorderColor3 = COLOUR3_BLACK
 	labelText.BorderSizePixel = 0
 
-	local text: TextLabel = Instance.new("TextLabel")
-	text.Name = "text"
-	text.Position = UDim2.fromOffset(0, 0)
-	text.Size = UDim2.new(Style.Sizes.ItemWidthScale, 0, 0, textSize.Y + 2 * Style.Sizes.FramePadding.Y)
+	local textbox: TextBox = Instance.new("TextBox")
+	textbox.Name = "textbox"
+	textbox.Position = UDim2.fromOffset(0, 0)
+	textbox.Size = UDim2.new(Style.Sizes.ItemWidthScale, 0, 0, textSize.Y + 2 * Style.Sizes.FramePadding.Y)
 
-	text.BackgroundColor3 = Style.Colours.FrameBg.Colour
-	text.BackgroundTransparency = Style.Colours.FrameBg.Transparency
-	text.BorderColor3 = COLOUR3_BLACK
-	text.BorderSizePixel = 0
+	textbox.BackgroundColor3 = Style.Colours.FrameBg.Colour
+	textbox.BackgroundTransparency = Style.Colours.FrameBg.Transparency
+	textbox.BorderColor3 = COLOUR3_BLACK
+	textbox.BorderSizePixel = 0
 
-	text.Text = self.Value[1]
-	text.FontFace = Style.Font
-	text.TextColor3 = Style.Colours.Text.Colour
-	text.TextTransparency = Style.Colours.Text.Transparency
-	text.TextSize = Style.Sizes.TextSize
-	text.TextWrapped = false
-	text.TextXAlignment = Enum.TextXAlignment.Left
+	textbox.Text = self.Value[1]
+	textbox.FontFace = Style.Font
+	textbox.TextColor3 = Style.Colours.Text.Colour
+	textbox.TextTransparency = Style.Colours.Text.Transparency
+	textbox.TextSize = Style.Sizes.TextSize
+	textbox.TextWrapped = false
+	textbox.TextXAlignment = Enum.TextXAlignment.Left
+	textbox.MultiLine = false
+	textbox.TextWrapped = false
+	textbox.ClearTextOnFocus = false
+	textbox.ClipsDescendants = true
 
 	local padding: UIPadding = Instance.new("UIPadding")
 	padding.PaddingTop = UDim.new(0, Style.Sizes.FramePadding.Y)
@@ -77,9 +81,9 @@ function InputText:DrawInputText(position: Vector2)
 	padding.PaddingLeft = UDim.new(0, Style.Sizes.FramePadding.X)
 	padding.PaddingRight = UDim.new(0, Style.Sizes.FramePadding.X)
 
-	padding.Parent = text
+	padding.Parent = textbox
 
-	text.Parent = labelText
+	textbox.Parent = labelText
 
 	if self.HasLabel == true then
 		local label: TextLabel = Instance.new("TextLabel")
@@ -114,6 +118,21 @@ function InputText:UpdatePosition(position: Vector2)
 		self:DrawInputText(position)
 	else
 		self.Instance.Position = UDim2.fromOffset(position.X, position.Y)
+	end
+end
+
+function InputText:UpdateText()
+	if self.Instance == nil then
+		return
+	end
+
+	self.InternalValue = self.Instance.textbox.Text
+
+	if self.Value[1] ~= self.InternalValue then
+		self.Value[1] = self.InternalValue
+		self.Value[2] = true
+	elseif self.Value[2] == true then
+		self.Value[2] = false
 	end
 end
 

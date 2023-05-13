@@ -35,6 +35,13 @@ local TextFlags: { [string]: Types.Flag } = {
 	BulletText = 1,
 }
 
+local InputFlags: { [string]: Types.Flag } = {
+	StringInput = 1,
+	IntegerInput = 2,
+	FloatInput = 4,
+	PlaceHolderText = 8,
+}
+
 -- local WindowFlags: () -> Types.WindowFlags = BitFlags({
 -- 	NoTitleBar = false,
 -- 	NoResize = false,
