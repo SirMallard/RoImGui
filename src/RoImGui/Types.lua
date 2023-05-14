@@ -509,7 +509,7 @@ export type ImGuiLabelText = typeof(setmetatable(
 	}
 ))
 
-export type ImGuiInputText = typeof(setmetatable(
+export type ImGuiInput = typeof(setmetatable(
 	{} :: {
 		Class: ImGuiClass,
 		Id: ImGuiId,
@@ -517,12 +517,15 @@ export type ImGuiInputText = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		Value: { string },
-		InternalValue: string,
+		Value: { string | number },
+		InternalValue: string | number,
 		HasLabel: boolean,
 
 		Active: boolean,
 		LastFrameActive: number,
+
+		Flags: Flag,
+		Extras: { [string]: any },
 
 		Size: Vector2,
 		Instance: TextLabel,
@@ -531,13 +534,20 @@ export type ImGuiInputText = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (label: string, value: { string }, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiInputText,
+		new: (
+			label: string,
+			value: { string },
+			window: ImGuiWindow,
+			parentInstance: ElementFrame,
+			flags: Flag,
+			...any
+		) -> ImGuiInput,
 
-		DrawInputText: (self: ImGuiInputText, position: Vector2) -> (),
-		UpdatePosition: (self: ImGuiInputText, position: Vector2) -> (),
-		UpdateText: (self: ImGuiInputText) -> (),
+		DrawInputText: (self: ImGuiInput, position: Vector2) -> (),
+		UpdatePosition: (self: ImGuiInput, position: Vector2) -> (),
+		UpdateText: (self: ImGuiInput) -> (),
 
-		Destroy: (self: ImGuiInputText) -> (),
+		Destroy: (self: ImGuiInput) -> (),
 	}
 ))
 
@@ -621,7 +631,7 @@ export type Element =
 	| ImGuiButton
 	| ImGuiRadioButton
 	| ImGuiLabelText
-	| ImGuiInputText
+	| ImGuiInput
 	| ImGuiTreeNode
 	| ImGuiHeader
 	| ImGuiSeparator
@@ -659,8 +669,35 @@ export type ImGui = {
 	TextColoured: (self: ImGui, colour: Colour4, string, ...any) -> (),
 	BulletText: (self: ImGui, text: string, ...any) -> (),
 
+	_Input: (
+		self: ImGui,
+		flags: Flag,
+		lable: string,
+		value: { string | number },
+		placeholder: string?,
+		minimum: number?,
+		maxmimum: number?,
+		format: string?
+	) -> (),
 	LabelText: (self: ImGui, text: string, lable: string) -> (),
 	InputText: (self: ImGui, labeL: string, value: { string }) -> (),
+	InputTextWithHint: (self: ImGui, labeL: string, value: { string }, placeholder: string) -> (),
+	InputInteger: (
+		self: ImGui,
+		label: string,
+		value: { number },
+		minimum: number?,
+		maximum: number?,
+		format: string?
+	) -> (),
+	InputFloat: (
+		self: ImGui,
+		label: string,
+		value: { number },
+		minimum: number?,
+		maximum: number?,
+		format: string?
+	) -> (),
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> boolean,
 	Button: (self: ImGui, text: string) -> boolean,

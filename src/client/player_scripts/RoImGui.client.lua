@@ -27,6 +27,9 @@ local counter: number = 0
 local radioValue: { number } = { 0 }
 local textString: { string } = { "random string	" }
 
+local integerValue: { number } = { 100 }
+local floatValue: { number } = { 11.12 }
+
 runService.RenderStepped:Connect(function(_: number)
 	if RoImGui:Begin("One window", { true }, firstFlags) then
 		RoImGui:Text("1. Created inside one begin.")
@@ -139,6 +142,9 @@ runService.RenderStepped:Connect(function(_: number)
 			end
 			if RoImGui:TreeNode("Input") then
 				RoImGui:InputText("Text", textString)
+				RoImGui:InputTextWithHint("Placeholder Text", textString, "secret behind the line")
+				RoImGui:InputInteger("Integer Input", integerValue, -100, 100)
+				RoImGui:InputFloat("Float Input", floatValue)
 
 				RoImGui:TreePop()
 			end

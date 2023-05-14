@@ -37,9 +37,9 @@ local TextFlags: { [string]: Types.Flag } = {
 
 local InputFlags: { [string]: Types.Flag } = {
 	StringInput = 1,
-	IntegerInput = 2,
-	FloatInput = 4,
-	PlaceHolderText = 8,
+	PlaceHolderText = 2,
+	IntegerInput = 4,
+	FloatInput = 8,
 }
 
 -- local WindowFlags: () -> Types.WindowFlags = BitFlags({
@@ -67,5 +67,6 @@ local InputFlags: { [string]: Types.Flag } = {
 
 Flags.WindowFlags = WindowFlags
 Flags.TextFlags = TextFlags
+Flags.InputFlags = InputFlags
 
 return Flags

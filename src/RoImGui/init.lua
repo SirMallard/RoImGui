@@ -21,7 +21,7 @@ local Button = require(components.Button)
 local RadioButton = require(components.RadioButton)
 
 local LabelText = require(components.LabelText)
-local InputText = require(components.InputText)
+local Input = require(components.Input)
 
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
@@ -30,11 +30,6 @@ local startFrameId: number = -1
 local endFrameId: number = -1
 -- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
-
-local DefaultWindowFlags: Types.Flag = 0
-local DefaultTextFlags: Types.Flag = 0
-
-local BulletTextFlags: Types.Flag = Flags.TextFlags.BulletText
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
@@ -967,7 +962,7 @@ end
 ]]
 function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Flag | nil): boolean
 	-- just create a set of default flags
-	flags = flags or DefaultWindowFlags
+	flags = flags or 0
 
 	--[[
 		If the window is not open at all because the open value is false then we return instantly
@@ -1199,12 +1194,12 @@ end
 ]]
 
 function ImGui:Text(textString: string, ...: any)
-	ImGui:_Text(DefaultTextFlags, textString, ...)
+	ImGui:_Text(0, textString, ...)
 end
 
 function ImGui:ChangingText(id: Types.ImGuiId, textString: string, ...: any)
 	ImGui:PushId(id)
-	ImGui:_Text(DefaultTextFlags, textString, ...)
+	ImGui:_Text(0, textString, ...)
 end
 
 function ImGui:TextDisabled(textString: string, ...: any)
@@ -1213,12 +1208,12 @@ end
 
 function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
 	ImGui:PushColour("Text", colour)
-	ImGui:_Text(DefaultTextFlags, textString, ...)
+	ImGui:_Text(0, textString, ...)
 	ImGui:PopColour("Text")
 end
 
 function ImGui:BulletText(textString: string, ...: any)
-	ImGui:_Text(BulletTextFlags, textString, ...)
+	ImGui:_Text(1, textString, ...)
 end
 
 function ImGui:_Text(flags: Types.Flag, textString: string, ...: any)
@@ -1488,6 +1483,30 @@ function ImGui:LabelText(text: string, label: string)
 end
 
 function ImGui:InputText(label: string, value: { string })
+	ImGui:_Input(1, label, value)
+end
+
+function ImGui:InputTextWithHint(label: string, value: { string }, placeholder: string)
+	ImGui:_Input(3, label, value, placeholder)
+end
+
+function ImGui:InputInteger(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+	ImGui:_Input(4, label, value, nil, minimum, maximum, format)
+end
+
+function ImGui:InputFloat(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+	ImGui:_Input(8, label, value, nil, minimum, maximum, format)
+end
+
+function ImGui:_Input(
+	flags: Types.Flag,
+	label: string,
+	value: { string | number },
+	placeholder: string?,
+	minimum: number?,
+	maxmimum: number?,
+	format: string?
+)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1498,23 +1517,27 @@ function ImGui:InputText(label: string, value: { string })
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	local inputText: Types.ImGuiInputText? =
-		ImGui:GetElementById(elementFrame.Id .. ">" .. label, "InputText", elementFrame)
+	local input: Types.ImGuiInput? = ImGui:GetElementById(elementFrame.Id .. ">" .. label, "Input", elementFrame)
 
-	if inputText == nil then
-		inputText = InputText.new(label, value, window, elementFrame)
-		inputText:DrawInputText(elementFrame.DrawCursor.Position)
-		table.insert(elementFrame.Elements, inputText)
+	if input == nil then
+		input = Input.new(label, value, window, elementFrame, flags, {
+			Placeholder = placeholder,
+			Minimum = minimum,
+			Maxmimum = maxmimum,
+			Format = format,
+		})
+		input:DrawInputText(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, input)
 	else
-		inputText:UpdatePosition(elementFrame.DrawCursor.Position)
+		input:UpdatePosition(elementFrame.DrawCursor.Position)
 	end
 
-	ItemSize(elementFrame.DrawCursor, inputText.Instance.AbsoluteSize)
+	ItemSize(elementFrame.DrawCursor, input.Instance.AbsoluteSize)
 
-	inputText.Active = true
-	inputText.LastFrameActive = startFrameId
+	input.Active = true
+	input.LastFrameActive = startFrameId
 
-	inputText:UpdateText()
+	input:UpdateText()
 end
 
 function ImGui:Separator()

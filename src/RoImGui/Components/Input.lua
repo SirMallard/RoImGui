@@ -1,18 +1,27 @@
+local StarterGui = game:GetService("StarterGui")
 local Types = require(script.Parent.Parent.Types)
+local Flags = require(script.Parent.Parent.Flags)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
 
-local InputText = {}
-InputText.__index = InputText
-InputText.ClassName = "ImGuiInputText"
+local Input = {}
+Input.__index = Input
+Input.ClassName = "ImGuiInput"
 
 local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function InputText.new(label: string, value: { string }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
-	local self: Types.ImGuiInputText = setmetatable({}, InputText) :: Types.ImGuiInputText
+function Input.new(
+	label: string,
+	value: { string },
+	window: Types.ImGuiWindow,
+	elementFrame: Types.ElementFrame,
+	flags: Types.Flag,
+	extras: { [string]: any }
+)
+	local self: Types.ImGuiInput = setmetatable({}, Input) :: Types.ImGuiInput
 
-	self.Class = "InputText"
+	self.Class = "Input"
 	self.Id = elementFrame.Id .. ">" .. label
 	self.Label = label
 	self.Value = value
@@ -23,6 +32,9 @@ function InputText.new(label: string, value: { string }, window: Types.ImGuiWind
 	self.Window = window
 	self.LastFrameActive = 0
 
+	self.Flags = flags
+	self.Extras = extras
+
 	self.Active = true
 
 	self.Size = Vector2.zero
@@ -30,7 +42,7 @@ function InputText.new(label: string, value: { string }, window: Types.ImGuiWind
 	return self
 end
 
-function InputText:DrawInputText(position: Vector2)
+function Input:DrawInputText(position: Vector2)
 	if self.Instance ~= nil then
 		self.Instance:Destroy()
 		self.Instance = nil
@@ -71,9 +83,30 @@ function InputText:DrawInputText(position: Vector2)
 	textbox.TextWrapped = false
 	textbox.TextXAlignment = Enum.TextXAlignment.Left
 	textbox.MultiLine = false
-	textbox.TextWrapped = false
 	textbox.ClearTextOnFocus = false
 	textbox.ClipsDescendants = true
+
+	if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
+		local placeholder: TextLabel = Instance.new("TextLabel")
+		placeholder.Name = "placeholder"
+		placeholder.Position = UDim2.fromOffset(0, 0)
+		placeholder.Size = UDim2.fromScale(1, 1)
+
+		placeholder.BackgroundColor3 = COLOUR3_WHITE
+		placeholder.BackgroundTransparency = 1
+		placeholder.BorderColor3 = COLOUR3_BLACK
+		placeholder.BorderSizePixel = 0
+
+		placeholder.Text = self.Extras.Placeholder
+		placeholder.FontFace = Style.Font
+		placeholder.TextColor3 = Style.Colours.TextDisabled.Colour
+		placeholder.TextTransparency = (#self.InternalValue == 0) and Style.Colours.TextDisabled.Transparency or 1
+		placeholder.TextSize = Style.Sizes.TextSize
+		placeholder.TextWrapped = false
+		placeholder.TextXAlignment = Enum.TextXAlignment.Left
+
+		placeholder.Parent = textbox
+	end
 
 	local padding: UIPadding = Instance.new("UIPadding")
 	padding.PaddingTop = UDim.new(0, Style.Sizes.FramePadding.Y)
@@ -113,7 +146,7 @@ function InputText:DrawInputText(position: Vector2)
 	self.Size = Vector2.new(1, math.max(textSize.Y, labelSize.Y) + 2 * Style.Sizes.FramePadding.Y)
 end
 
-function InputText:UpdatePosition(position: Vector2)
+function Input:UpdatePosition(position: Vector2)
 	if self.Instance == nil then
 		self:DrawInputText(position)
 	else
@@ -121,22 +154,42 @@ function InputText:UpdatePosition(position: Vector2)
 	end
 end
 
-function InputText:UpdateText()
+function Input:UpdateText()
 	if self.Instance == nil then
 		return
 	end
 
-	self.InternalValue = self.Instance.textbox.Text
+	local textValue: string = self.Instance.textbox.Text
+	if self.Instance.textbox.CursorPosition < 0 and textValue ~= tostring(self.InternalValue) then
+		if Flags.Enabled(self.Flags, Flags.InputFlags.FloatInput) == true then
+			local float: number = tonumber(textValue:match("%-?%d+[%.?%d+]?%d+")) or self.InternalValue
+			float = math.clamp(float, self.Extras.Minimum or -math.huge, self.Extras.Maximum or math.huge)
+			self.InternalValue = float
+		elseif Flags.Enabled(self.Flags, Flags.InputFlags.IntegerInput) == true then
+			local integer: number = tonumber(textValue:match("%-?%d+")) or self.InternalValue
+			integer = math.clamp(integer, self.Extras.Minimum or -math.huge, self.Extras.Maximum or math.huge)
+			self.InternalValue = integer
+		else
+			self.InternalValue = textValue
+		end
+	end
 
 	if self.Value[1] ~= self.InternalValue then
 		self.Value[1] = self.InternalValue
 		self.Value[2] = true
+		self.Instance.textbox.Text = self.InternalValue
 	elseif self.Value[2] == true then
-		self.Value[2] = false
+		self.Value[2] = nil
+	end
+
+	if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
+		self.Instance.textbox.placeholder.TextTransparency = (#self.InternalValue == 0)
+				and Style.Colours.TextDisabled.Transparency
+			or 1
 	end
 end
 
-function InputText:Destroy()
+function Input:Destroy()
 	if self.Instance ~= nil then
 		self.Instance.Parent = nil
 		self.Instance:Destroy()
@@ -146,4 +199,4 @@ function InputText:Destroy()
 	setmetatable(self, nil)
 end
 
-return InputText
+return Input
