@@ -1055,6 +1055,13 @@ function ImGui:EndMenuBar()
 		or (window.RedrawNextFrame == true)
 		or (Flags.Enabled(window.Flags, Flags.WindowFlags.MenuBar) == false)
 	then
+		-- Since we still want to have scrolling the draw cursor will be incremented. Any element
+		-- local height: number = Style.Sizes.TextSize + Style.Sizes.ItemSpacing.Y
+		-- if textString:find("\n") then
+		-- 	height = Utility.CalculateTextSize(textString).Y + Style.Sizes.ItemSpacing.Y
+		-- end
+		-- elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		-- elementFrame.DrawCursor.Position += Vector2.yAxis * height
 		return
 	end
 

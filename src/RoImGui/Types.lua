@@ -133,7 +133,7 @@ export type ImGuiClass =
 	| "Button"
 	| "RadioButton"
 	| "LabelText"
-	| "InputText"
+	| "Input"
 	| "Corner"
 	| "Side"
 	| "Resize"
@@ -141,41 +141,7 @@ export type ImGuiClass =
 	| "CollapsingHeader"
 	| "Separator"
 
---[[
-		=<>= FLAGS =<>=
-]]
 export type Flag = number
-
--- export type WindowFlags = {
--- 	type: "WindowFlags",
-
--- 	NoTitleBar: boolean,
--- 	NoResize: boolean,
--- 	NoMove: boolean,
--- 	NoScrollBar: boolean,
--- 	NoMouseScroll: boolean,
--- 	Collapsed: boolean,
--- 	NoBackground: boolean,
--- 	MenuBar: boolean,
--- 	NoClose: boolean,
--- 	NoCollapse: boolean,
-
--- 	ChildWindow: boolean,
--- 	Tooltip: boolean,
--- 	Popup: boolean,
--- 	Modal: boolean,
--- 	ChildMenu: boolean,
--- }
-
--- export type PopupFlags = {
--- 	type: "PopupFlags",
--- }
-
--- export type TextFlags = {
--- 	type: "TextFlags",
-
--- 	BulletText: boolean,
--- }
 
 export type DrawCursor = {
 	Position: Vector2,
