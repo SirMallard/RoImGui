@@ -1,16 +1,16 @@
 local runService: RunService = game:GetService("RunService")
 
-local components = script.Components
+local Demo = require(script.Demo)
 local Types = require(script.Types)
-local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
+local Flags = require(script.Flags)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
-local Flags = require(script.Flags)
+local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 
 --[[
 	Requiring all of the elements	
 ]]
---
+local components = script.Components
 local Window = require(components.Window)
 
 local Menu = require(components.Menu)
@@ -21,62 +21,22 @@ local Button = require(components.Button)
 local RadioButton = require(components.RadioButton)
 
 local LabelText = require(components.LabelText)
+local Input = require(components.Input)
 
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
 
-local startFrameId: number = -1
-local endFrameId: number = -1
--- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local frameId: number = -1
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
-ImGui.FrameId = startFrameId
+ImGui.FrameId = frameId
 ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
 ImGui.Style = script.Utility.Style
-
-function ImGui:DebugWindow()
-	local flags: Types.WindowFlags = Flags.WindowFlags()
-	flags.NoClose = true
-	-- flags.NoCollapse = true
-
-	-- if ImGui:Begin("Debug", { true }, flags) then
-	-- ImGui:Text("Elements:")
-	-- ImGui:Indent()
-	-- ImGui:Text("ActiveID: %s", ImGuiInternal.ActiveId or "NONE")
-	-- ImGui:Text("HoverID: %s", ImGuiInternal.HoverId or "NONE")
-	-- ImGui:Unindent()
-
-	-- ImGui:Text("Windows:")
-	-- ImGui:Indent()
-	-- ImGui:Text("Active Window: %s", ImGuiInternal.ActiveWindow and ImGuiInternal.ActiveWindow.Id or "NONE")
-	-- ImGui:Text("Hovered Window: %s", ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "NONE")
-	-- ImGui:Text("Moving Window: %s", ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "NONE")
-	-- ImGui:Text("Nav Window: %s", ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "NONE")
-	-- ImGui:Text("Resizing WIndow: %s", ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "NONE")
-	-- ImGui:Unindent()
-	-- ImGui:Text("Resizing:")
-	-- ImGui:Indent()
-	-- ImGui:Text("Mouse Position: (%s)", ImGuiInternal.MouseCursor.Position)
-	-- ImGui:Text("Mouse Delta: (%s)", ImGuiInternal.MouseCursor.Delta)
-	-- ImGui:Text("Hold Offset: (%s)", ImGuiInternal.HoldOffset)
-	-- ImGui:Unindent()
-	-- ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
-	-- 	ImGui:End()
-	-- end
-
-	if ImGuiInternal.Debug.HoverDebug[1] == true and ImGuiInternal.HoverId ~= "" then
-		ImGuiInternal.Debug.HoverElement.stroke.Enabled = true
-	else
-		ImGuiInternal.Debug.HoverElement.stroke.Enabled = false
-	end
-
-	-- local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
-	-- window.Active = true
-end
+ImGui.Internal = ImGuiInternal
 
 --[[
 	Initialisation API
@@ -102,8 +62,8 @@ function ImGui:Start()
 			return
 		end
 
-		startFrameId += 1
-		ImGui.FrameId = startFrameId
+		frameId += 1
+		ImGui.FrameId = frameId
 		ImGuiInternal:UpdateTime(deltaTime)
 
 		ImGui:SetHover("", "")
@@ -121,11 +81,8 @@ function ImGui:Start()
 			return
 		end
 
-		endFrameId += 1
-		if endFrameId ~= startFrameId then
-			print("⏰ Out of sync? 😤")
-		end
-		-- ImGui:DebugWindow()
+		Demo:ShowDemoWindow(ImGui)
+		Demo:ShowDebugWindow(ImGui)
 
 		ImGui:EndFrameMouseUpdate()
 		ImGui:CleanWindowElements()
@@ -185,7 +142,7 @@ function ImGui:CleanWindowElements()
 		for name: string, menu: Types.ImGuiMenu in menubar.Menus do
 			menu.Active = false
 
-			if menu.LastFrameActive < endFrameId then
+			if menu.LastFrameActive < frameId then
 				menu:Destroy()
 				window.Window.Menubar.Menus[name] = nil
 			end
@@ -198,7 +155,7 @@ function ImGui:CleanWindowElements()
 		local frame: Types.ElementFrame = window.Window.Frame
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
-			if element.LastFrameActive < endFrameId then
+			if element.LastFrameActive < frameId then
 				if element["Destroy"] == nil then
 					element.Instance:Destroy()
 				else
@@ -259,7 +216,7 @@ function ImGui:FindHoveredWindow()
 			continue
 		end
 
-		if window.Flags.NoResize == true then
+		if Flags.Enabled(window.Flags, Flags.WindowFlags.NoResize) == true then
 			if Utility.IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) == false then
 				continue
 			end
@@ -292,16 +249,27 @@ function ImGui:FindHoveredWindow()
 end
 
 -- Updates RootWindow properties of the current window based upon flags
-function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.WindowFlags, parentWindow: Types.ImGuiWindow?)
+function ImGui:UpdateWindowLinks(window: Types.ImGuiWindow, flags: Types.Flag, parentWindow: Types.ImGuiWindow?)
 	window.ParentWindow = parentWindow
 	window.RootWindow, window.PopupRootWindow, window.PopupParentRootWindow = window, window, window
-	if (parentWindow ~= nil) and (flags.ChildWindow == true) and not (flags.Tooltip == true) then
+	if
+		(parentWindow ~= nil)
+		and (Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true)
+		and (Flags.Enabled(flags, Flags.WindowFlags.Tooltip) == false)
+	then
 		window.RootWindow = parentWindow.RootWindow
 	end
-	if (parentWindow ~= nil) and (flags.Popup == true) then
+	if (parentWindow ~= nil) and (Flags.Enabled(flags, Flags.WindowFlags.Popup) == true) then
 		window.PopupRootWindow = parentWindow.PopupRootWindow
 	end
-	if (parentWindow ~= nil) and not (flags.Modal == true) and (flags.ChildWindow == true or flags.Popup == true) then
+	if
+		(parentWindow ~= nil)
+		and not (Flags.Enabled(flags, Flags.WindowFlags.Modal) == true)
+		and (
+			Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true
+			or Flags.Enabled(flags, Flags.WindowFlags.Popup) == true
+		)
+	then
 		window.PopupParentRootWindow = parentWindow.PopupParentRootWindow
 	end
 end
@@ -350,7 +318,7 @@ function ItemHoverable(
 		return false
 	end
 
-	if ImGuiInternal.HoveredWindow ~= window then
+	if ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id ~= window.Id then
 		return false
 	end
 
@@ -487,7 +455,7 @@ function ImGui:GetWindowById(windowName: string): Types.ImGuiWindow?
 	return ImGuiInternal.Windows[windowName] or nil
 end
 
-function ImGui:CreateWindow(windowName: string, flags: Types.WindowFlags): Types.ImGuiWindow
+function ImGui:CreateWindow(windowName: string, flags: Types.Flag): Types.ImGuiWindow
 	local parentWindow: Types.ImGuiWindow? = nil
 
 	local window: Types.ImGuiWindow = Window.new(windowName, parentWindow, flags)
@@ -562,6 +530,11 @@ function ImGui:GetElementById(
 	-- return element
 end
 
+function ImGui:PushId(id: Types.ImGuiId)
+	ImGuiInternal.NextItemData.Id = id
+	ImGuiInternal.NextItemData.Reset = true
+end
+
 function ImGui:PushColour(index: string, colour: Types.Colour4)
 	Style.Colours[index] = colour
 end
@@ -589,17 +562,34 @@ function ImGui:AlignTextToFramePadding()
 	drawCursor.TextLineOffset = math.max(drawCursor.TextLineOffset, Style.Sizes.FramePadding.Y)
 end
 
+function ImGui:IsItemHovered()
+	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
+
+	if window == nil then
+		return false
+	end
+
+	if ImGuiInternal.HoveredWindow.Id ~= window.Id then
+		return false
+	end
+
+	return false
+end
+
 --[[
 	Manages the activity on the title bar excluding moving:
 		- Checks for close and collapse buttons and updates accordingly.
 		- Detects a double click on the title bar and collapses the window.
+	
+	The draw next frame argument is only used when the window collapses,
+	since everything inside is culled.
 ]]
 function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	local focusOnButton: boolean = false
 
 	-- Collapse button
 	local collapse: Types.WindowTitleButton = window.Window.Title.Collapse
-	if window.Flags.NoCollapse == false and collapse.Instance ~= nil then
+	if Flags.Enabled(window.Flags, Flags.WindowFlags.NoCollapse) == false and collapse.Instance ~= nil then
 		local instance: ImageLabel = collapse.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
@@ -621,7 +611,7 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 	-- Close button
 	local close: Types.WindowTitleButton = window.Window.Title.Close
-	if window.Flags.NoClose == false and close.Instance ~= nil then
+	if Flags.Enabled(window.Flags, Flags.WindowFlags.NoClose) == false and close.Instance ~= nil then
 		local instance: ImageLabel = close.Instance
 
 		local pressed: boolean, hovered: boolean, held: boolean =
@@ -640,7 +630,11 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 
 	-- Window background double click which will nto work when the window cannot collapse
 	local title: Types.WindowTitle = window.Window.Title
-	if (focusOnButton == false) and (title.Instance ~= nil) and (window.Flags.NoCollapse == false) then
+	if
+		(focusOnButton == false)
+		and (title.Instance ~= nil)
+		and (Flags.Enabled(window.Flags, Flags.WindowFlags.NoCollapse) == false)
+	then
 		local instance: Frame = title.Instance
 
 		local hovered: boolean =
@@ -655,6 +649,12 @@ function ImGui:HandleWindowTitleBar(window: Types.ImGuiWindow)
 	end
 end
 
+--[[
+	Manages the border of the window. Each side and the bottom two corners
+	are frames which just get handled as any normal button would. None of the
+	window moving actually happens here.
+	I don't know how efficent this is, because there are lots of vector2 creations.
+]]
 function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	if ImGuiInternal.ResizingWindow ~= nil then
 		return
@@ -668,6 +668,12 @@ function ImGui:HandleWindowBorder(window: Types.ImGuiWindow)
 	local innerPadding: number = Style.Sizes.ResizeInnerPadding
 	local padding: number = outerPadding + innerPadding
 
+	--[[
+		Every resize is passed through here.
+		Because the detection radius is greater than the visible edges of the window
+		which highlight when you click, we can't use the absolute position in any
+		helpful way.
+	]]
 	local function ResizeBehaviour(
 		element: Types.ResizeElement,
 		positionPadding: Vector2,
@@ -850,6 +856,18 @@ function ImGui:UpdateWindowResize()
 end
 
 --[[
+	Debug functions
+]]
+
+function ImGui:ShowDebugWindow(enabled: boolean)
+	Demo.DebugWindow = enabled
+end
+
+function ImGui:ShowDemoWindow(enabled: boolean)
+	Demo.DemoWindow = enabled
+end
+
+--[[
 	CREATION FUNCTIONS
 
 	Window functions
@@ -869,49 +887,66 @@ end
 	:Indent()
 	:UnIndent()
 ]]
-function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.WindowFlags | nil): boolean
-	-- just create a set of default flags
-	flags = flags or Flags.WindowFlags()
 
-	-- if the window is not open at all because the open value is false then we return instantly
-	-- this ensures that the window is not created at all since it will not be visible
-	-- additionally, we do not need to check the window open value, since it is updated every frame
-	-- and is equal to the open variable which is checked here
-	if (open ~= nil) and (open[1] == false) and (flags.NoClose == false) then
+--[[
+	The main window creation. This will create the draggable, resizable windows for most operations
+	but the creation of any popups, menus and other window objects will go through here.
+
+	The flags property changes the behaviour of the window. However, most flags don't update exisiting
+	behaviour. For example, if the flags change to have no title bar, the title bar won't be deleted
+	but it won't be interactable. If you want to change flags for a window, skipping a frame to delete
+	the window will draw a new window with the new flags. It's just simpler that way.
+]]
+function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Flag | nil): boolean
+	-- just create a set of default flags
+	flags = flags or 0
+
+	--[[
+		If the window is not open at all because the open value is false then we return instantly
+		this ensures that the window is not created at all since it will not be visible.
+		Additionally, we do not need to check the window open value, since it is updated every frame
+		and is equal to the open variable which is checked here.
+	]]
+	if (open ~= nil) and (open[1] == false) and (Flags.Enabled(flags, Flags.WindowFlags.NoClose) == false) then
 		return false
 	end
 
-	-- grab the previous window if we have already created one, else we create a new one
-	-- therefore, we are not preserving state between frames
+	--[[
+		If the window already exists we use it again. It keeps all elements from the previous frame.
+		Otherwise we create a new empty window.
+	]]
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
-	local firstFrameCall: boolean = (window.LastFrameActive ~= startFrameId) -- If this is the first time in the renderstep for creating the window
-	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1)) or (flags.Popup == true)
+	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
+	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
+		or (Flags.Enabled(flags, Flags.WindowFlags.Popup) == true)
 
+	--[[
+		The parent window if this begin is called within another window. It can be nil
+	]]
 	local parentWindowFromStack: Types.ImGuiWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack] -- the last used window in the stack
 	local parentWindow: Types.ImGuiWindow? = firstFrameCall and parentWindowFromStack or window.ParentWindow -- either the stack window or the window's parent
 
+	--[[
+		No we are ready to add the window to the stack and set as the current window.
+		Any additional window data is also updated.
+	]]
 	table.insert(ImGuiInternal.WindowStack, window)
 	ImGuiInternal.CurrentWindow = window
 	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
 	window.Appearing = windowApearing
-	window.LastFrameActive = startFrameId
+	window.LastFrameActive = frameId
 	ImGuiInternal.ActiveWindow = window
 
-	if flags.ChildWindow == true then
+	if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 		ImGuiInternal.ChildWindowCount += 1
 	end
 
-	if flags.Popup == true then
-		print("Popup window created!")
-	end
-
-	-- don't know why exactly, but it doesn't seem to be an issue.
-	-- if ((window.Open[1] == false) and (flags.NoClose == false)) or (flags.Collapsed == true) then
-	-- 	window.Collapsed = true
-	-- end
-
+	--[[
+		If it's the first call this frame, then we draw the window and set any data. Any changes
+		won't propogate until the next frame.
+	]]
 	if firstFrameCall == true then
 		window.Flags = flags
 		-- local tooltip: boolean = (flags.ChildWindow == true) and (flags.Tooltip == true)
@@ -919,43 +954,45 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 		ImGui:UpdateWindowLinks(window, flags, parentWindow)
 		window.ParentWindowFromStack = parentWindowFromStack
 		window.Active = true
-		window.Open = open or { true } -- we default to
+		window.Open = open or { true } -- We default to open. Closed would be unhelpful.
 
-		-- if (flags.NoTitleBar == false) and (flags.NoCollapse == false) then
-		-- end
-
-		-- if windowApearing == true then
-		-- 	if (flags.Popup == true) and (flags.Modal == false) then
-		-- 	end
-		-- end
-
-		if flags.ChildWindow == true then
+		if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 			table.insert(parentWindow.ChildWindows, window)
 		end
 
-		window:DrawWindow()
+		window:DrawWindow() -- Just a window shell.
 
-		if flags.NoTitleBar == false then
+		if Flags.Enabled(flags, Flags.WindowFlags.NoTitleBar) == false then
 			window:DrawTitle()
 			ImGui:HandleWindowTitleBar(window)
 		end
 
-		if (flags.NoResize == false) and (window.Collapsed == false) then
+		if (Flags.Enabled(flags, Flags.WindowFlags.NoResize) == false) and (window.Collapsed == false) then
 			ImGui:HandleWindowBorder(window)
 		end
 
+		--[[
+			This draws the actual ElementFrame for the elements to sit in.
+		]]
 		window:DrawFrame()
 	end
 
 	-- A lot of internal code in here!
 
-	-- if the window is not active, not sure if it can be false or the window is collapsed
-	-- collapsing will still render the title bar which is why we go through all of this process.
-	local skipElements: boolean = (window.Collapsed == true) or (window.Active == false)
+	--[[
+		If the window is collapsed or not visible or will be redrawn next frame, there is no point
+		adding elements to the window. Anything colled within can be skipped
+	]]
+	local skipElements: boolean = (window.Collapsed == true)
+		or (window.Active == false)
+		or (window.Open[1] == false)
+		or (window.RedrawNextFrame == true)
 	window.SkipElements = skipElements
 
-	-- based on the issue about when to end elements, because this window can have no child
-	-- elements we end it entirely.
+	--[[
+		Based on the issue about when to end elements, because this window can have no child
+		elements we end it entirely.
+	]]
 	if skipElements == true then
 		ImGui:End()
 	end
@@ -963,17 +1000,23 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Window
 	return not skipElements
 end
 
+--[[
+	Finishes with the current window. Must be called only if the :Begin() returns true.
+]]
 function ImGui:End()
 	assert((#ImGuiInternal.WindowStack > 0), "Called :End() to many times!")
 	assert(ImGuiInternal.CurrentWindow ~= nil, "Never called :Begin() to set a current window!")
 
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
-	local flags: Types.WindowFlags = window.Flags
+	local flags: Types.Flag = window.Flags
 
-	if flags.ChildWindow == true then
+	if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
 		ImGuiInternal.ChildWindowCount -= 1
 	end
 
+	--[[
+		Every stack gets popped and changes the current window.
+	]]
 	table.remove(ImGuiInternal.WindowStack)
 	ImGuiInternal.CurrentWindow = ImGuiInternal.WindowStack[#ImGuiInternal.WindowStack]
 	table.remove(ImGuiInternal.ElementFrameStack)
@@ -989,7 +1032,7 @@ function ImGui:BeginMenuBar()
 		(window.Collapsed == true)
 		or (window.Open[1] == false)
 		or (window.RedrawNextFrame == true)
-		or (window.Flags.MenuBar == false)
+		or (Flags.Enabled(window.Flags, Flags.WindowFlags.MenuBar) == false)
 	then
 		return false
 	end
@@ -1010,8 +1053,15 @@ function ImGui:EndMenuBar()
 		(window.Collapsed == true)
 		or (window.Open[1] == false)
 		or (window.RedrawNextFrame == true)
-		or (window.Flags.MenuBar == false)
+		or (Flags.Enabled(window.Flags, Flags.WindowFlags.MenuBar) == false)
 	then
+		-- Since we still want to have scrolling the draw cursor will be incremented. Any element
+		-- local height: number = Style.Sizes.TextSize + Style.Sizes.ItemSpacing.Y
+		-- if textString:find("\n") then
+		-- 	height = Utility.CalculateTextSize(textString).Y + Style.Sizes.ItemSpacing.Y
+		-- end
+		-- elementFrame.DrawCursor.PreviousPosition = elementFrame.DrawCursor.Position
+		-- elementFrame.DrawCursor.Position += Vector2.yAxis * height
 		return
 	end
 
@@ -1025,7 +1075,7 @@ function ImGui:BeginMenu(name: string)
 	assert(window.ActiveMenu == nil, ImGuiInternal.ErrorMessages.ActiveMenuOpen)
 
 	-- see ImGui:Text()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	if window.SkipElements == true then
 		return false
 	end
 
@@ -1045,7 +1095,9 @@ function ImGui:BeginMenu(name: string)
 	end
 
 	menu.Active = true
-	menu.LastFrameActive = startFrameId
+	menu.LastFrameActive = frameId
+
+	-- local menuOpen: boolean = menu.Open
 
 	local instance: TextLabel = menu.Instance
 	local pressed: boolean, hovered: boolean, held: boolean =
@@ -1073,31 +1125,69 @@ function ImGui:EndMenu()
 	window.ActiveMenu = nil
 end
 
+--[[
+	Text Functions:
+
+		There are multiple text functions which all ultimately call the same :TextV() function.
+		The :TextV() function draws all the elements and has to change properties depending on
+		the type of text element to draw.
+		
+		The :TextDisabled() is the :TextColoured function and they both just use the :Push and
+		:PopColour() functions to change the style. :BulletText() is a bit different since it
+		enables the .BulletText flag to change the behaviour.
+]]
+
 function ImGui:Text(textString: string, ...: any)
-	ImGui:TextV(textString, false, ...)
+	ImGui:_Text(0, textString, ...)
 end
 
-function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
+function ImGui:ChangingText(id: Types.ImGuiId, textString: string, ...: any)
+	ImGui:PushId(id)
+	ImGui:_Text(0, textString, ...)
+end
+
+function ImGui:TextDisabled(textString: string, ...: any)
+	ImGui:TextColoured(Style.Colours.TextDisabled, textString, ...)
+end
+
+function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
+	ImGui:PushColour("Text", colour)
+	ImGui:_Text(0, textString, ...)
+	ImGui:PopColour("Text")
+end
+
+function ImGui:BulletText(textString: string, ...: any)
+	ImGui:_Text(1, textString, ...)
+end
+
+function ImGui:_Text(flags: Types.Flag, textString: string, ...: any)
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- We don't draw if it is going to be redrawn next frame.
-	-- Don't remove because the text is parented to an instance and when it redraws next frame
-	-- the instance is destroyed so the text only appears for a frame and is then destroyed
-	-- so we don't draw at all.
-	-- Settings the text to redraw next frame would already happen, so why render at all.
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	--[[
+		We don't draw if it is going to be redrawn next frame.
+		Don't remove because the text is parented to an instance and when it redraws next frame
+		the instance is destroyed so the text only appears for a frame and is then destroyed
+		so we don't draw at all.
+	]]
+	if window.SkipElements == true then
 		return
 	end
 
+	--[[
+		IMPORTANT:
+			This whole passage regards whether elements should be drawn even if they are not visible
+			because the scrolling is incorrect. When this was implemented, windows could not be scrolled
+			and therefore it was easy enough to just cull any item below the current window height. However,
+			this will not work with scrolling so it's no longer part of the window.
+		
 	-- There's no point drawing the element if it's too far down a window to be visible.
 	-- The windows are unlikely to be resized up and down repeatedly so it saves memory and time
 	-- by exiting at the start.
 	-- There's no point checking horizontally because it's unlikely that anything will be too far
 	-- and it's not worth it for now.
 	-- This will need to be changed when window scrolling is added.
-	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
 	if
 		elementFrame.DrawCursor.Position.Y
 		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
@@ -1111,73 +1201,80 @@ function ImGui:TextV(textString: string, bulletText: boolean, ...: any)
 		-- elementFrame.DrawCursor.Position += Vector2.yAxis * height
 		return
 	end
+	]]
 
-	-- format with the args
-	local args: { any } = { ... }
-	if #args > 0 then
-		for index: number, arg: any in args do
-			args[index] = tostring(arg)
-		end
-		textString = textString:format(table.unpack(args))
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+
+	--[[
+		If any additional paramaters are passed then they are formatted.
+	]]
+	if #{ ... } > 0 then
+		textString = textString:format(...)
 	end
 
-	-- If a previous version already exists from the last frame then we use it.
-	-- It will have any data already in it.
+	--[[
+		If a previous version already exists from the last frame then we use it since it already
+		has all the data we need.
+
+		If the NextItemData contains an id then it must be used over the generated version. But it
+		is still appended to the element frame to ensure comptability. I don't think there's anytime
+		when you would not want that.
+	]]
 	local text: Types.ImGuiText? = ImGui:GetElementById(
-		elementFrame.Id .. ">" .. textString,
-		bulletText == true and "BulletText" or "Text",
+		elementFrame.Id .. ">" .. (ImGuiInternal.NextItemData.Id or textString),
+		Flags.Enabled(flags, Flags.TextFlags.BulletText) == true and "BulletText" or "Text",
 		elementFrame
 	)
 
-	-- If it does not already exist then we create a new one, draw it and then add it to the elements
-	-- in the element frame. If it does exist, we just change position.
+	--[[
+		If it does not already exist then we create a new one, draw it and then add it to the elements
+		in the ElementFrame. If it does exist, we just change position.
+
+		The :DrawText() and :UpdatePosition() methods pass through the position to draw to. Normally, it
+		would just be the DrawCursor position, but since it is a text element, we have an additional
+		property to adjust the vertical offset when elements are aligned on the same line. This prevents
+		the text being too high relative to other elements with frame padding, such as buttons and checkboxes.
+	]]
 	if text == nil then
-		text = Text.new(textString, bulletText, window, elementFrame)
+		text = Text.new(textString, window, elementFrame, flags)
 		text:DrawText(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 		table.insert(elementFrame.Elements, text)
 	else
+		if text.Text ~= textString then
+			text:UpdateText(textString)
+		end
+
 		text:UpdatePosition(elementFrame.DrawCursor.Position + Vector2.yAxis * elementFrame.DrawCursor.TextLineOffset)
 	end
 
+	--[[
+		We pass the size of the text into the ItemSize() function which moves the draw cursor for the next
+		element. We can just use the Size property of the text element since it doesn't change once drawn.
+	]]
 	ItemSize(elementFrame.DrawCursor, text.Size)
 
 	text.Active = true
-	text.LastFrameActive = startFrameId
+	text.LastFrameActive = frameId
+	ImGuiInternal:ResetNextItemData()
 end
 
-function ImGui:TextDisabled(textString: string, ...: any)
-	ImGui:PushColour("Text", Style.Colours.TextDisabled)
-	ImGui:TextV(textString, false, ...)
-	ImGui:PopColour("Text")
-end
+--[[
+	Interactive Buttons:
 
-function ImGui:TextColoured(colour: Types.Colour4, textString: string, ...: any)
-	ImGui:PushColour("Text", colour)
-	ImGui:TextV(textString, false, ...)
-	ImGui:PopColour("Text")
-end
-
-function ImGui:BulletText(textString: string, ...: any)
-	ImGui:TextV(textString, true, ...)
-end
-
+		Most elements can be interacted with and will return a boolean value or number to
+		show whether they have been interacted with.
+]]
 function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return value[1]
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
+		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return value[1]
-	end
 
 	local checkbox: Types.ImGuiCheckbox? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Checkbox", elementFrame)
@@ -1193,7 +1290,7 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	ItemSize(elementFrame.DrawCursor, checkbox.Size)
 
 	checkbox.Active = true
-	checkbox.LastFrameActive = startFrameId
+	checkbox.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(checkbox.Instance.AbsolutePosition, checkbox.Size, checkbox.Id, checkbox.Class, window)
@@ -1212,29 +1309,23 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	return false
 end
 
-function ImGui:Button(text: string): boolean
+function ImGui:Button(text: string, width: number?): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local button: Types.ImGuiButton? = ImGui:GetElementById(elementFrame.Id .. ">" .. text, "Button", elementFrame)
 
 	if button == nil then
 		button = Button.new(text, window, elementFrame)
-		button:DrawButton(elementFrame.DrawCursor.Position)
+		button:DrawButton(elementFrame.DrawCursor.Position, width)
 		table.insert(elementFrame.Elements, button)
 	else
 		button:UpdatePosition(elementFrame.DrawCursor.Position)
@@ -1243,7 +1334,7 @@ function ImGui:Button(text: string): boolean
 	ItemSize(elementFrame.DrawCursor, button.Size, Style.Sizes.FramePadding.Y)
 
 	button.Active = true
-	button.LastFrameActive = startFrameId
+	button.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(button.Instance.AbsolutePosition, button.Size, button.Id, button.Class, window)
@@ -1261,18 +1352,12 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return false
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
+		return value[1] == buttonValue
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local radioButton: Types.ImGuiRadioButton? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "RadioButton", elementFrame)
@@ -1288,7 +1373,7 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	ItemSize(elementFrame.DrawCursor, radioButton.Size)
 
 	radioButton.Active = true
-	radioButton.LastFrameActive = startFrameId
+	radioButton.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean = ButtonBehaviour(
 		radioButton.Instance.AbsolutePosition,
@@ -1317,18 +1402,12 @@ function ImGui:LabelText(text: string, label: string)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return false
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
+		return
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local labelText: Types.ImGuiLabelText? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text .. "|" .. label, "LabelText", elementFrame)
@@ -1344,7 +1423,93 @@ function ImGui:LabelText(text: string, label: string)
 	ItemSize(elementFrame.DrawCursor, labelText.Instance.AbsoluteSize)
 
 	labelText.Active = true
-	labelText.LastFrameActive = startFrameId
+	labelText.LastFrameActive = frameId
+end
+
+function ImGui:InputText(label: string, value: { string })
+	ImGui:_Input(1, label, value)
+end
+
+function ImGui:InputTextWithHint(label: string, value: { string }, placeholder: string)
+	ImGui:_Input(3, label, value, placeholder)
+end
+
+function ImGui:InputInteger(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+	ImGui:_Input(4, label, value, nil, minimum, maximum, format)
+end
+
+function ImGui:InputFloat(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+	ImGui:_Input(8, label, value, nil, minimum, maximum, format)
+end
+
+function ImGui:_Input(
+	flags: Types.Flag,
+	label: string,
+	value: { string | number },
+	placeholder: string?,
+	minimum: number?,
+	maximum: number?,
+	format: string?
+)
+	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
+	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
+	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
+
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
+		return
+	end
+
+	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
+	local input: Types.ImGuiInput? = ImGui:GetElementById(elementFrame.Id .. ">" .. label, "Input", elementFrame)
+
+	if input == nil then
+		input = Input.new(label, value, window, elementFrame, flags, placeholder)
+		input:DrawInputText(elementFrame.DrawCursor.Position)
+		table.insert(elementFrame.Elements, input)
+	else
+		input:UpdatePosition(elementFrame.DrawCursor.Position)
+	end
+
+	ItemSize(elementFrame.DrawCursor, input.Instance.AbsoluteSize)
+
+	input.Active = true
+	input.LastFrameActive = frameId
+
+	local textValue: string = input.Instance.textbox.Text
+	local editing: boolean = input.Instance.textbox.CursorPosition >= 0
+	local changed: boolean = textValue ~= tostring(value[1])
+
+	-- when the user has stopped interacting with it and it has changed we want to format the text.
+	if (editing == false) and (changed == true) then
+		if Flags.Enabled(flags, Flags.InputFlags.FloatInput) == true then
+			local textFloat: string = (format or "%s"):format(
+				textValue:match("%-?%d+[%.?%d+]?%d+") or tostring(value[1])
+			) or tostring(value[1])
+			local float: number = math.clamp(tonumber(textFloat), minimum or -math.huge, maximum or math.huge)
+			-- we match and format the string based on a selector for floats and a format optionally provided
+			-- by the user. These values are also then clamped if the user provides values.
+
+			-- if the formatted value
+			if textValue ~= tostring(float) then
+				value[1] = float
+				input.Instance.textbox.Text = tostring(float)
+			end
+		elseif Flags.Enabled(flags, Flags.InputFlags.IntegerInput) == true then
+			local textInteger: string = (format or "%s"):format(textValue:match("%-?%d+") or tostring(value[1]))
+				or tostring(value[1])
+			local integer: number = math.clamp(tonumber(textInteger), minimum or -math.huge, maximum or math.huge)
+
+			if textValue ~= tostring(integer) then
+				value[1] = integer
+				input.Instance.textbox.Text = tostring(integer)
+			end
+		else
+			value[1] = textValue
+		end
+	end
+
+	input:UpdateText()
 end
 
 function ImGui:Separator()
@@ -1352,24 +1517,19 @@ function ImGui:Separator()
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
 		return
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return
-	end
 
 	local separator: Types.ImGuiSeparator? = ImGui:GetElementById("", "Separator", elementFrame, true)
 
 	if separator == nil then
 		separator = {
 			Class = "Separator",
+			Id = "",
 		} :: Types.ImGuiSeparator
 		local instance: Frame = Instance.new("Frame")
 		instance.Name = "separator"
@@ -1390,7 +1550,7 @@ function ImGui:Separator()
 	ItemSize(elementFrame.DrawCursor, separator.Instance.AbsoluteSize)
 
 	separator.Active = true
-	separator.LastFrameActive = startFrameId
+	separator.LastFrameActive = frameId
 end
 
 function ImGui:Indent(width: number?)
@@ -1416,18 +1576,12 @@ function ImGui:TreeNode(text: string): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local treenode: Types.ImGuiTreeNode? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "TreeNode", elementFrame, true)
@@ -1443,7 +1597,7 @@ function ImGui:TreeNode(text: string): boolean
 	ItemSize(elementFrame.DrawCursor, treenode.Size)
 
 	treenode.Active = true
-	treenode.LastFrameActive = startFrameId
+	treenode.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(treenode.Instance.AbsolutePosition, treenode.Size, treenode.Id, treenode.Class, window)
@@ -1464,19 +1618,7 @@ function ImGui:TreePop()
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
-		return
-	end
-
-	local elementFrame: Types.ElementFrame? = ImGui:GetActiveElementFrame()
-	if elementFrame == nil then
-		return
-	end
-
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
+	if window.SkipElements == true then
 		return
 	end
 
@@ -1488,18 +1630,12 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow? = ImGuiInternal.CurrentWindow
 
-	-- see ImGui:TextV()
-	if (window.Collapsed == true) or (window.Open[1] == false) or (window.RedrawNextFrame == true) then
+	-- see ImGui:_Text()
+	if window.SkipElements == true then
 		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
-	if
-		elementFrame.DrawCursor.Position.Y
-		> math.max(elementFrame.Instance.AbsoluteSize.Y, window.Window.Frame.Instance.AbsoluteSize.Y)
-	then
-		return false
-	end
 
 	local header: Types.ImGuiHeader? =
 		ImGui:GetElementById(elementFrame.Id .. ">" .. text, "CollapsingHeader", elementFrame, true)
@@ -1515,7 +1651,7 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	ItemSize(elementFrame.DrawCursor, header.Instance.AbsoluteSize)
 
 	header.Active = true
-	header.LastFrameActive = startFrameId
+	header.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(header.Instance.AbsolutePosition, header.Instance.AbsoluteSize, header.Id, header.Class, window)

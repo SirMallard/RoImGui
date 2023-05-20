@@ -89,6 +89,7 @@ local ImGuiInternal: Types.ImGuiInternal = {
 			Colours = {},
 			Sizes = {},
 		},
+		Reset = false,
 	},
 
 	Debug = {},
@@ -107,7 +108,7 @@ function ImGuiInternal:Initialise()
 
 	local debugElements: Frame = Instance.new("Frame")
 	debugElements.Name = "debug_elements"
-	debugElements.ZIndex = 5
+	debugElements.ZIndex = 128
 	debugElements.AnchorPoint = Vector2.new(0.5, 0.5)
 	debugElements.Position = UDim2.fromScale(0.5, 0.5)
 	debugElements.Size = UDim2.fromScale(1, 1)
@@ -214,6 +215,18 @@ function ImGuiInternal:UpdateTime(deltaTime: number)
 	self.Time = os.time()
 	self.ElapsedTime += deltaTime
 	self.DeltaTime = deltaTime
+end
+
+function ImGuiInternal:ResetNextItemData()
+	if self.NextItemData.Reset == true then
+		self.NextItemData = {
+			Style = {
+				Colours = {},
+				Sizes = {},
+			},
+			Reset = false,
+		}
+	end
 end
 
 ImGuiInternal.ErrorMessages = {

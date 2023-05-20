@@ -17,6 +17,7 @@ function Menu.new(text: string, window: Types.ImGuiWindow, menubar: Types.Window
 	self.Text = text
 
 	self.State = 0
+	self.Open = false
 
 	self.Menubar = menubar
 	self.Window = window
@@ -57,7 +58,7 @@ function Menu:DrawMenu(position: Vector2)
 	menu.TextTransparency = Style.Colours.Text.Transparency
 	menu.TextSize = Style.Sizes.TextSize
 	menu.TextWrapped = false
-	menu.TextXAlignment = Enum.TextXAlignment.Left
+	menu.TextXAlignment = Enum.TextXAlignment.Center
 
 	menu.Parent = self.Menubar.Instance
 	self.Instance = menu

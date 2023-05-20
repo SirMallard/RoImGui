@@ -1,6 +1,8 @@
 local Types = require(script.Parent.Parent.Types)
+local Flags = require(script.Parent.Parent.Flags)
 local Style = require(script.Parent.Parent.Utility.Style)
 local Utility = require(script.Parent.Parent.Utility.Utility)
+local ImGuiInternal = require(script.Parent.Parent.ImGuiInternal)
 
 local Text = {}
 Text.__index = Text
@@ -9,17 +11,18 @@ Text.ClassName = "ImGuiText"
 local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function Text.new(text: string, bulletText: boolean, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
+function Text.new(text: string, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame, flags: Types.Flag)
 	local self: Types.ImGuiText = setmetatable({}, Text) :: Types.ImGuiText
 
-	self.Class = bulletText == true and "BulletText" or "Text"
-	self.Id = elementFrame.Id .. ">" .. text
+	self.Class = Flags.Enabled(flags, Flags.TextFlags.BulletText) == true and "BulletText" or "Text"
+	self.Id = elementFrame.Id .. ">" .. (ImGuiInternal.NextItemData.Id or text)
 	self.Text = text
 
 	self.ElementFrame = elementFrame
 	self.Window = window
 	self.LastFrameActive = 0
-	self.BulletText = bulletText
+
+	self.Flags = flags
 
 	self.Active = true
 
@@ -40,7 +43,7 @@ function Text:DrawText(position: Vector2)
 
 	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
 	local fontSize: number = Style.Sizes.TextSize
-	if self.BulletText == true then
+	if Flags.Enabled(self.Flags, Flags.TextFlags.BulletText) == true then
 		textSize += Vector2.new(2 * Style.Sizes.FramePadding.X + fontSize, 0)
 	end
 
@@ -62,7 +65,7 @@ function Text:DrawText(position: Vector2)
 	text.TextWrapped = false
 	text.TextXAlignment = Enum.TextXAlignment.Left
 
-	if self.BulletText == true then
+	if Flags.Enabled(self.Flags, Flags.TextFlags.BulletText) == true then
 		local padding: UIPadding = Instance.new("UIPadding")
 		padding.Name = "padding"
 		padding.PaddingLeft = UDim.new(0, 2 * Style.Sizes.FramePadding.X + fontSize)
@@ -96,6 +99,24 @@ function Text:UpdatePosition(position: Vector2)
 	else
 		self.Instance.Position = UDim2.fromOffset(position.X, position.Y)
 	end
+end
+
+function Text:UpdateText(text: string)
+	self.Text = text
+
+	if self.Instance == nil then
+		return
+	end
+
+	local textSize: Vector2 = Utility.CalculateTextSize(self.Text)
+	local fontSize: number = Style.Sizes.TextSize
+	if Flags.Enabled(self.Flags, Flags.TextFlags.BulletText) == true then
+		textSize += Vector2.new(2 * Style.Sizes.FramePadding.X + fontSize, 0)
+	end
+
+	self.Instance.Size = UDim2.fromOffset(textSize.X, textSize.Y)
+	self.Instance.Text = self.Text
+	self.Size = textSize
 end
 
 function Text:Destroy()
