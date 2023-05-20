@@ -16,7 +16,7 @@ A powerful, versatile and ridiculously easy-to-use immediate mode UI library for
 
 The library is based heavily, both in code and style, off [Dear ImGui](https://github.com/ocornut/imgui/), an open source immediate mode library for C++.
 
-RoImGui is **not** designed for building front-end interfaces due to its limited individual control over the styling of UI elements. If you want to make a UI for players then I would recommend either [Fusion](https://github.com/Elttob/Fusion) by Elltob or [Roact](https://github.com/Roblox/roact/) by Roblox. 
+RoImGui is **not** designed for building front-end interfaces due to its limited individual control over the styling of UI elements. If you want to make a UI for players then I would recommend either [Fusion](https://github.com/Elttob/Fusion) by Elttob or [Roact](https://github.com/Roblox/roact/) by Roblox. 
 
 ## Immediate-Mode Graphical User Interface (ImGui)
 Immediate-mode UIs are an entirely different way of developing UI compared to the much more common retain-mode UI frameworks. With immediate-mode UIs you do not need to manage the initialisation, updating or cleanup of UI elements or worry about managing state. Elements are created each frame and can be appended to anywhere in the codebase.
@@ -54,9 +54,9 @@ Immediate-mode UIs are an entirely different way of developing UI compared to th
 - [ ] Input
   - [ ] Combobox
   - [ ] Listbox
-  - [ ] Text
-  - [ ] Number
-    - [ ] Integer or Float
+  - [x] Text
+  - [x] Number
+    - [x] Integer or Float
     - [ ] Increment
     - [ ] Drag
   - [ ] Vector2
