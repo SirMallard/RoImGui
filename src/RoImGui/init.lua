@@ -1,16 +1,16 @@
 local runService: RunService = game:GetService("RunService")
 
-local components = script.Components
+local Demo = require(script.Demo)
 local Types = require(script.Types)
-local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
+local Flags = require(script.Flags)
 local Style = require(script.Utility.Style)
 local Utility = require(script.Utility.Utility)
-local Flags = require(script.Flags)
+local ImGuiInternal: Types.ImGuiInternal = require(script.ImGuiInternal)
 
 --[[
 	Requiring all of the elements	
 ]]
---
+local components = script.Components
 local Window = require(components.Window)
 
 local Menu = require(components.Menu)
@@ -26,89 +26,17 @@ local Input = require(components.Input)
 local TreeNode = require(components.TreeNode)
 local Header = require(components.Header)
 
-local startFrameId: number = -1
-local endFrameId: number = -1
--- local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
+local frameId: number = -1
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 local ImGui: Types.ImGui = {} :: Types.ImGui
 
-ImGui.FrameId = startFrameId
+ImGui.FrameId = frameId
 ImGui.Flags = Flags
 ImGui.Types = script.Types
 ImGui.Colour4 = script.Utility.Colour4
 ImGui.Style = script.Utility.Style
 ImGui.Internal = ImGuiInternal
-
-function ImGui:DebugWindow()
-	local flags: Types.Flag = Flags.WindowFlags.NoClose
-
-	if ImGui:Begin("Debug", { true }, flags) then
-		ImGui:Text("Debug Window.\nFor showing internal data. The data is accurate for this frame since the\n")
-		if ImGui:TreeNode("ID") then
-			ImGui:ChangingText(
-				"ActiveId: ###",
-				"ActiveId: %s",
-				(#ImGuiInternal.ActiveId ~= 0) and ImGuiInternal.ActiveId or "-----"
-			)
-			ImGui:ChangingText(
-				"HoverId: ###",
-				"HoverId: %s",
-				(#ImGuiInternal.HoverId ~= 0) and ImGuiInternal.HoverId or "-----"
-			)
-
-			ImGui:TreePop()
-		end
-
-		if ImGui:TreeNode("Windows") then
-			ImGui:ChangingText(
-				"Hovered Window: ###",
-				"Hovered Window: %s",
-				ImGuiInternal.HoveredWindow and ImGuiInternal.HoveredWindow.Id or "-----"
-			)
-			ImGui:ChangingText(
-				"Moving Window: ###",
-				"Moving Window: %s",
-				ImGuiInternal.MovingWindow and ImGuiInternal.MovingWindow.Id or "-----"
-			)
-			ImGui:ChangingText(
-				"Nav Window: ###",
-				"Nav Window: %s",
-				ImGuiInternal.NavWindow and ImGuiInternal.NavWindow.Id or "-----"
-			)
-			ImGui:ChangingText(
-				"Resizing Window: ###",
-				"Resizing Window: %s",
-				ImGuiInternal.ResizingWindow and ImGuiInternal.ResizingWindow.Id or "-----"
-			)
-
-			ImGui:TreePop()
-		end
-
-		if ImGui:TreeNode("Mouse") then
-			ImGui:ChangingText(
-				"Mouse Position: (###)",
-				"Mouse Position: (%s)",
-				tostring(ImGuiInternal.MouseCursor.Position)
-			)
-			ImGui:ChangingText("Mouse Delta: (###)", "Mouse Delta: (%s)", tostring(ImGuiInternal.MouseCursor.Delta))
-			ImGui:ChangingText("Hold Offset: (###)", "Hold Offset: (%s)", tostring(ImGuiInternal.HoldOffset))
-
-			ImGui:TreePop()
-		end
-		ImGui:Checkbox("Show Item Picker", ImGuiInternal.Debug.HoverDebug)
-		ImGui:End()
-	end
-
-	if ImGuiInternal.Debug.HoverDebug[1] == true and ImGuiInternal.HoverId ~= "" then
-		ImGuiInternal.Debug.HoverElement.stroke.Enabled = true
-	else
-		ImGuiInternal.Debug.HoverElement.stroke.Enabled = false
-	end
-
-	-- local window: Types.ImGuiWindow = ImGui:GetWindowById("Debug")
-	-- window.Active = true
-end
 
 --[[
 	Initialisation API
@@ -134,8 +62,8 @@ function ImGui:Start()
 			return
 		end
 
-		startFrameId += 1
-		ImGui.FrameId = startFrameId
+		frameId += 1
+		ImGui.FrameId = frameId
 		ImGuiInternal:UpdateTime(deltaTime)
 
 		ImGui:SetHover("", "")
@@ -153,11 +81,8 @@ function ImGui:Start()
 			return
 		end
 
-		endFrameId += 1
-		if endFrameId ~= startFrameId then
-			print("⏰ Out of sync? 😤")
-		end
-		ImGui:DebugWindow()
+		Demo:ShowDemoWindow(ImGui)
+		Demo:ShowDebugWindow(ImGui)
 
 		ImGui:EndFrameMouseUpdate()
 		ImGui:CleanWindowElements()
@@ -217,7 +142,7 @@ function ImGui:CleanWindowElements()
 		for name: string, menu: Types.ImGuiMenu in menubar.Menus do
 			menu.Active = false
 
-			if menu.LastFrameActive < endFrameId then
+			if menu.LastFrameActive < frameId then
 				menu:Destroy()
 				window.Window.Menubar.Menus[name] = nil
 			end
@@ -230,7 +155,7 @@ function ImGui:CleanWindowElements()
 		local frame: Types.ElementFrame = window.Window.Frame
 
 		for elementIndex: number, element: Types.Element in frame.Elements do
-			if element.LastFrameActive < endFrameId then
+			if element.LastFrameActive < frameId then
 				if element["Destroy"] == nil then
 					element.Instance:Destroy()
 				else
@@ -931,6 +856,18 @@ function ImGui:UpdateWindowResize()
 end
 
 --[[
+	Debug functions
+]]
+
+function ImGui:ShowDebugWindow(enabled: boolean)
+	Demo.DebugWindow = enabled
+end
+
+function ImGui:ShowDemoWindow(enabled: boolean)
+	Demo.DemoWindow = enabled
+end
+
+--[[
 	CREATION FUNCTIONS
 
 	Window functions
@@ -981,8 +918,8 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Flag |
 	local previousWindow: Types.ImGuiWindow? = ImGui:GetWindowById(windowName)
 	local window: Types.ImGuiWindow = previousWindow or ImGui:CreateWindow(windowName, flags)
 
-	local firstFrameCall: boolean = (window.LastFrameActive ~= startFrameId) -- If this is the first time in the renderstep for creating the window
-	local windowApearing: boolean = (window.LastFrameActive < (startFrameId - 1))
+	local firstFrameCall: boolean = (window.LastFrameActive ~= frameId) -- If this is the first time in the renderstep for creating the window
+	local windowApearing: boolean = (window.LastFrameActive < (frameId - 1))
 		or (Flags.Enabled(flags, Flags.WindowFlags.Popup) == true)
 
 	--[[
@@ -999,7 +936,7 @@ function ImGui:Begin(windowName: string, open: { boolean }?, flags: Types.Flag |
 	ImGuiInternal.CurrentWindow = window
 	table.insert(ImGuiInternal.ElementFrameStack, window.Window.Frame) -- append the window frame to the elementframe stack. Sets the next draw position to the window frame.
 	window.Appearing = windowApearing
-	window.LastFrameActive = startFrameId
+	window.LastFrameActive = frameId
 	ImGuiInternal.ActiveWindow = window
 
 	if Flags.Enabled(flags, Flags.WindowFlags.ChildWindow) == true then
@@ -1151,7 +1088,7 @@ function ImGui:BeginMenu(name: string)
 	end
 
 	menu.Active = true
-	menu.LastFrameActive = startFrameId
+	menu.LastFrameActive = frameId
 
 	-- local menuOpen: boolean = menu.Open
 
@@ -1310,7 +1247,7 @@ function ImGui:_Text(flags: Types.Flag, textString: string, ...: any)
 	ItemSize(elementFrame.DrawCursor, text.Size)
 
 	text.Active = true
-	text.LastFrameActive = startFrameId
+	text.LastFrameActive = frameId
 	ImGuiInternal:ResetNextItemData()
 end
 
@@ -1346,7 +1283,7 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	ItemSize(elementFrame.DrawCursor, checkbox.Size)
 
 	checkbox.Active = true
-	checkbox.LastFrameActive = startFrameId
+	checkbox.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(checkbox.Instance.AbsolutePosition, checkbox.Size, checkbox.Id, checkbox.Class, window)
@@ -1365,7 +1302,7 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	return false
 end
 
-function ImGui:Button(text: string): boolean
+function ImGui:Button(text: string, width: number?): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1381,7 +1318,7 @@ function ImGui:Button(text: string): boolean
 
 	if button == nil then
 		button = Button.new(text, window, elementFrame)
-		button:DrawButton(elementFrame.DrawCursor.Position)
+		button:DrawButton(elementFrame.DrawCursor.Position, width)
 		table.insert(elementFrame.Elements, button)
 	else
 		button:UpdatePosition(elementFrame.DrawCursor.Position)
@@ -1390,7 +1327,7 @@ function ImGui:Button(text: string): boolean
 	ItemSize(elementFrame.DrawCursor, button.Size, Style.Sizes.FramePadding.Y)
 
 	button.Active = true
-	button.LastFrameActive = startFrameId
+	button.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(button.Instance.AbsolutePosition, button.Size, button.Id, button.Class, window)
@@ -1429,7 +1366,7 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	ItemSize(elementFrame.DrawCursor, radioButton.Size)
 
 	radioButton.Active = true
-	radioButton.LastFrameActive = startFrameId
+	radioButton.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean = ButtonBehaviour(
 		radioButton.Instance.AbsolutePosition,
@@ -1479,7 +1416,7 @@ function ImGui:LabelText(text: string, label: string)
 	ItemSize(elementFrame.DrawCursor, labelText.Instance.AbsoluteSize)
 
 	labelText.Active = true
-	labelText.LastFrameActive = startFrameId
+	labelText.LastFrameActive = frameId
 end
 
 function ImGui:InputText(label: string, value: { string })
@@ -1504,7 +1441,7 @@ function ImGui:_Input(
 	value: { string | number },
 	placeholder: string?,
 	minimum: number?,
-	maxmimum: number?,
+	maximum: number?,
 	format: string?
 )
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
@@ -1520,12 +1457,7 @@ function ImGui:_Input(
 	local input: Types.ImGuiInput? = ImGui:GetElementById(elementFrame.Id .. ">" .. label, "Input", elementFrame)
 
 	if input == nil then
-		input = Input.new(label, value, window, elementFrame, flags, {
-			Placeholder = placeholder,
-			Minimum = minimum,
-			Maxmimum = maxmimum,
-			Format = format,
-		})
+		input = Input.new(label, value, window, elementFrame, flags, placeholder)
 		input:DrawInputText(elementFrame.DrawCursor.Position)
 		table.insert(elementFrame.Elements, input)
 	else
@@ -1535,7 +1467,40 @@ function ImGui:_Input(
 	ItemSize(elementFrame.DrawCursor, input.Instance.AbsoluteSize)
 
 	input.Active = true
-	input.LastFrameActive = startFrameId
+	input.LastFrameActive = frameId
+
+	local textValue: string = input.Instance.textbox.Text
+	local editing: boolean = input.Instance.textbox.CursorPosition >= 0
+	local changed: boolean = textValue ~= tostring(value[1])
+
+	-- when the user has stopped interacting with it and it has changed we want to format the text.
+	if (editing == false) and (changed == true) then
+		if Flags.Enabled(flags, Flags.InputFlags.FloatInput) == true then
+			local textFloat: string = (format or "%s"):format(
+				textValue:match("%-?%d+[%.?%d+]?%d+") or tostring(value[1])
+			) or tostring(value[1])
+			local float: number = math.clamp(tonumber(textFloat), minimum or -math.huge, maximum or math.huge)
+			-- we match and format the string based on a selector for floats and a format optionally provided
+			-- by the user. These values are also then clamped if the user provides values.
+
+			-- if the formatted value
+			if textValue ~= tostring(float) then
+				value[1] = float
+				input.Instance.textbox.Text = tostring(float)
+			end
+		elseif Flags.Enabled(flags, Flags.InputFlags.IntegerInput) == true then
+			local textInteger: string = (format or "%s"):format(textValue:match("%-?%d+") or tostring(value[1]))
+				or tostring(value[1])
+			local integer: number = math.clamp(tonumber(textInteger), minimum or -math.huge, maximum or math.huge)
+
+			if textValue ~= tostring(integer) then
+				value[1] = integer
+				input.Instance.textbox.Text = tostring(integer)
+			end
+		else
+			value[1] = textValue
+		end
+	end
 
 	input:UpdateText()
 end
@@ -1578,7 +1543,7 @@ function ImGui:Separator()
 	ItemSize(elementFrame.DrawCursor, separator.Instance.AbsoluteSize)
 
 	separator.Active = true
-	separator.LastFrameActive = startFrameId
+	separator.LastFrameActive = frameId
 end
 
 function ImGui:Indent(width: number?)
@@ -1625,7 +1590,7 @@ function ImGui:TreeNode(text: string): boolean
 	ItemSize(elementFrame.DrawCursor, treenode.Size)
 
 	treenode.Active = true
-	treenode.LastFrameActive = startFrameId
+	treenode.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(treenode.Instance.AbsolutePosition, treenode.Size, treenode.Id, treenode.Class, window)
@@ -1679,7 +1644,7 @@ function ImGui:CollapsingHeader(text: string, value: { boolean }?): boolean
 	ItemSize(elementFrame.DrawCursor, header.Instance.AbsoluteSize)
 
 	header.Active = true
-	header.LastFrameActive = startFrameId
+	header.LastFrameActive = frameId
 
 	local pressed: boolean, hovered: boolean, held: boolean =
 		ButtonBehaviour(header.Instance.AbsolutePosition, header.Instance.AbsoluteSize, header.Id, header.Class, window)

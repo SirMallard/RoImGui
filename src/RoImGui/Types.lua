@@ -432,7 +432,7 @@ export type ImGuiButton = typeof(setmetatable(
 
 		new: (text: string, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiButton,
 
-		DrawButton: (self: ImGuiButton, position: Vector2) -> (),
+		DrawButton: (self: ImGuiButton, position: Vector2, width: number?) -> (),
 		UpdatePosition: (self: ImGuiButton, position: Vector2) -> (),
 
 		Destroy: (self: ImGuiButton) -> (),
@@ -525,7 +525,7 @@ export type ImGuiInput = typeof(setmetatable(
 		LastFrameActive: number,
 
 		Flags: Flag,
-		Extras: { [string]: any },
+		PlaceholderText: string?,
 
 		Size: Vector2,
 		Instance: TextLabel,
@@ -540,7 +540,7 @@ export type ImGuiInput = typeof(setmetatable(
 			window: ImGuiWindow,
 			parentInstance: ElementFrame,
 			flags: Flag,
-			...any
+			placeholder: string?
 		) -> ImGuiInput,
 
 		DrawInputText: (self: ImGuiInput, position: Vector2) -> (),
@@ -653,6 +653,9 @@ export type ImGui = {
 
 	FrameId: number,
 
+	ShowDebugWindow: (self: ImGui, enabled: boolean) -> (),
+	ShowDemoWindow: (self: ImGui, enabled: boolean) -> (),
+
 	Begin: (self: ImGui, windowName: string, open: { boolean }?, flags: Flag?) -> boolean,
 	End: (self: ImGui) -> (),
 
@@ -661,6 +664,8 @@ export type ImGui = {
 
 	BeginMenu: (self: ImGui, name: string) -> boolean,
 	EndMenu: (self: ImGui) -> (),
+
+	-- Components
 
 	_Text: (self: ImGui, flags: Flag, text: string, ...any) -> (),
 	Text: (self: ImGui, text: string, ...any) -> (),
@@ -676,7 +681,7 @@ export type ImGui = {
 		value: { string | number },
 		placeholder: string?,
 		minimum: number?,
-		maxmimum: number?,
+		maximum: number?,
 		format: string?
 	) -> (),
 	LabelText: (self: ImGui, text: string, lable: string) -> (),
@@ -700,12 +705,12 @@ export type ImGui = {
 	) -> (),
 
 	Checkbox: (self: ImGui, text: string, value: { boolean }) -> boolean,
-	Button: (self: ImGui, text: string) -> boolean,
+	Button: (self: ImGui, text: string, width: number?) -> boolean,
 	RadioButton: (self: ImGui, text: string, value: { number }, buttonValue: number) -> boolean,
 
 	TreeNode: (self: ImGui, text: string) -> boolean,
 	TreePop: (self: ImGui) -> (),
-	CollapsingHeader: (self: ImGui, text: string, value: { boolean }) -> boolean,
+	CollapsingHeader: (self: ImGui, text: string, value: { boolean }?) -> boolean,
 
 	Separator: (self: ImGui) -> (),
 
@@ -721,6 +726,7 @@ export type ImGui = {
 	Flags: {
 		WindowFlags: { [string]: Flag },
 		TextFlags: { [string]: Flag },
+		InputFlags: { [string]: Flag },
 		Enabled: (flag: Flag, otherFlag: Flag) -> boolean,
 	},
 	Types: ModuleScript,

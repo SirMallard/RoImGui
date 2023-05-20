@@ -56,6 +56,8 @@ function Header:DrawHeader(position: Vector2)
 	header.BorderColor3 = COLOUR3_BLACK
 	header.BorderSizePixel = 0
 
+	header.ClipsDescendants = true
+
 	local text: TextLabel = Instance.new("TextLabel")
 	text.Name = "text"
 	text.Position = UDim2.fromOffset(Style.Sizes.TextSize + offset + padding, Style.Sizes.FramePadding.Y)

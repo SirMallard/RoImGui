@@ -1,4 +1,3 @@
-local StarterGui = game:GetService("StarterGui")
 local Types = require(script.Parent.Parent.Types)
 local Flags = require(script.Parent.Parent.Flags)
 local Style = require(script.Parent.Parent.Utility.Style)
@@ -17,7 +16,7 @@ function Input.new(
 	window: Types.ImGuiWindow,
 	elementFrame: Types.ElementFrame,
 	flags: Types.Flag,
-	extras: { [string]: any }
+	placeholder: string?
 )
 	local self: Types.ImGuiInput = setmetatable({}, Input) :: Types.ImGuiInput
 
@@ -33,7 +32,7 @@ function Input.new(
 	self.LastFrameActive = 0
 
 	self.Flags = flags
-	self.Extras = extras
+	self.PlaceholderText = placeholder
 
 	self.Active = true
 
@@ -85,6 +84,7 @@ function Input:DrawInputText(position: Vector2)
 	textbox.MultiLine = false
 	textbox.ClearTextOnFocus = false
 	textbox.ClipsDescendants = true
+	textbox.CursorPosition = -1
 
 	if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
 		local placeholder: TextLabel = Instance.new("TextLabel")
@@ -97,7 +97,7 @@ function Input:DrawInputText(position: Vector2)
 		placeholder.BorderColor3 = COLOUR3_BLACK
 		placeholder.BorderSizePixel = 0
 
-		placeholder.Text = self.Extras.Placeholder
+		placeholder.Text = self.PlaceholderText
 		placeholder.FontFace = Style.Font
 		placeholder.TextColor3 = Style.Colours.TextDisabled.Colour
 		placeholder.TextTransparency = (#self.InternalValue == 0) and Style.Colours.TextDisabled.Transparency or 1
@@ -159,33 +159,21 @@ function Input:UpdateText()
 		return
 	end
 
-	local textValue: string = self.Instance.textbox.Text
-	if self.Instance.textbox.CursorPosition < 0 and textValue ~= tostring(self.InternalValue) then
-		if Flags.Enabled(self.Flags, Flags.InputFlags.FloatInput) == true then
-			local float: number = tonumber(textValue:match("%-?%d+[%.?%d+]?%d+")) or self.InternalValue
-			float = math.clamp(float, self.Extras.Minimum or -math.huge, self.Extras.Maximum or math.huge)
-			self.InternalValue = float
-		elseif Flags.Enabled(self.Flags, Flags.InputFlags.IntegerInput) == true then
-			local integer: number = tonumber(textValue:match("%-?%d+")) or self.InternalValue
-			integer = math.clamp(integer, self.Extras.Minimum or -math.huge, self.Extras.Maximum or math.huge)
-			self.InternalValue = integer
-		else
-			self.InternalValue = textValue
-		end
-	end
-
-	if self.Value[1] ~= self.InternalValue then
-		self.Value[1] = self.InternalValue
+	if self.InternalValue ~= self.Value[1] then
+		self.InternalValue = self.Value[1]
 		self.Value[2] = true
-		self.Instance.textbox.Text = self.InternalValue
+
+		if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
+			self.Instance.textbox.placeholder.TextTransparency = (#self.InternalValue == 0)
+					and Style.Colours.TextDisabled.Transparency
+				or 1
+		end
+
+		if self.Instance.textbox.Text ~= tostring(self.Value[1]) then
+			self.Instance.textbox.Text = tostring(self.Value[1])
+		end
 	elseif self.Value[2] == true then
 		self.Value[2] = nil
-	end
-
-	if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
-		self.Instance.textbox.placeholder.TextTransparency = (#self.InternalValue == 0)
-				and Style.Colours.TextDisabled.Transparency
-			or 1
 	end
 end
 

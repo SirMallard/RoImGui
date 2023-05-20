@@ -133,9 +133,12 @@ function RadioButton:UpdateRadioButton()
 
 	if self.InternalValue ~= self.Value[1] then
 		self.InternalValue = self.Value[1]
+		self.Value[2] = true
 		self.Instance.radio.button.ImageTransparency = self.Value[1] == self.ButtonValue
 				and Style.Colours.CheckMark.Transparency
 			or 1
+	elseif self.Value[2] == true then
+		self.Value[2] = nil
 	end
 end
 
