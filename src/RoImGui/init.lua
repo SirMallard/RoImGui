@@ -206,9 +206,6 @@ end
 function ImGui:FindHoveredWindow()
 	ImGuiInternal.HoveredWindow = nil
 
-	-- local topWindow: Types.ImGuiWindow? = ImGuiInternal.WindowFocusOrder[#ImGuiInternal.WindowFocusOrder]
-	-- print(topWindow ~= nil and topWindow.Id or "nil")
-
 	for index = #ImGuiInternal.WindowFocusOrder, 1, -1 do
 		local window = ImGuiInternal.WindowFocusOrder[index]
 		local instance: Frame? = window.Window.Instance
@@ -1300,12 +1297,6 @@ function ImGui:Checkbox(text: string, value: Types.BooleanPointer): boolean
 	if pressed == true then
 		if value[2] ~= nil then
 			value[1][value[2]] = not value[1][value[2]]
-			print(
-				"Changed value to",
-				(if value[2] ~= nil then value[1][value[2]] else value[1]) == true
-						and Style.Colours.CheckMark.Transparency
-					or 1
-			)
 		else
 			value[1] = not value[1]
 		end
