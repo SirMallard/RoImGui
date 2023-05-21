@@ -23,6 +23,14 @@ local textString: { string } = { "random string	" }
 local integerValue: { number } = { 100 }
 local floatValue: { number } = { 11.12 }
 
+local nested_table = {
+	checkbox_one = false,
+	checkbox_two = false,
+}
+
+local checkbox_one = { nested_table, "checkbox_one" }
+local checkbox_two = { nested_table, "checkbox_two" }
+
 function Demo:ShowDebugWindow(ImGui: Types.ImGui)
 	if Demo.DebugWindow == false then
 		return
@@ -138,6 +146,11 @@ function Demo:ShowDemoWindow(ImGui: Types.ImGui)
 				if anotherCheckbox[1] == true then
 					ImGui:Checkbox("Hide this checkbox", anotherCheckbox)
 				end
+
+				ImGui:Separator()
+
+				ImGui:Checkbox("Checkbox one", checkbox_one)
+				ImGui:Checkbox("Checkbox two", checkbox_two)
 
 				ImGui:TreePop()
 			end

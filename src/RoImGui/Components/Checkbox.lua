@@ -115,10 +115,11 @@ function Checkbox:UpdateCheckmark()
 		return
 	end
 
-	if self.InternalValue ~= (self.Value[2] ~= nil and self.Value[1][self.Value[2]] or self.Value[1]) then
-		self.InternalValue = self.Value[1]
+	local value: boolean = if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]
+	if self.InternalValue ~= value then
+		self.InternalValue = value
 		self.Value[0] = true
-		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+		self.Instance.checkbox.ImageTransparency = value == true and Style.Colours.CheckMark.Transparency or 1
 	elseif self.Value[0] == true then
 		self.Value[0] = false
 	end
