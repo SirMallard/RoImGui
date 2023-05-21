@@ -9,14 +9,19 @@ Checkbox.ClassName = "ImGuiCheckbox"
 local COLOUR3_WHITE: Color3 = Color3.fromRGB(255, 255, 255)
 local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
-function Checkbox.new(text: string, value: { boolean }, window: Types.ImGuiWindow, elementFrame: Types.ElementFrame)
+function Checkbox.new(
+	text: string,
+	value: Types.BooleanPointer,
+	window: Types.ImGuiWindow,
+	elementFrame: Types.ElementFrame
+)
 	local self: Types.ImGuiCheckbox = setmetatable({}, Checkbox) :: Types.ImGuiCheckbox
 
 	self.Class = "Checkbox"
 	self.Id = elementFrame.Id .. ">" .. text
 	self.Text = text
 	self.Value = value
-	self.InternalValue = value[1]
+	self.InternalValue = value[2] ~= nil and value[1][value[2]] or value[1]
 
 	self.State = 0
 
@@ -86,7 +91,9 @@ function Checkbox:DrawCheckbox(position: Vector2)
 
 	icon.Image = "rbxassetid://11505661049"
 	icon.ImageColor3 = Style.Colours.CheckMark.Colour
-	icon.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
+	icon.ImageTransparency = (if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]) == true
+			and Style.Colours.CheckMark.Transparency
+		or 1
 
 	icon.Parent = checkbox
 
@@ -108,12 +115,12 @@ function Checkbox:UpdateCheckmark()
 		return
 	end
 
-	if self.InternalValue ~= self.Value[1] then
+	if self.InternalValue ~= (self.Value[2] ~= nil and self.Value[1][self.Value[2]] or self.Value[1]) then
 		self.InternalValue = self.Value[1]
-		self.Value[2] = true
+		self.Value[0] = true
 		self.Instance.checkbox.ImageTransparency = self.Value[1] == true and Style.Colours.CheckMark.Transparency or 1
-	elseif self.Value[2] == true then
-		self.Value[2] = false
+	elseif self.Value[0] == true then
+		self.Value[0] = false
 	end
 end
 

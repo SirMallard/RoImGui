@@ -1264,7 +1264,7 @@ end
 		Most elements can be interacted with and will return a boolean value or number to
 		show whether they have been interacted with.
 ]]
-function ImGui:Checkbox(text: string, value: { boolean }): boolean
+function ImGui:Checkbox(text: string, value: Types.BooleanPointer): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
@@ -1298,7 +1298,11 @@ function ImGui:Checkbox(text: string, value: { boolean }): boolean
 	ButtonLogic(checkbox.Instance.checkbox, hovered, held, checkbox, 0, Style.ButtonStyles.Frame)
 
 	if pressed == true then
-		value[1] = not value[1]
+		if value[2] ~= nil then
+			value[1][value[2]] = not value[1][value[2]]
+		else
+			value[1] = not value[1]
+		end
 	end
 
 	checkbox:UpdateCheckmark()
@@ -1347,14 +1351,14 @@ function ImGui:Button(text: string, width: number?): boolean
 	return false
 end
 
-function ImGui:RadioButton(text: string, value: { number }, buttonValue: number): boolean
+function ImGui:RadioButton(text: string, value: Types.NumberPointer, buttonValue: number): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:_Text()
 	if window.SkipElements == true then
-		return value[1] == buttonValue
+		return (if value[2] ~= nil then value[1][value[2]] else value[1]) == buttonValue
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
@@ -1386,7 +1390,11 @@ function ImGui:RadioButton(text: string, value: { number }, buttonValue: number)
 	ButtonLogic(radioButton.Instance.radio, hovered, held, radioButton, 1, Style.ButtonStyles.Frame)
 
 	if pressed == true then
-		value[1] = buttonValue
+		if value[2] ~= nil then
+			value[1][value[2]] = buttonValue
+		else
+			value[1] = buttonValue
+		end
 	end
 
 	radioButton:UpdateRadioButton()
@@ -1426,26 +1434,38 @@ function ImGui:LabelText(text: string, label: string)
 	labelText.LastFrameActive = frameId
 end
 
-function ImGui:InputText(label: string, value: { string })
+function ImGui:InputText(label: string, value: Types.StringPointer)
 	ImGui:_Input(1, label, value)
 end
 
-function ImGui:InputTextWithHint(label: string, value: { string }, placeholder: string)
+function ImGui:InputTextWithHint(label: string, value: Types.StringPointer, placeholder: string)
 	ImGui:_Input(3, label, value, placeholder)
 end
 
-function ImGui:InputInteger(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+function ImGui:InputInteger(
+	label: string,
+	value: Types.NumberPointer,
+	minimum: number?,
+	maximum: number?,
+	format: string?
+)
 	ImGui:_Input(4, label, value, nil, minimum, maximum, format)
 end
 
-function ImGui:InputFloat(label: string, value: { number }, minimum: number?, maximum: number?, format: string?)
+function ImGui:InputFloat(
+	label: string,
+	value: Types.NumberPointer,
+	minimum: number?,
+	maximum: number?,
+	format: string?
+)
 	ImGui:_Input(8, label, value, nil, minimum, maximum, format)
 end
 
 function ImGui:_Input(
 	flags: Types.Flag,
 	label: string,
-	value: { string | number },
+	value: Types.StringPointer | Types.NumberPointer,
 	placeholder: string?,
 	minimum: number?,
 	maximum: number?,
@@ -1478,34 +1498,45 @@ function ImGui:_Input(
 
 	local textValue: string = input.Instance.textbox.Text
 	local editing: boolean = input.Instance.textbox.CursorPosition >= 0
-	local changed: boolean = textValue ~= tostring(value[1])
+	local actualValue: string = if value[2] ~= nil then value[1][value[2]] else value[1]
+	local changed: boolean = textValue ~= actualValue
 
 	-- when the user has stopped interacting with it and it has changed we want to format the text.
 	if (editing == false) and (changed == true) then
 		if Flags.Enabled(flags, Flags.InputFlags.FloatInput) == true then
-			local textFloat: string = (format or "%s"):format(
-				textValue:match("%-?%d+[%.?%d+]?%d+") or tostring(value[1])
-			) or tostring(value[1])
+			local textFloat: string = (format or "%s"):format(textValue:match("%-?%d+[%.?%d+]?%d+") or actualValue)
+				or actualValue
 			local float: number = math.clamp(tonumber(textFloat), minimum or -math.huge, maximum or math.huge)
 			-- we match and format the string based on a selector for floats and a format optionally provided
 			-- by the user. These values are also then clamped if the user provides values.
 
 			-- if the formatted value
 			if textValue ~= tostring(float) then
-				value[1] = float
+				if value[2] ~= nil then
+					value[1][value[2]] = float
+				else
+					value[1] = float
+				end
 				input.Instance.textbox.Text = tostring(float)
 			end
 		elseif Flags.Enabled(flags, Flags.InputFlags.IntegerInput) == true then
-			local textInteger: string = (format or "%s"):format(textValue:match("%-?%d+") or tostring(value[1]))
-				or tostring(value[1])
+			local textInteger: string = (format or "%s"):format(textValue:match("%-?%d+") or actualValue) or actualValue
 			local integer: number = math.clamp(tonumber(textInteger), minimum or -math.huge, maximum or math.huge)
 
 			if textValue ~= tostring(integer) then
-				value[1] = integer
+				if value[2] ~= nil then
+					value[1][value[2]] = integer
+				else
+					value[1] = integer
+				end
 				input.Instance.textbox.Text = tostring(integer)
 			end
 		else
-			value[1] = textValue
+			if value[2] ~= nil then
+				value[1][value[2]] = textValue
+			else
+				value[1] = textValue
+			end
 		end
 	end
 

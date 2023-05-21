@@ -110,6 +110,9 @@ export type ImGuiButtonStyles = {
 		=<>= VALUES =<>=
 ]]
 export type ImGuiId = string
+export type BooleanPointer = { boolean } | { { [any]: boolean } | any }
+export type NumberPointer = { number } | { { [any]: number } | any }
+export type StringPointer = { string } | { { [any]: string } | any }
 
 --[[
 	The Internal ButtonState used by all buttons:
@@ -351,7 +354,7 @@ export type ImGuiCheckbox = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		Value: { boolean },
+		Value: BooleanPointer,
 		InternalValue: boolean,
 
 		State: ButtonState,
@@ -366,7 +369,7 @@ export type ImGuiCheckbox = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiCheckbox,
+		new: (text: string, value: BooleanPointer, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiCheckbox,
 
 		DrawCheckbox: (self: ImGuiCheckbox, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiCheckbox, position: Vector2) -> (),
@@ -414,7 +417,7 @@ export type ImGuiRadioButton = typeof(setmetatable(
 		Window: ImGuiWindow,
 
 		ButtonValue: number,
-		Value: { number },
+		Value: NumberPointer,
 		InternalValue: number,
 
 		State: ButtonState,
@@ -432,7 +435,7 @@ export type ImGuiRadioButton = typeof(setmetatable(
 		new: (
 			text: string,
 			id: number,
-			buttonValue: { boolean },
+			buttonValue: NumberPointer,
 			window: ImGuiWindow,
 			parentInstance: ElementFrame
 		) -> ImGuiRadioButton,
@@ -483,7 +486,7 @@ export type ImGuiInput = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		Value: { string | number },
+		Value: NumberPointer | StringPointer,
 		InternalValue: string | number,
 		HasLabel: boolean,
 
@@ -502,7 +505,7 @@ export type ImGuiInput = typeof(setmetatable(
 
 		new: (
 			label: string,
-			value: { string },
+			value: NumberPointer | StringPointer,
 			window: ImGuiWindow,
 			parentInstance: ElementFrame,
 			flags: Flag,
@@ -525,7 +528,7 @@ export type ImGuiTreeNode = typeof(setmetatable(
 		ElementFrame: ElementFrame,
 		Window: ImGuiWindow,
 
-		Value: { boolean },
+		Value: BooleanPointer,
 		InternalValue: boolean,
 
 		State: ButtonState,
@@ -540,7 +543,7 @@ export type ImGuiTreeNode = typeof(setmetatable(
 		Class: string,
 		__index: any,
 
-		new: (text: string, value: { boolean }, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiTreeNode,
+		new: (text: string, value: BooleanPointer, window: ImGuiWindow, parentInstance: ElementFrame) -> ImGuiTreeNode,
 
 		DrawTreeNode: (self: ImGuiTreeNode, position: Vector2) -> (),
 		UpdatePosition: (self: ImGuiTreeNode, position: Vector2) -> (),
@@ -644,19 +647,19 @@ export type ImGui = {
 		self: ImGui,
 		flags: Flag,
 		lable: string,
-		value: { string | number },
+		value: NumberSequence | StringPointer,
 		placeholder: string?,
 		minimum: number?,
 		maximum: number?,
 		format: string?
 	) -> (),
 	LabelText: (self: ImGui, text: string, lable: string) -> (),
-	InputText: (self: ImGui, labeL: string, value: { string }) -> (),
-	InputTextWithHint: (self: ImGui, labeL: string, value: { string }, placeholder: string) -> (),
+	InputText: (self: ImGui, labeL: string, value: StringPointer) -> (),
+	InputTextWithHint: (self: ImGui, labeL: string, value: StringPointer, placeholder: string) -> (),
 	InputInteger: (
 		self: ImGui,
 		label: string,
-		value: { number },
+		value: NumberPointer,
 		minimum: number?,
 		maximum: number?,
 		format: string?
@@ -664,15 +667,15 @@ export type ImGui = {
 	InputFloat: (
 		self: ImGui,
 		label: string,
-		value: { number },
+		value: NumberPointer,
 		minimum: number?,
 		maximum: number?,
 		format: string?
 	) -> (),
 
-	Checkbox: (self: ImGui, text: string, value: { boolean }) -> boolean,
+	Checkbox: (self: ImGui, text: string, value: BooleanPointer) -> boolean,
 	Button: (self: ImGui, text: string, width: number?) -> boolean,
-	RadioButton: (self: ImGui, text: string, value: { number }, buttonValue: number) -> boolean,
+	RadioButton: (self: ImGui, text: string, value: NumberPointer, buttonValue: number) -> boolean,
 
 	TreeNode: (self: ImGui, text: string) -> boolean,
 	TreePop: (self: ImGui) -> (),

@@ -12,7 +12,7 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 function RadioButton.new(
 	text: string,
 	buttonValue: number,
-	value: { number },
+	value: Types.NumberPointer,
 	window: Types.ImGuiWindow,
 	elementFrame: Types.ElementFrame
 )
@@ -23,7 +23,7 @@ function RadioButton.new(
 	self.Text = text
 	self.ButtonValue = buttonValue
 	self.Value = value
-	self.InternalValue = value[1]
+	self.InternalValue = if value[2] ~= nil then value[1][value[2]] else value[1]
 
 	self.State = 0
 
@@ -89,7 +89,11 @@ function RadioButton:DrawRadioButton(position: Vector2)
 
 	button.Image = Style.Images.Circle
 	button.ImageColor3 = Style.Colours.CheckMark.Colour
-	button.ImageTransparency = (self.Value[1] == self.ButtonValue) and Style.Colours.CheckMark.Transparency or 1
+	button.ImageTransparency = (
+		(if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]) == self.ButtonValue
+	)
+			and Style.Colours.CheckMark.Transparency
+		or 1
 
 	button.Parent = radio
 
@@ -131,14 +135,15 @@ function RadioButton:UpdateRadioButton()
 		return
 	end
 
-	if self.InternalValue ~= self.Value[1] then
-		self.InternalValue = self.Value[1]
-		self.Value[2] = true
-		self.Instance.radio.button.ImageTransparency = self.Value[1] == self.ButtonValue
+	local value: number = if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]
+	if self.InternalValue ~= value then
+		self.InternalValue = value
+		self.Value[0] = true
+		self.Instance.radio.button.ImageTransparency = value == self.ButtonValue
 				and Style.Colours.CheckMark.Transparency
 			or 1
-	elseif self.Value[2] == true then
-		self.Value[2] = nil
+	elseif self.Value[0] == true then
+		self.Value[0] = nil
 	end
 end
 

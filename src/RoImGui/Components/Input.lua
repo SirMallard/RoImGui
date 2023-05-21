@@ -12,7 +12,7 @@ local COLOUR3_BLACK: Color3 = Color3.fromRGB(0, 0, 0)
 
 function Input.new(
 	label: string,
-	value: { string },
+	value: Types.NumberPointer | Types.StringPointer,
 	window: Types.ImGuiWindow,
 	elementFrame: Types.ElementFrame,
 	flags: Types.Flag,
@@ -24,7 +24,7 @@ function Input.new(
 	self.Id = elementFrame.Id .. ">" .. label
 	self.Label = label
 	self.Value = value
-	self.InternalValue = value[1]
+	self.InternalValue = if value[2] ~= nil then value[1][value[2]] else value[1]
 	self.HasLabel = #self.Label > 0
 
 	self.ElementFrame = elementFrame
@@ -51,7 +51,8 @@ function Input:DrawInputText(position: Vector2)
 		return
 	end
 
-	local textSize: Vector2 = Utility.CalculateTextSize(self.Value[1])
+	local textSize: Vector2 =
+		Utility.CalculateTextSize(if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1])
 	local labelSize: Vector2 = (self.HasLabel == true) and Utility.CalculateTextSize(self.Label) or Vector2.zero
 
 	local labelText: Frame = Instance.new("Frame")
@@ -74,7 +75,7 @@ function Input:DrawInputText(position: Vector2)
 	textbox.BorderColor3 = COLOUR3_BLACK
 	textbox.BorderSizePixel = 0
 
-	textbox.Text = self.Value[1]
+	textbox.Text = if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]
 	textbox.FontFace = Style.Font
 	textbox.TextColor3 = Style.Colours.Text.Colour
 	textbox.TextTransparency = Style.Colours.Text.Transparency
@@ -159,9 +160,10 @@ function Input:UpdateText()
 		return
 	end
 
-	if self.InternalValue ~= self.Value[1] then
-		self.InternalValue = self.Value[1]
-		self.Value[2] = true
+	local value: number | string = if self.Value[2] ~= nil then self.Value[1][self.Value[2]] else self.Value[1]
+	if self.InternalValue ~= value then
+		self.InternalValue = value
+		self.Value[0] = true
 
 		if Flags.Enabled(self.Flags, Flags.InputFlags.PlaceHolderText) == true then
 			self.Instance.textbox.placeholder.TextTransparency = (#self.InternalValue == 0)
@@ -169,11 +171,11 @@ function Input:UpdateText()
 				or 1
 		end
 
-		if self.Instance.textbox.Text ~= tostring(self.Value[1]) then
-			self.Instance.textbox.Text = tostring(self.Value[1])
+		if self.Instance.textbox.Text ~= tostring(value) then
+			self.Instance.textbox.Text = tostring(value)
 		end
-	elseif self.Value[2] == true then
-		self.Value[2] = nil
+	elseif self.Value[0] == true then
+		self.Value[0] = nil
 	end
 end
 
