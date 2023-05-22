@@ -652,10 +652,10 @@ export type ImGui = {
 		minimum: number?,
 		maximum: number?,
 		format: string?
-	) -> (),
+	) -> boolean,
 	LabelText: (self: ImGui, text: string, lable: string) -> (),
 	InputText: (self: ImGui, labeL: string, value: StringPointer) -> (),
-	InputTextWithHint: (self: ImGui, labeL: string, value: StringPointer, placeholder: string) -> (),
+	InputTextWithHint: (self: ImGui, labeL: string, value: StringPointer, placeholder: string) -> boolean,
 	InputInteger: (
 		self: ImGui,
 		label: string,
@@ -663,7 +663,7 @@ export type ImGui = {
 		minimum: number?,
 		maximum: number?,
 		format: string?
-	) -> (),
+	) -> boolean,
 	InputFloat: (
 		self: ImGui,
 		label: string,
@@ -671,7 +671,7 @@ export type ImGui = {
 		minimum: number?,
 		maximum: number?,
 		format: string?
-	) -> (),
+	) -> boolean,
 
 	Checkbox: (self: ImGui, text: string, value: BooleanPointer) -> boolean,
 	Button: (self: ImGui, text: string, width: number?) -> boolean,

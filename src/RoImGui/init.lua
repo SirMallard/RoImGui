@@ -1431,12 +1431,12 @@ function ImGui:LabelText(text: string, label: string)
 	labelText.LastFrameActive = frameId
 end
 
-function ImGui:InputText(label: string, value: Types.StringPointer)
-	ImGui:_Input(1, label, value)
+function ImGui:InputText(label: string, value: Types.StringPointer): boolean
+	return ImGui:_Input(1, label, value)
 end
 
-function ImGui:InputTextWithHint(label: string, value: Types.StringPointer, placeholder: string)
-	ImGui:_Input(3, label, value, placeholder)
+function ImGui:InputTextWithHint(label: string, value: Types.StringPointer, placeholder: string): boolean
+	return ImGui:_Input(3, label, value, placeholder)
 end
 
 function ImGui:InputInteger(
@@ -1445,8 +1445,8 @@ function ImGui:InputInteger(
 	minimum: number?,
 	maximum: number?,
 	format: string?
-)
-	ImGui:_Input(4, label, value, nil, minimum, maximum, format)
+): boolean
+	return ImGui:_Input(4, label, value, nil, minimum, maximum, format)
 end
 
 function ImGui:InputFloat(
@@ -1455,8 +1455,8 @@ function ImGui:InputFloat(
 	minimum: number?,
 	maximum: number?,
 	format: string?
-)
-	ImGui:_Input(8, label, value, nil, minimum, maximum, format)
+): boolean
+	return ImGui:_Input(8, label, value, nil, minimum, maximum, format)
 end
 
 function ImGui:_Input(
@@ -1467,14 +1467,14 @@ function ImGui:_Input(
 	minimum: number?,
 	maximum: number?,
 	format: string?
-)
+): boolean
 	assert(ImGuiInternal.CurrentWindow, ImGuiInternal.ErrorMessages.CurrentWindow)
 	assert(#ImGuiInternal.ElementFrameStack > 0, ImGuiInternal.ErrorMessages.ElementFrame)
 	local window: Types.ImGuiWindow = ImGuiInternal.CurrentWindow
 
 	-- see ImGui:_Text()
 	if window.SkipElements == true then
-		return
+		return false
 	end
 
 	local elementFrame: Types.ElementFrame = ImGui:GetActiveElementFrame()
@@ -1494,12 +1494,11 @@ function ImGui:_Input(
 	input.LastFrameActive = frameId
 
 	local textValue: string = input.Instance.textbox.Text
-	local editing: boolean = input.Instance.textbox.CursorPosition >= 0
 	local actualValue: string = if value[2] ~= nil then value[1][value[2]] else value[1]
-	local changed: boolean = textValue ~= actualValue
+	local valueChanged: boolean = false
 
 	-- when the user has stopped interacting with it and it has changed we want to format the text.
-	if (editing == false) and (changed == true) then
+	if ((input.Instance.textbox.CursorPosition >= 0) == false) and ((textValue ~= actualValue) == true) then
 		if Flags.Enabled(flags, Flags.InputFlags.FloatInput) == true then
 			local textFloat: string = (format or "%s"):format(textValue:match("%-?%d+[%.?%d+]?%d+") or actualValue)
 				or actualValue
@@ -1535,9 +1534,13 @@ function ImGui:_Input(
 				value[1] = textValue
 			end
 		end
+
+		valueChanged = true
 	end
 
 	input:UpdateText()
+
+	return valueChanged
 end
 
 function ImGui:Separator()
