@@ -1,6 +1,5 @@
 local guiService = game:GetService("GuiService")
 local runService: RunService = game:GetService("RunService")
-local userInputService = game:GetService("UserInputService")
 
 local Types = require(script.Types)
 local Style = require(script.Utility.Style)
@@ -44,64 +43,7 @@ function Remediate.Update(deltaTime: number)
 	frameData.Frame += 1
 	frameData.Time += deltaTime
 
-	Remediate:UpdateInput(deltaTime)
-end
-
-function Remediate:UpdateInput(deltaTime: number)
-	local mouseData = Internal.MouseData
-
-	-- we account for the guiinset and then clamp it on the screen
-	local screenSize: Vector2 = Internal.Screen.AbsoluteSize
-	local position: Vector2 = userInputService:GetMouseLocation() - Internal.FrameData.GuiInset
-	position = Vector2.new(math.clamp(position.X, 0, screenSize.X), math.clamp(position.Y, 0, screenSize.Y))
-
-	mouseData.Cursor.Delta = position - mouseData.Cursor.Position
-	mouseData.Cursor.Position = position
-	mouseData.Cursor.Magnitude = mouseData.Cursor.Delta.Magnitude -- the delta magnitude
-
-	-- some of the mouse data is reset or updated.
-	mouseData.LeftButton.Changed = false
-	mouseData.LeftButton.Frames += 1
-	mouseData.LeftButton.Time += deltaTime
-	local leftButton: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-	mouseData.RightButton.Changed = false
-	mouseData.RightButton.Frames += 1
-	mouseData.RightButton.Time += deltaTime
-	local rightButton: boolean = userInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-
-	-- if the time between clicks is too long or they move too far then it doesn't count as a click
-	if
-		(Internal.FrameData.Time - mouseData.LeftButton.Time) > mouseData.DoubleClickTime
-		or mouseData.Cursor.Magnitude > mouseData.DoubleClickMagnitude
-	then
-		mouseData.LeftButton.Clicks = 0
-	end
-	if
-		(Internal.FrameData.Time - mouseData.RightButton.Time) > mouseData.DoubleClickTime
-		or mouseData.Cursor.Magnitude > mouseData.DoubleClickMagnitude
-	then
-		mouseData.RightButton.Clicks = 0
-	end
-
-	-- change in button state - clicked if up.
-	if leftButton ~= mouseData.LeftButton.State then
-		mouseData.LeftButton.State = leftButton
-		mouseData.LeftButton.Changed = true
-		mouseData.LeftButton.Frames = 0
-		mouseData.LeftButton.Time = 0
-		if leftButton == false then
-			mouseData.LeftButton.Clicks += 1
-		end
-	end
-	if rightButton ~= mouseData.RightButton.State then
-		mouseData.RightButton.State = rightButton
-		mouseData.RightButton.Changed = true
-		mouseData.RightButton.Frames = 0
-		mouseData.RightButton.Time = 0
-		if rightButton == false then
-			mouseData.RightButton.Clicks += 1
-		end
-	end
+	Internal:UpdateInput(deltaTime)
 end
 
 function Remediate:_getId()
@@ -134,14 +76,9 @@ function Remediate:_getId()
 end
 
 function Remediate:_sizeItem(drawCursor: Types.DrawCursor, size: Vector2, textPadding: number?)
-	local lineOffset: number = (textPadding ~= nil)
-			and (textPadding > 0)
-			and math.max(0, drawCursor.TextLineOffset - textPadding)
-		or 0
-	local linePosition: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y
-		or drawCursor.Position.Y
-	local lineHeight: number =
-		math.max(drawCursor.LineHeight, drawCursor.Position.Y - linePosition + size.Y + lineOffset)
+	local lineOffset: number = (textPadding ~= nil) and (textPadding > 0) and math.max(0, drawCursor.TextLineOffset - textPadding) or 0
+	local linePosition: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y or drawCursor.Position.Y
+	local lineHeight: number = math.max(drawCursor.LineHeight, drawCursor.Position.Y - linePosition + size.Y + lineOffset)
 
 	drawCursor.PreviousPosition = Vector2.new(drawCursor.Position.X + size.X, linePosition)
 	drawCursor.Position = Vector2.new(drawCursor.Indent, linePosition + lineHeight + Style.Sizes.ItemSpacing.Y)
@@ -176,6 +113,10 @@ function Remediate:_element(class: Types.Class, flags: Types.Flags, ...)
 
 	element:Update(window.DrawCursor.Position, flags, ...)
 	Remediate:_sizeItem(window.DrawCursor, element.Size)
+
+	return
 end
+
+function Remediate:Begin() end
 
 return Remediate

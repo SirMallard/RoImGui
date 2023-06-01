@@ -19,6 +19,23 @@ function methods.getTextSize(text: string)
 	return textService:GetTextBoundsAsync(TEXT_PARAMS)
 end
 
+function methods.applyButtonStyle(instance: GuiObject, state: Types.ButtonState, buttonStyle, hovered: boolean, held: boolean)
+	if hovered then
+		if held and (state ~= 2) then
+			methods.applyStyle(instance, buttonStyle[2])
+			return 2
+		elseif state ~= 1 then
+			methods.applyStyle(instance, buttonStyle[1])
+			return 1
+		end
+	elseif state ~= 0 then
+		methods.applyStyle(instance, buttonStyle[0])
+		return 0
+	end
+
+	return state
+end
+
 function methods.applyStyle(instance: GuiObject, style)
 	instance.BackgroundColor3 = style.Colour or WHITE
 	instance.BackgroundTransparency = style.Transparency or 1

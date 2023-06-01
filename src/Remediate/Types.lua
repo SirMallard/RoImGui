@@ -1,9 +1,15 @@
 export type Flags = number
 
-export type BooleanVariable = { [number]: boolean | string | number }
-export type NumberVariable = { number }
-export type StringVariable = { string }
+export type InternalPointer<T, K> = { [number]: { [K]: T } | K }
+export type Pointer<T, K> = { [number]: T } | InternalPointer<T, K>
 export type Key = number | string
+
+--[[
+	either we have a direct pointer { false }
+	or we want to pass a table with a key or index. { { index = false }, "index" }
+	
+	We can then check
+]]
 
 export type Id = string
 export type Class = string
@@ -33,21 +39,20 @@ export type Element = {
 	Id: Id,
 	Flags: Flags,
 
-	Size: Vector2,
-
 	Frame: number,
 
 	Properties: {
+		Size: Vector2,
 		[any]: any,
 	},
 	Values: {
 		[any]: any,
 	},
 
-	[any]: any,
+	[any]: (Element, ...any) -> ...any,
 }
 
-export type Window = Element & {
+export type Window = {
 	Name: string,
 
 	Instance: Frame,
@@ -56,7 +61,7 @@ export type Window = Element & {
 
 	RedrawFrame: number,
 
-	Elements: { [Id]: Element },
+	Elements: { [Id]: any },
 
 	Properties: {
 		Collapsed: boolean,
@@ -70,10 +75,12 @@ export type Window = Element & {
 		CollapseState: ButtonState,
 	},
 	Values: {
-		Open: BooleanVariable,
+		Open: { boolean },
 		_open: boolean,
 		Key: Key,
 	},
+
+	[any]: any,
 }
 
 export type Text = Element & {
@@ -88,7 +95,7 @@ export type Checkbox = Element & {
 	Instance: Frame,
 
 	Values: {
-		Value: BooleanVariable,
+		Value: Pointer<boolean, Key>,
 		_value: boolean,
 		Key: Key,
 	},
@@ -100,7 +107,7 @@ export type RadioButton = Element & {
 	Instance: Frame,
 
 	Values: {
-		Value: NumberVariable,
+		Value: Pointer<number, Key>,
 		_value: number,
 		Key: Key,
 	},
@@ -119,7 +126,7 @@ export type StringInput = Element & {
 	Instance: Frame,
 
 	Values: {
-		Value: StringVariable,
+		Value: Pointer<string, Key>,
 		_value: string,
 		Key: Key,
 	},
@@ -170,7 +177,7 @@ export type ComboInput = Element & {
 		Values: { string },
 	},
 	Values: {
-		Value: StringVariable,
+		Value: Pointer<string, Key>,
 		_value: string,
 		Key: Key,
 	},
@@ -223,8 +230,6 @@ type FrameData = {
 	ElementData: {
 		HoverId: Id,
 		ActiveId: Id,
-		HoverClass: Class,
-		ActiveClass: Class,
 
 		HoldOffset: Vector2,
 		ResizeAxis: Vector2,
@@ -269,13 +274,17 @@ type ElementData = {
 type RenderData = {}
 
 export type Remediate = {
-	-- FrameData: FrameData,
-	-- MouseData: MouseData,
-	-- ElementData: ElementData,
-
-	-- Screen: ScreenGui,
-
 	[any]: any,
+}
+
+export type Internal = {
+	FrameData: FrameData,
+	MouseData: MouseData,
+	ElementData: ElementData,
+
+	Screen: ScreenGui,
+
+	[any]: (Internal, ...any) -> ...any,
 }
 
 return {}

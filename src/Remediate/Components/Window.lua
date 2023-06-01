@@ -8,9 +8,8 @@ local Window = {
 	Class = "Window",
 }
 
-function Window.new(flags, id: Types.Id, name: string, open: Types.BooleanVariable?)
+function Window.new(flags, id: Types.Id, name: string, open: Types.InternalPointer<boolean, Types.Key>)
 	local self = {} :: Types.Window
-
 	self.Id = id
 	self.Flags = flags
 
@@ -44,10 +43,11 @@ function Window.new(flags, id: Types.Id, name: string, open: Types.BooleanVariab
 		CollapseState = 0,
 	}
 
+	--supress
 	self.Values = {
-		Open = open and open[1][open[2]] or { true },
-		_open = open and open[1][open[2]] or true,
-		Key = open and open[2] or 1,
+		Open = open[1],
+		_open = open[1][open[2]],
+		Key = open[2],
 	}
 
 	return setmetatable(self, Window)
@@ -75,14 +75,13 @@ function Window:Draw()
 
 	-- only draw if we have a titlebar
 	if not bit32.band(self.Flags, Flags.NoTitleBar) then
-		local title = self:DrawTitle()
-		title.Parent = window
+		self:DrawTitle(window)
 	end
 
 	self.Instance = window
 end
 
-function Window:DrawTitle()
+function Window:DrawTitle(parent: Frame)
 	local textBounds: Vector2 = Utility.getTextSize(self.Name)
 	local textLeftPadding: number = Style.Sizes.FramePadding.X
 	local textRightPadding: number = Style.Sizes.FramePadding.X
@@ -98,13 +97,7 @@ function Window:DrawTitle()
 	title.Position = UDim2.fromOffset(0, 0)
 	title.Size = UDim2.new(1, 0, 0, Style.Sizes.TextMinHeight + 2 * Style.Sizes.FramePadding.Y)
 	title.ClipsDescendants = true
-	Utility.applyStyle(
-		title,
-		Style.ButtonStyles[if self.Properties.Collapsed
-			then 4
-			elseif Internal.FrameData.WindowData.Active.Id == self.Id then 2
-			else 1]
-	)
+	Utility.applyStyle(title, Style.ButtonStyles[if self.Properties.Collapsed then 4 elseif Internal.FrameData.WindowData.Active.Id == self.Id then 2 else 1])
 
 	Utility.newPadding(Style.Sizes.FramePadding).Parent = title
 
@@ -136,7 +129,7 @@ function Window:DrawTitle()
 		closeButton.Position = UDim2.new(1, 1, 0.5, -1)
 		closeButton.Size = UDim2.fromOffset(Style.Sizes.TextSize + 2, Style.Sizes.TextSize + 2)
 		Utility.applyStyle(closeButton, Style.ButtonStyles.TitleButton[self.Properties.CloseState])
-		closeButton.Parent = titleFrame
+		closeButton.Parent = title
 
 		local cross: ImageLabel = Instance.new("ImageLabel")
 		cross.Name = "cross"
@@ -152,49 +145,105 @@ function Window:DrawTitle()
 	-- if the flags allow for collapsing
 	if not bit32.band(self.Flags, Flags.NoCollapse) then
 		local collapseButton: Frame = Instance.new("Frame")
-		collapseButton.Name = "close"
+		collapseButton.Name = "collapse"
 		collapseButton.AnchorPoint = Vector2.new(0, 0.5)
 		collapseButton.Position = UDim2.new(0, -1, 0.5, -1)
 		collapseButton.Size = UDim2.fromOffset(Style.Sizes.TextSize + 2, Style.Sizes.TextSize + 2)
 		Utility.applyStyle(collapseButton, Style.ButtonStyles.TitleButton[self.Properties.CollapseState])
-		collapseButton.Parent = titleFrame
+		collapseButton.Parent = title
 
 		local arrow: ImageLabel = Instance.new("ImageLabel")
 		arrow.Name = "arrow"
 		arrow.AnchorPoint = Vector2.new(0.5, 0.5)
 		arrow.Position = UDim2.fromScale(0.5, 0.5)
 		arrow.Size = UDim2.fromOffset(Style.Sizes.TextSize, Style.Sizes.TextSize)
+		arrow.Rotation = if self.Properties.Collapsed then -90 else 0
 		arrow.Image = Style.Images.Dropdown
 		Utility.applyStyle(arrow)
 		Utility.applyStyle(arrow, Style.Colours.Text)
 		arrow.Parent = collapseButton
 	end
 
-	return title
+	title.Parent = parent
 end
 
 function Window:DrawFrame() end
 
+-- this handles the buttons and double clicking on the title
+function Window:UpdateTitle()
+	if bit32.band(self.Flags, Flags.NoTitleBar) then
+		return -- we dont check if the window should not have a title
+	end
+
+	-- if we don't interact with the collapse or close button, we can interact with the title bar
+	local focussedOnButton = false
+
+	-- if close button is there then we check if we are interacting with it. This affects the style
+	-- applied to the button and we can handle the response.
+	if self.Properties.CanClose then
+		local instance: GuiObject = self.Instance.title.close
+		local pressed: boolean, hovered: boolean, held: boolean = Internal:HandleInteraction(instance.AbsolutePosition, instance.AbsoluteSize, self.Id, self)
+
+		focussedOnButton = pressed or hovered or held
+
+		self.Properties.CloseState = Utility.applyButtonStyle(instance, self.Properties.CloseState, Style.ButtonStyles.TitleButton, hovered, held)
+
+		if pressed then
+			self.Properties.Collapsed = not self.Properties.Collapsed
+			self.RedrawFrame = Internal.FrameData.Frame
+		end
+	end
+
+	-- same with the collapse button
+	if not bit32.band(self.Flags, Flags.NoCollapse) then
+		local instance: GuiObject = self.Instance.title.collapse
+		local pressed: boolean, hovered: boolean, held: boolean = Internal:HandleInteraction(instance.AbsolutePosition, instance.AbsoluteSize, self.Id, self)
+
+		focussedOnButton = pressed or hovered or held
+
+		self.Properties.CollapseState = Utility.applyButtonStyle(instance, self.Properties.CollapseState, Style.ButtonStyles.TitleButton, hovered, held)
+		instance.Rotation = if self.Properties.Collapsed then -90 else 0
+
+		if pressed then
+			self.Properties.Collapsed = not self.Properties.Collapsed
+			self.RedrawFrame = Internal.FrameData.Frame
+		end
+	end
+
+	if not focussedOnButton and not bit32.band(self.Flags, Flags.NoCollapse) then
+		local instance: GuiObject = self.Instance.title
+
+		local hovered: boolean = Internal:HandleHover(instance.AbsolutePosition, instance.AbsoluteSize, self.Id, self)
+
+		if hovered and Internal.MouseData.LeftButton.Clicks == 2 then
+			self.Properties.Collapsed = not self.Properties.Collapsed
+			self.RedrawFrame = Internal.FrameData.Frame
+		end
+	end
+end
+
 --[[
 	every frame we need to update:
+		changes which may happen:
+			flags - redraw
+			style - redraw
+			collapsed - redraw
+			closed - wedraw
 		handled elsewhere:
 			update the position
 			update the size
-		in the window:
-			flags - entire
-			title bar colour - style the frame
-			collapsed - redraw
-			closed - wedraw entirely
-			global style - redraw entire
-			
+		internally:
+			check title button values - don't use button component
+			check the title clicks for collapsing
 ]]
-function Window:Update(flags: Types.Flags, open: Types.BooleanVariable)
+function Window:Update(flags: Types.Flags)
+	-- if the flags change at all then we do an entire redraw.
 	if self.Flags ~= flags then
+		self.Flags = flags
 		self.RedrawFrame = Internal.FrameData.Frame
 	end
 
-	open = open
-
+	-- a redraw will also properly update colours on certain components
 	if (self.RedrawFrame == Internal.FrameData.Frame) or Internal.ElementData.RedrawElement then
 		self:Draw()
 	end
