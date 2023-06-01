@@ -36,6 +36,12 @@ function Demo:ShowDebugWindow(ImGui: Types.ImGui)
 		return
 	end
 
+	-- local single_value = { false }
+	-- local multi_table = { boolean_value = false }
+
+	-- ImGui:Checkbox("Single Value", single_value)
+	-- ImGui:Checkbox("Multitable", { multi_table, "boolean_value" })
+
 	local flags: Types.Flag = Flags.WindowFlags.NoClose
 
 	if ImGui:Begin("Debug", { true }, flags) then
@@ -105,6 +111,10 @@ end
 function Demo:ShowDemoWindow(ImGui: Types.ImGui)
 	if Demo.DemoWindow == false then
 		return
+	end
+
+	if ImGui:Begin("Checkbox window") then
+		ImGui:Checkbox("Checkbox", anotherCheckbox)
 	end
 
 	if ImGui:Begin("Demo Window", { true }) then
@@ -212,7 +222,9 @@ function Demo:ShowDemoWindow(ImGui: Types.ImGui)
 				ImGui:InputText("Text", textString)
 				ImGui:InputTextWithHint("Placeholder Text", textString, "secret behind the line")
 				ImGui:InputInteger("Integer Input", integerValue, -100, 100)
-				ImGui:InputFloat("Float Input", floatValue, nil, nil, "%.4f")
+				if ImGui:InputFloat("Float Input", floatValue, nil, nil, "%.4f") then
+					print(`Float changed to {floatValue[1]}`)
+				end
 
 				ImGui:TreePop()
 			end

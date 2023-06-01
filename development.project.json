@@ -11,6 +11,10 @@
 				"RoImGui":
 				{
 					"$path": "src/RoImGui"
+				},
+				"Remediate":
+				{
+					"$path": "src/Remediate"
 				}
 			},
 			"Libraries": {
