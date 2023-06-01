@@ -54,6 +54,9 @@ function generateId()
 	end
 
 	print(ID)
+	local hash1 = PJWHash(ID)
+	local hash2 = JenkinsHash(ID)
+	print(hash1, hash2)
 end
 
 function layerOne()
