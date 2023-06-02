@@ -53,12 +53,15 @@ export type Element = {
 }
 
 export type Window = {
+	Id: Id,
+	Flags: Flags,
 	Name: string,
 
 	Instance: Frame,
 	SkipElements: boolean,
 	DrawCursor: DrawCursor,
 
+	Frame: number,
 	RedrawFrame: number,
 
 	Elements: { [Id]: any },

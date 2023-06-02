@@ -1,3 +1,29 @@
+--[[
+	Frames:
+		- we don't change windows values initially unless they are in response to the user.
+		  ie. mouse moved to resize
+		Start:
+			Cleanup - we want to remove all elements at the start ideally.
+
+			Mouse - the new mouse inputs and positions are fetched.
+			Hover - cleared
+			Hovered window - cleared and the hovered window is found and set.
+			Active window - possibly cleared and the hovered window and button down makes it active.
+			Moved windows -  possibly cleared and the positions are updated to reflect the mouse position.
+			Resized windows - same as above.
+
+		User:
+			Hover - the hovering element.
+			Active - possibily cleared and the mouse button down element.
+			Active window - edge case for literally the edges of windows which overalap
+				the size but still count as active - resize elements extend
+
+		End:
+			Focsus order - the user has clicked on a window and not clicked an element.
+			Window move - no element is selected so we allow the window to move.
+			
+]]
+
 local userInputService = game:GetService("UserInputService")
 
 local Types = require(script.Parent.Types)
@@ -131,29 +157,31 @@ function Internal:IsCursorInBox(position: Vector2, size: Vector2)
 end
 
 function Internal:PreFrameUpdate()
+	local frameData = Internal.FrameData
 	Internal:SetHover("")
-	Internal.FrameData.WindowData.Hovered = nil
+	frameData.WindowData.Hovered = nil
 
 	-- we just loop through all the windows and find the one the user is hovering on.
-	for _, window: Types.Window in Internal.FrameData.WindowFocusOrder do
+	for index = #frameData.WindowFocusOrder, 1, -1 do
+		local window: Types.Window = frameData.WindowFocusOrder[index]
 		local instance: GuiObject = window.Instance
 		if Internal:IsCursorInBox(instance.AbsolutePosition, instance.AbsoluteSize) then
-			Internal.FrameData.WindowData.Hovered = window
+			frameData.WindowData.Hovered = window
 			break
 		end
 	end
 
 	-- if the user is not holding down then we stop moving or resizing.
 	if Internal.MouseData.LeftButton.State == false then
-		Internal.FrameData.WindowData.Moving = nil
-		Internal.FrameData.WindowData.Resizing = nil
+		frameData.WindowData.Moving = nil
+		frameData.WindowData.Resizing = nil
 	elseif Internal.MouseData.LeftButton.Changed then
-		if Internal.FrameData.WindowData.Hovered == nil then
+		if frameData.WindowData.Hovered == nil then
 			-- we know the mosue has clicked down outside any windows so we clear the active window.
-			Internal.FrameData.WindowData.Active = nil
+			frameData.WindowData.Active = nil
 		else
 			-- a click in a window so set that window as active.
-			Internal.FrameData.WindowData.Active = Internal.FrameData.WindowData.Hovered
+			frameData.WindowData.Active = frameData.WindowData.Hovered
 		end
 	end
 
@@ -161,41 +189,46 @@ function Internal:PreFrameUpdate()
 end
 
 function Internal:PostFrameUpdate()
-	local totalWindows: number = #Internal.FrameData.WindowFocusOrder
-	for zindex: number, window: Types.Window in Internal.FrameData.WindowFocusOrder do
-		-- the first window should have the higher zindex to appear first.
-		window.Instance.ZIndex = totalWindows - zindex
+	local frameData = Internal.FrameData
+	for zindex: number, window: Types.Window in frameData.WindowFocusOrder do
+		-- the first element is at the bottom.
+		window.Instance.ZIndex = zindex
 	end
 
-	if Internal.MouseData.LeftButton.State == true then
+	-- if the mouse is down and there is not active elemnts then the mouse is on the frame so we just
+	if (Internal.MouseData.LeftButton.State == true) and (frameData.ElementData.HoverId == "") and (frameData.ElementData.ActiveId == "") then
+		local window: Types.Window = frameData.WindowData.Active
+		frameData.WindowData.Moving = window
+		frameData.ElementData.HoldOffset = Internal.MouseData.Cursor.Position - window.Properties.Position
 	end
 end
 
 function Internal:UpdateWindows()
-	local window: Types.Window? = Internal.FrameData.WindowData.Moving
+	local frameData = Internal.FrameData
+	local window: Types.Window? = frameData.WindowData.Moving
 
 	if window ~= nil then
 		-- if the window is down then we move the window relative to the offset and the mouse.
 		if Internal.MouseData.LeftButton.State == true then
-			window.Properties.Position = Internal.MouseData.Cursor.Position - Internal.FrameData.ElementData.HoldOffset
+			window.Properties.Position = Internal.MouseData.Cursor.Position - frameData.ElementData.HoldOffset
 		else
-			Internal.FrameData.WindowData.Moving = nil
-			Internal.FrameData.ElementData.HoldOffset = Vector2.zero
+			frameData.WindowData.Moving = nil
+			frameData.ElementData.HoldOffset = Vector2.zero
 		end
 		-- clearly they are acting on the window and not an element
 		Internal:SetActive("")
 	end
 
-	window = Internal.FrameData.WindowData.Resizing
+	window = frameData.WindowData.Resizing
 
 	if window ~= nil then
 		if Internal.MouseData.LeftButton.State == true then
 			local position: Vector2 = window.Properties.Position
 			local size: Vector2 = window.Properties.Size
-			local minimumSize: Vector2 = window.MinimumSize
-			local offset: Vector2 = Internal.FrameData.ElementData.HoldOffset
-			local resizeSize: Vector2 = Internal.FrameData.ElementData.ResizeAxis
-			local screenSize: Vector2 = Internal.FrameData.ScreenSize
+			local minimumSize: Vector2 = window.Properties.MinimumSize
+			local offset: Vector2 = frameData.ElementData.HoldOffset
+			local resizeSize: Vector2 = frameData.ElementData.ResizeAxis
+			local screenSize: Vector2 = frameData.ScreenSize
 			local newPosition: Vector2 = position
 			local newSize: Vector2 = size
 
@@ -221,12 +254,38 @@ function Internal:UpdateWindows()
 			window.Properties.Position = newPosition
 			window.Properties.Size = newSize
 		else
-			Internal.FrameData.WindowData.Resizing = nil
-			Internal.FrameData.ElementData.HoldOffset = Vector2.zero
-			Internal.FrameData.ElementData.ResizeAxis = Vector2.zero
+			frameData.WindowData.Resizing = nil
+			frameData.ElementData.HoldOffset = Vector2.zero
+			frameData.ElementData.ResizeAxis = Vector2.zero
 		end
 
 		Internal:SetActive("")
+	end
+end
+
+function Internal:CleanupElements()
+	-- the frame has incremented already so we have to backtrack to the last frame it should be at.
+	local validFrame: number = Internal.FrameData.Frame - 1
+	local frameData = Internal.FrameData
+	for _, window: Types.Window in frameData.Windows do
+		if window.Frame < validFrame then
+			table.remove(frameData.WindowFocusOrder, table.find(frameData.WindowFocusOrder, window))
+			frameData.Windows[window.Id] = nil
+
+			if window == frameData.WindowData.Active then
+				frameData.WindowData.Active = nil
+			end
+			if frameData.WindowData.Moving == window then
+				frameData.WindowData.Moving = nil
+			end
+			if frameData.WindowData.Resizing == window then
+				frameData.WindowData.Resizing = nil
+			end
+
+			-- we also want to clear everything else in the window.
+
+			window:Destroy()
+		end
 	end
 end
 
