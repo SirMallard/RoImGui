@@ -125,12 +125,12 @@ function Internal:UpdateInput(deltaTime: number)
 	mouseY = Internal.MouseData.Cursor.Position.Y
 end
 
--- just a simple AABB test
+-- just a simple AABB test.
 function Internal:IsCursorInBox(position: Vector2, size: Vector2)
 	return (mouseX >= position.X) and (mouseY >= position.Y) and (mouseX <= position.X + size.X) and (mouseY <= position.Y + size.Y)
 end
 
-function Internal:Update()
+function Internal:PreFrameUpdate()
 	Internal:SetHover("")
 	Internal.FrameData.WindowData.Hovered = nil
 
@@ -143,13 +143,90 @@ function Internal:Update()
 		end
 	end
 
-	-- if the user is not holding down then we stop moving or resizing
-	if Internal.MouseData.LeftButton.State == 0 then
+	-- if the user is not holding down then we stop moving or resizing.
+	if Internal.MouseData.LeftButton.State == false then
 		Internal.FrameData.WindowData.Moving = nil
 		Internal.FrameData.WindowData.Resizing = nil
-	elseif Internal.MouseData.LeftButton.Changed and Internal.FrameData.WindowData.Hovered == nil then
-		-- we know the mosue has clicked down outside any windows so we clear the active
-		Internal:SetActive("", nil)
+	elseif Internal.MouseData.LeftButton.Changed then
+		if Internal.FrameData.WindowData.Hovered == nil then
+			-- we know the mosue has clicked down outside any windows so we clear the active window.
+			Internal.FrameData.WindowData.Active = nil
+		else
+			-- a click in a window so set that window as active.
+			Internal.FrameData.WindowData.Active = Internal.FrameData.WindowData.Hovered
+		end
+	end
+
+	Internal:UpdateWindows()
+end
+
+function Internal:PostFrameUpdate()
+	local totalWindows: number = #Internal.FrameData.WindowFocusOrder
+	for zindex: number, window: Types.Window in Internal.FrameData.WindowFocusOrder do
+		-- the first window should have the higher zindex to appear first.
+		window.Instance.ZIndex = totalWindows - zindex
+	end
+
+	if Internal.MouseData.LeftButton.State == true then
+	end
+end
+
+function Internal:UpdateWindows()
+	local window: Types.Window? = Internal.FrameData.WindowData.Moving
+
+	if window ~= nil then
+		-- if the window is down then we move the window relative to the offset and the mouse.
+		if Internal.MouseData.LeftButton.State == true then
+			window.Properties.Position = Internal.MouseData.Cursor.Position - Internal.FrameData.ElementData.HoldOffset
+		else
+			Internal.FrameData.WindowData.Moving = nil
+			Internal.FrameData.ElementData.HoldOffset = Vector2.zero
+		end
+		-- clearly they are acting on the window and not an element
+		Internal:SetActive("")
+	end
+
+	window = Internal.FrameData.WindowData.Resizing
+
+	if window ~= nil then
+		if Internal.MouseData.LeftButton.State == true then
+			local position: Vector2 = window.Properties.Position
+			local size: Vector2 = window.Properties.Size
+			local minimumSize: Vector2 = window.MinimumSize
+			local offset: Vector2 = Internal.FrameData.ElementData.HoldOffset
+			local resizeSize: Vector2 = Internal.FrameData.ElementData.ResizeAxis
+			local screenSize: Vector2 = Internal.FrameData.ScreenSize
+			local newPosition: Vector2 = position
+			local newSize: Vector2 = size
+
+			local mousePosition: Vector2 = Internal.MouseData.Cursor.Position
+
+			-- DON'T TOUCH THIS CODE.
+			-- this maths took a lot of trial an error. I'm not going to explain it specifically.
+			-- the position and size may change and is clamped onto the screen.
+			if resizeSize.X > 0 then
+				newSize = Vector2.new(math.clamp(mousePosition.X - position.X - offset.X, minimumSize.X, screenSize.X - position.X), newSize.Y)
+			elseif resizeSize.X < 0 then
+				newSize = Vector2.new(math.clamp(position.X + size.X - mousePosition.X + offset.X, minimumSize.X, screenSize.X - position.X - minimumSize.X), newSize.Y)
+				newPosition = Vector2.new(math.clamp(mousePosition.X - offset.X, 0, position.X + size.X - minimumSize.X), newPosition.Y)
+			end
+
+			if resizeSize.Y > 0 then
+				newSize = Vector2.new(newSize.X, math.clamp(mousePosition.Y - position.Y - offset.Y, minimumSize.Y, screenSize.Y - position.Y))
+			elseif resizeSize.Y < 0 then
+				newSize = Vector2.new(newSize.X, math.clamp(position.Y + size.Y - mousePosition.Y + offset.Y, minimumSize.Y, screenSize.Y - position.Y - minimumSize.Y))
+				newPosition = Vector2.new(newPosition.X, math.clamp(mousePosition.Y - offset.Y, -offset.Y, position.Y + size.Y - minimumSize.Y))
+			end
+
+			window.Properties.Position = newPosition
+			window.Properties.Size = newSize
+		else
+			Internal.FrameData.WindowData.Resizing = nil
+			Internal.FrameData.ElementData.HoldOffset = Vector2.zero
+			Internal.FrameData.ElementData.ResizeAxis = Vector2.zero
+		end
+
+		Internal:SetActive("")
 	end
 end
 
@@ -161,9 +238,8 @@ end
 -- the active element remains the same even as the mouse moves so we want to update the window.
 -- there is no way for us to know what the active window is each frame unless we rely on the
 -- previous frame, therefore we can't wipe it at the start of the frame.
-function Internal:SetActive(id: Types.Id, window: Types.Window?)
+function Internal:SetActive(id: Types.Id)
 	Internal.FrameData.ElementData.ActiveId = id
-	Internal.FrameData.WindowData.Active = window
 end
 
 -- this checks whether we can hover over an object
@@ -196,18 +272,21 @@ function Internal:HandleInteraction(position: Vector2, size: Vector2, id: Types.
 	local hovered: boolean = Internal:HandleHover(position, size, id, window)
 	local held: boolean, pressed: boolean = false, false
 
-	-- the hover is already set so we just check if the mouse is down
-	if hovered and (Internal.MouseData.LeftButton.State == 1) then
-		Internal:SetActive(id, window)
+	-- the hover is already set so we just check if the mouse is down.
+	if hovered and (Internal.MouseData.LeftButton.State == true) then
+		Internal:SetActive(id)
+		Internal.FrameData.WindowData.Active = window
 	end
 
 	-- at the start of the frame we clear the active id unless the mouse is still down.
 	if Internal.FrameData.ElementData.ActiveId == id then
-		if Internal.MouseData.LeftButton.State == 1 then
+		if Internal.MouseData.LeftButton.State == true then
 			held = true
 		else
 			-- if the mouse is up this frame and they are still hovering then it's a click.
+			-- however, the mosue is no longer down so the element is not active.
 			pressed = hovered
+			Internal:SetActive("")
 		end
 	end
 

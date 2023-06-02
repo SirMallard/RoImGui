@@ -243,6 +243,12 @@ function Window:Update(flags: Types.Flags)
 		self.RedrawFrame = Internal.FrameData.Frame
 	end
 
+	self:UpdateTitle()
+
+	-- we update the position and size.
+	self.Instance.Position = UDim2.fromOffset(self.Properties.Position.X, self.Properties.Position.Y)
+	self.Instance.Size = UDim2.fromOffset(self.Properties.Size.X, self.Properties.Size.Y)
+
 	-- a redraw will also properly update colours on certain components
 	if (self.RedrawFrame == Internal.FrameData.Frame) or Internal.ElementData.RedrawElement then
 		self:Draw()
