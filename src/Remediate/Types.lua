@@ -1,7 +1,7 @@
 export type Flags = number
 
 export type InternalPointer<T, K> = { [number]: { [K]: T } | K }
-export type Pointer<T, K> = { [number]: T } | InternalPointer<T, K>
+export type Pointer<T, K> = { [number]: T }
 export type Key = number | string
 
 --[[
@@ -64,7 +64,7 @@ export type Window = {
 	Frame: number,
 	RedrawFrame: number,
 
-	Elements: { [Id]: any },
+	Elements: { [Id]: Element },
 
 	Properties: {
 		Collapsed: boolean,
@@ -80,7 +80,7 @@ export type Window = {
 	Values: {
 		Open: { boolean },
 		_open: boolean,
-		Key: Key,
+		Key: number,
 	},
 
 	[any]: any,
@@ -219,7 +219,8 @@ type FrameData = {
 	Time: number,
 
 	Windows: { [Id]: Window },
-	WindowFocusOrder: { [number]: Window },
+	WindowFocusOrder: { Window },
+	WindowStack: { Window },
 
 	WindowData: {
 		Current: Window?,

@@ -3,7 +3,7 @@
 		- we don't change windows values initially unless they are in response to the user.
 		  ie. mouse moved to resize
 		Start:
-			Cleanup - we want to remove all elements at the start ideally.
+			Refresh - we want to remove all elements at the start ideally.
 
 			Mouse - the new mouse inputs and positions are fetched.
 			Hover - cleared
@@ -40,6 +40,7 @@ Internal.FrameData = {
 	Windows = {},
 	-- Assuming that the top window is the bottom of the list.
 	WindowFocusOrder = {},
+	WindowStack = {},
 
 	WindowData = {
 		Current = nil,
@@ -263,7 +264,7 @@ function Internal:UpdateWindows()
 	end
 end
 
-function Internal:CleanupElements()
+function Internal:RefreshElements()
 	-- the frame has incremented already so we have to backtrack to the last frame it should be at.
 	local validFrame: number = Internal.FrameData.Frame - 1
 	local frameData = Internal.FrameData
@@ -283,9 +284,29 @@ function Internal:CleanupElements()
 			end
 
 			-- we also want to clear everything else in the window.
-
+			-- either we just destroy the window and allow a garbage cleanup or explicitly go
+			-- through each element. The instances should all be garbage collected eventually.
 			window:Destroy()
 		end
+
+		-- we just loop through all the elements and we destroy the ones that should no longer be there.
+		for id: Types.Id, element: Types.Element in window.Elements do
+			if element.Frame < validFrame then
+				element:Destroy()
+				window.Elements[id] = nil
+			end
+		end
+
+		-- we reset the draw cursor again.
+		window.DrawCursor = {
+			Position = Vector2.zero,
+			PreviousPosition = Vector2.zero,
+			MaximumPosition = Vector2.zero,
+			LineHeight = 0,
+			TextLineOffset = 0,
+			Indent = 0,
+			SameLine = false,
+		}
 	end
 end
 

@@ -8,7 +8,7 @@ local Window = {
 	Class = "Window",
 }
 
-function Window.new(flags, id: Types.Id, name: string, open: Types.InternalPointer<boolean, Types.Key>)
+function Window.new(flags, id: Types.Id, name: string, open: Types.Pointer<boolean, Types.Key>)
 	local self = {} :: Types.Window
 	self.Id = id
 	self.Flags = flags
@@ -43,11 +43,11 @@ function Window.new(flags, id: Types.Id, name: string, open: Types.InternalPoint
 		CollapseState = 0,
 	}
 
-	--supress
+	-- I'm leaving this here in case I come up with a better idea later.
 	self.Values = {
-		Open = open[1],
-		_open = open[1][open[2]],
-		Key = open[2],
+		Open = open,
+		_open = open[1],
+		Key = 1,
 	}
 
 	return setmetatable(self, Window)
@@ -243,16 +243,20 @@ function Window:Update(flags: Types.Flags)
 		self.RedrawFrame = Internal.FrameData.Frame
 	end
 
-	self:UpdateTitle()
-
 	-- we update the position and size.
 	self.Instance.Position = UDim2.fromOffset(self.Properties.Position.X, self.Properties.Position.Y)
 	self.Instance.Size = UDim2.fromOffset(self.Properties.Size.X, self.Properties.Size.Y)
+
+	self:UpdateTitle()
 
 	-- a redraw will also properly update colours on certain components
 	if (self.RedrawFrame == Internal.FrameData.Frame) or Internal.ElementData.RedrawElement then
 		self:Draw()
 	end
+
+	local minimumTitleSize: Vector2 = Vector2.new(self.Instance.title.AbsoluteSize.X - self.Instance.title.window_title.AbsoluteSize.X + self.Instance.title.window_title.text.AbsoluteSize.X, self.Instance.title.AbsoluteSize.Y)
+	self.Properties.MinimumSize = minimumTitleSize
+	self.Properties.Size = Vector2.new(math.max(self.Properties.MinimumSize.X, self.Properties.Size.X), math.max(self.Properties.MinimumSize.Y, self.Properties.Size.Y))
 end
 
 return Window

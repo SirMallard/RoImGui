@@ -1,11 +1,13 @@
+local FriendService = game:GetService("FriendService")
 local guiService = game:GetService("GuiService")
 local runService: RunService = game:GetService("RunService")
 
 local Types = require(script.Types)
 local Style = require(script.Utility.Style)
 local Internal = require(script.Internal)
+local Components = require(script.Components)
 
-local Remediate = {} :: Types.Remediate
+local Remediate = {}
 Remediate.Status = 0
 
 function Remediate:Start()
@@ -75,6 +77,7 @@ function Remediate:_getId()
 	return ("%08x"):format(hash)
 end
 
+-- this code is taken from ImGui and I'm don't properly understand what happens.
 function Remediate:_sizeItem(drawCursor: Types.DrawCursor, size: Vector2, textPadding: number?)
 	local lineOffset: number = (textPadding ~= nil) and (textPadding > 0) and math.max(0, drawCursor.TextLineOffset - textPadding) or 0
 	local linePosition: number = (drawCursor.SameLine == true) and drawCursor.PreviousPosition.Y or drawCursor.Position.Y
@@ -112,11 +115,46 @@ function Remediate:_element(class: Types.Class, flags: Types.Flags, ...)
 	element.Frame = Internal.FrameData.Frame
 
 	element:Update(window.DrawCursor.Position, flags, ...)
-	Remediate:_sizeItem(window.DrawCursor, element.Size)
+	Remediate:_sizeItem(window.DrawCursor, element.Properties.Size)
 
 	return
 end
 
-function Remediate:Begin() end
+function Remediate:Begin(name: string, open: Types.Pointer<boolean, Types.Key>?, flags: Types.Flags?)
+	local frameData = Internal.FrameData
+	flags = flags or 0
+
+	local id: Types.Id = Remediate:_getId()
+
+	local window: Types.Window = frameData.Windows[id]
+	if window == nil then
+		window = Components.Window.new(flags, id, name, open or { true })
+		frameData.Windows[id] = window
+		table.insert(frameData.WindowFocusOrder, window)
+		window:Draw()
+	end
+
+	table.insert(frameData.WindowStack, window)
+	frameData.WindowData.Current = window
+	window.Frame = frameData.Frame
+
+	window.SkipElements = window.Properties.Collapsed or (window.Values.Open[window.Values.Key] == false)
+
+	window:Update()
+
+	if window.SkipElements then
+		Remediate:End()
+	end
+end
+
+function Remediate:End()
+	local frameData = Internal.FrameData
+	assert((#frameData.WindowStack > 0), "Called :End() to many times!")
+	assert(frameData.WindowData.Current ~= nil, "Never called :Begin() to set a current window!")
+
+	-- we remove the element from the stack and set the current window to the previous one
+	table.remove(frameData.WindowStack)
+	frameData.WindowData.Current = frameData.WindowStack[#frameData.WindowStack]
+end
 
 return Remediate
