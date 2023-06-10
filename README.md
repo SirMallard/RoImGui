@@ -1,3 +1,5 @@
+### Deprecated in favour of [Iris](https://github.com/Michael-48/Iris).
+
 # RoImGui
 A powerful, versatile and ridiculously easy-to-use immediate mode UI library for Roblox projects. RoImGui is a visual library for testing and debugging of code through on-screen windows and panels which are hooked to anywhere in your project.
 
